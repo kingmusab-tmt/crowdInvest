@@ -37,13 +37,16 @@ import {
   ShieldOff,
   Star,
   UserX,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type UserRole = "User" | "Admin";
+
+type UserRole = "User" | "Community Admin" | "General Admin";
 type UserStatus = "Active" | "Restricted";
 
 type User = {
@@ -56,22 +59,29 @@ type User = {
   balance: number;
   isTopUser: boolean;
   dateJoined: string;
+  community?: string;
 };
 
 const initialUsers: User[] = [
-  { id: 'usr_1', name: 'Olivia Martin', email: 'olivia.martin@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=a', role: 'User', status: 'Active', balance: 1250.75, isTopUser: true, dateJoined: '2024-07-15' },
-  { id: 'usr_2', name: 'Jackson Lee', email: 'jackson.lee@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=b', role: 'User', status: 'Active', balance: 750.00, isTopUser: false, dateJoined: '2024-07-14' },
-  { id: 'usr_3', name: 'Liam Johnson', email: 'liam@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c', role: 'User', status: 'Restricted', balance: 300.25, isTopUser: false, dateJoined: '2024-07-12' },
-  { id: 'usr_4', name: 'Noah Williams', email: 'noah@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=d', role: 'User', status: 'Active', balance: 5000.00, isTopUser: true, dateJoined: '2024-07-10' },
-  { id: 'usr_5', name: 'Admin User', email: 'admin@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=e', role: 'Admin', status: 'Active', balance: 0.00, isTopUser: false, dateJoined: '2024-06-01' },
+  { id: 'usr_1', name: 'Olivia Martin', email: 'olivia.martin@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=a', role: 'User', status: 'Active', balance: 1250.75, isTopUser: true, dateJoined: '2024-07-15', community: 'Northside' },
+  { id: 'usr_2', name: 'Jackson Lee', email: 'jackson.lee@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=b', role: 'Community Admin', status: 'Active', balance: 750.00, isTopUser: false, dateJoined: '2024-07-14', community: 'Southside' },
+  { id: 'usr_3', name: 'Liam Johnson', email: 'liam@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c', role: 'User', status: 'Restricted', balance: 300.25, isTopUser: false, dateJoined: '2024-07-12', community: 'Northside' },
+  { id: 'usr_4', name: 'Noah Williams', email: 'noah@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=d', role: 'Community Admin', status: 'Active', balance: 5000.00, isTopUser: true, dateJoined: '2024-07-10', community: 'Northside' },
+  { id: 'usr_5', name: 'Admin User', email: 'admin@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=e', role: 'General Admin', status: 'Active', balance: 0.00, isTopUser: false, dateJoined: '2024-06-01' },
+  { id: 'usr_6', name: 'Ethan Jones', email: 'ethan.jones@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=f', role: 'User', status: 'Active', balance: 250.00, isTopUser: false, dateJoined: '2024-07-18', community: 'Southside' },
 ];
+
+const communities = ["Northside", "Southside", "West End", "Downtown"];
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>(initialUsers);
     const [isFundDialogOpen, setIsFundDialogOpen] = useState(false);
+    const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [fundAction, setFundAction] = useState<"add" | "debit">("add");
     const [fundAmount, setFundAmount] = useState("");
+    const [selectedRole, setSelectedRole] = useState<UserRole>("User");
+    const [selectedCommunity, setSelectedCommunity] = useState<string | undefined>(undefined);
     const { toast } = useToast();
 
     const openFundDialog = (user: User, action: "add" | "debit") => {
@@ -108,19 +118,34 @@ export default function AdminUsersPage() {
         });
     };
     
-    const handleToggleAdmin = (userId: string) => {
-        const user = users.find(u => u.id === userId)!;
-        const newRole: UserRole = user.role === "User" ? "Admin" : "User";
-        if (user.email === 'admin@example.com') {
-             toast({ title: "Action Forbidden", description: "Cannot remove admin status from the default admin.", variant: "destructive" });
+    const openRoleDialog = (user: User) => {
+        setSelectedUser(user);
+        setSelectedRole(user.role);
+        setSelectedCommunity(user.community);
+        setIsRoleDialogOpen(true);
+    };
+
+    const handleRoleChange = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedUser) return;
+        if (selectedUser.email === 'admin@example.com') {
+             toast({ title: "Action Forbidden", description: "Cannot change the role of the default admin.", variant: "destructive" });
+             setIsRoleDialogOpen(false);
              return;
         }
-        setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+
+        const community = selectedRole === "Community Admin" ? selectedCommunity : undefined;
+        setUsers(users.map(u => 
+            u.id === selectedUser.id ? { ...u, role: selectedRole, community: community } : u
+        ));
+
         toast({
             title: `User Role Changed`,
-            description: `${user.name} is now an ${newRole}.`,
+            description: `${selectedUser.name}'s role has been updated to ${selectedRole}.`,
         });
+        setIsRoleDialogOpen(false);
     };
+
 
     const handleToggleTopUser = (userId: string) => {
         const user = users.find(u => u.id === userId)!;
@@ -132,11 +157,19 @@ export default function AdminUsersPage() {
         });
     };
 
+    const getRoleBadgeVariant = (role: UserRole) => {
+        switch (role) {
+            case 'General Admin': return 'default';
+            case 'Community Admin': return 'secondary';
+            default: return 'outline';
+        }
+    }
+
   return (
     <div>
         <div className="mb-6">
           <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Monitor and manage all registered users.</p>
+          <p className="text-muted-foreground">Monitor and manage all registered users across communities.</p>
         </div>
         <Card>
             <CardHeader>
@@ -149,6 +182,7 @@ export default function AdminUsersPage() {
                         <TableRow>
                             <TableHead>User</TableHead>
                             <TableHead>Role</TableHead>
+                            <TableHead>Community</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Balance</TableHead>
                             <TableHead className="text-center">Actions</TableHead>
@@ -173,7 +207,10 @@ export default function AdminUsersPage() {
                                 </div>
                             </TableCell>
                             <TableCell>
-                                <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge>
+                                <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
+                            </TableCell>
+                            <TableCell>
+                                {user.community || 'N/A'}
                             </TableCell>
                             <TableCell>
                                 <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
@@ -198,13 +235,13 @@ export default function AdminUsersPage() {
                                         Debit Funds
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                     <DropdownMenuItem onClick={() => handleToggleRestrict(user.id)}>
-                                        {user.status === 'Active' ? <UserX className="mr-2 h-4 w-4" /> : <Shield className="mr-2 h-4 w-4" />}
-                                        {user.status === 'Active' ? 'Restrict User' : 'Unrestrict User'}
+                                    <DropdownMenuItem onClick={() => openRoleDialog(user)}>
+                                        <Shield className="mr-2 h-4 w-4" />
+                                        Change Role
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleToggleAdmin(user.id)}>
-                                        {user.role === 'User' ? <Shield className="mr-2 h-4 w-4" /> : <ShieldOff className="mr-2 h-4 w-4" />}
-                                        {user.role === 'User' ? 'Make Admin' : 'Remove Admin'}
+                                     <DropdownMenuItem onClick={() => handleToggleRestrict(user.id)}>
+                                        {user.status === 'Active' ? <UserX className="mr-2 h-4 w-4" /> : <Users className="mr-2 h-4 w-4" />}
+                                        {user.status === 'Active' ? 'Restrict User' : 'Unrestrict User'}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleToggleTopUser(user.id)}>
                                         <Star className="mr-2 h-4 w-4" />
@@ -255,6 +292,55 @@ export default function AdminUsersPage() {
                 </form>
             </DialogContent>
         </Dialog>
+        
+        <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Change Role for {selectedUser?.name}</DialogTitle>
+                    <DialogDescription>
+                        Select a new role and community if applicable.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleRoleChange}>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="role" className="text-right">Role</Label>
+                            <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="User">User</SelectItem>
+                                    <SelectItem value="Community Admin">Community Admin</SelectItem>
+                                    <SelectItem value="General Admin">General Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {selectedRole === 'Community Admin' && (
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="community" className="text-right">Community</Label>
+                                <Select value={selectedCommunity} onValueChange={setSelectedCommunity}>
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select a community" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {communities.map(community => (
+                                            <SelectItem key={community} value={community}>{community}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsRoleDialogOpen(false)}>Cancel</Button>
+                        <Button type="submit">Save Changes</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
+
+    
