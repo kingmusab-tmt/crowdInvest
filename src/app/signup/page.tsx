@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mountain } from "lucide-react";
 import Link from "next/link";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+const communities = ["Northside", "Southside", "West End", "Downtown"];
 
 export default function SignupPage() {
   return (
@@ -38,6 +42,29 @@ export default function SignupPage() {
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
                 <Input id="confirm-password" type="password" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="community">Community</Label>
+                <Select>
+                  <SelectTrigger id="community">
+                    <SelectValue placeholder="Select your community" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {communities.map((community) => (
+                      <SelectItem key={community} value={community}>
+                        {community}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="verification">Verification Information</Label>
+                <Textarea
+                  id="verification"
+                  placeholder="Provide information for your community admin to verify your identity (e.g., your address, family name, or a reference)."
+                  required
+                />
               </div>
                <Button type="submit" className="w-full">
                 Create Account
