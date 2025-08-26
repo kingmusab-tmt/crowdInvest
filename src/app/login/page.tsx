@@ -68,7 +68,7 @@ export default function LoginPage() {
             </div>
              <div className="mt-6 text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link href="#" className="underline" prefetch={false}>
+              <Link href="/signup" className="underline" prefetch={false}>
                 Sign up
               </Link>
             </div>
