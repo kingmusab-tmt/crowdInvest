@@ -14,42 +14,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Fingerprint, Bell, Palette, User, KeyRound, Save, EyeOff } from "lucide-react";
+import { Fingerprint, Bell, Palette, User, KeyRound, Save, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-export default function SettingsPage() {
+export default function AdminSettingsPage() {
   const { toast } = useToast();
 
   const handleSettingsSave = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     toast({
       title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
+      description: "Your admin preferences have been updated successfully.",
     });
   };
 
   return (
     <div>
        <div className="mb-6">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences.</p>
+        <h1 className="text-3xl font-bold">Admin Settings</h1>
+        <p className="text-muted-foreground">Manage your administrator account and global settings.</p>
       </div>
       <form onSubmit={handleSettingsSave}>
         <div className="grid gap-8">
             {/* Profile Settings */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><User /> Profile Information</CardTitle>
-                <CardDescription>Update your personal details here.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><User /> Admin Profile</CardTitle>
+                <CardDescription>Update your personal administrator details here.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                  <div className="flex items-center gap-6">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src="https://i.pravatar.cc/150" alt="User Avatar" />
-                      <AvatarFallback>U</AvatarFallback>
+                      <AvatarImage src="https://i.pravatar.cc/150?u=admin" alt="Admin Avatar" />
+                      <AvatarFallback>A</AvatarFallback>
                     </Avatar>
                      <div className="flex-1 space-y-2">
                         <Label htmlFor="profile-picture">Profile Picture</Label>
@@ -59,22 +59,12 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" defaultValue="John Doe" />
+                        <Input id="name" defaultValue="Admin User" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email Address</Label>
-                        <Input id="email" type="email" defaultValue="john.doe@example.com" disabled />
+                        <Input id="email" type="email" defaultValue="admin@example.com" disabled />
                     </div>
-                </div>
-                 <Separator />
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                        <Label htmlFor="profile-visibility" className="text-base flex items-center gap-2"><EyeOff /> Profile Visibility</Label>
-                        <p className="text-sm text-muted-foreground">
-                           Make your profile visible to other community members.
-                        </p>
-                    </div>
-                    <Switch id="profile-visibility" defaultChecked />
                 </div>
               </CardContent>
             </Card>
@@ -101,7 +91,7 @@ export default function SettingsPage() {
                     <div className="space-y-0.5">
                         <Label htmlFor="biometric-login" className="text-base flex items-center gap-2"><Fingerprint /> Enable Biometric Login</Label>
                         <p className="text-sm text-muted-foreground">
-                            Use your fingerprint or face to log in faster.
+                            Use your fingerprint or face to log in faster to the admin dashboard.
                         </p>
                     </div>
                     <Switch id="biometric-login" />
@@ -113,12 +103,12 @@ export default function SettingsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Palette /> Appearance</CardTitle>
-                    <CardDescription>Customize the look and feel of your dashboard.</CardDescription>
+                    <CardDescription>Customize the look and feel of your admin dashboard.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Label className="text-base">Theme</Label>
                     <p className="text-sm text-muted-foreground mb-4">Select the theme for your dashboard.</p>
-                     <RadioGroup defaultValue="light" className="grid grid-cols-3 gap-4">
+                     <RadioGroup defaultValue="system" className="grid grid-cols-3 gap-4">
                         <div>
                             <RadioGroupItem value="light" id="light" className="peer sr-only" />
                             <Label htmlFor="light" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
@@ -144,48 +134,31 @@ export default function SettingsPage() {
             {/* Notification Settings */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bell /> Notifications</CardTitle>
-                <CardDescription>Choose what you want to be notified about and where.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Bell /> Admin Notifications</CardTitle>
+                <CardDescription>Choose what you want to be notified about as an administrator.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                    <h3 className="mb-4 text-lg font-medium">By Email</h3>
-                    <div className="space-y-4">
-                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Community Announcements</Label>
-                                <p className="text-sm text-muted-foreground">Receive important updates from your community admin.</p>
-                            </div>
-                            <Checkbox defaultChecked />
-                        </div>
-                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">New Investment Opportunities</Label>
-                                <p className="text-sm text-muted-foreground">Get notified when new investment proposals are available.</p>
-                            </div>
-                            <Checkbox defaultChecked />
-                        </div>
-                         <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Withdrawal Status</Label>
-                                <p className="text-sm text-muted-foreground">Track the status of your withdrawal requests.</p>
-                            </div>
-                            <Checkbox />
-                        </div>
-                    </div>
-                </div>
-                 <div>
-                    <h3 className="mb-4 text-lg font-medium">Push Notifications</h3>
-                    <div className="space-y-4">
-                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Everything</Label>
-                                <p className="text-sm text-muted-foreground">Receive push notifications for all activities.</p>
-                            </div>
-                            <Checkbox />
-                        </div>
-                    </div>
-                </div>
+              <CardContent className="space-y-4">
+                  <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                          <Label className="text-base">New User Signups</Label>
+                          <p className="text-sm text-muted-foreground">Receive an email when a new user signs up and requires verification.</p>
+                      </div>
+                      <Checkbox defaultChecked />
+                  </div>
+                  <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                          <Label className="text-base">New Submissions</Label>
+                          <p className="text-sm text-muted-foreground">Get notified for new business, event, or assistance requests.</p>
+                      </div>
+                      <Checkbox defaultChecked />
+                  </div>
+                   <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                          <Label className="text-base">Withdrawal Requests</Label>
+                          <p className="text-sm text-muted-foreground">Receive an email whenever a user requests to withdraw funds.</p>
+                      </div>
+                      <Checkbox defaultChecked />
+                  </div>
               </CardContent>
               <CardFooter className="border-t px-6 py-4">
                  <Button type="submit">
