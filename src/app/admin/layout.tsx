@@ -61,8 +61,8 @@ const votingNavItems = [
 ]
 
 const settingsNavItems = [
-    { href: "#", icon: CreditCard, label: "Transactions" },
-    { href: "#", icon: Settings, label: "Settings" },
+    { href: "/admin/transactions", icon: CreditCard, label: "Transactions" },
+    { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 function AdminSidebar() {
