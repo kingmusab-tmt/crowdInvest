@@ -6,6 +6,7 @@ import {
   Settings,
   Mountain,
   Menu,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,10 +39,17 @@ export default function AdminLayout({
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <Link
                 href="/admin"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary bg-muted transition-all hover:text-primary"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Home className="h-4 w-4" />
                 Dashboard
+              </Link>
+              <Link
+                href="/admin/events"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary bg-muted transition-all hover:text-primary"
+              >
+                <Calendar className="h-4 w-4" />
+                Events
               </Link>
               <Link
                 href="#"
@@ -92,6 +100,13 @@ export default function AdminLayout({
                 >
                   <Home className="h-5 w-5" />
                   Dashboard
+                </Link>
+                <Link
+                  href="/admin/events"
+                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Calendar className="h-5 w-5" />
+                  Events
                 </Link>
                 <Link
                   href="#"
