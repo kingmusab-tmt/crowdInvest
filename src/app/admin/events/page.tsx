@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, Trash2 } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import { suggestEventDescription } from "@/ai/flows/suggest-event-flow";
 
 type Event = {
   id: number;
@@ -115,7 +116,27 @@ export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>(initialEvents);
   const [isNewEventDialogOpen, setIsNewEventDialogOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
+
+  const handleSuggestDescription = async () => {
+    if (!eventTitle) {
+        toast({ title: "Title is missing", description: "Please enter an event title first.", variant: "destructive" });
+        return;
+    }
+    setIsSuggesting(true);
+    try {
+        const suggestion = await suggestEventDescription(eventTitle);
+        setEventDescription(suggestion);
+    } catch (error) {
+        console.error("Error suggesting description:", error);
+        toast({ title: "Suggestion Failed", description: "Could not generate a description. Please try again.", variant: "destructive" });
+    } finally {
+        setIsSuggesting(false);
+    }
+  };
 
   const handleCreateEvent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -138,6 +159,8 @@ export default function AdminEventsPage() {
     setEvents([newEvent, ...events]);
     setIsNewEventDialogOpen(false);
     setImagePreview(null);
+    setEventTitle("");
+    setEventDescription("");
     toast({ title: "Event Created", description: `"${newEvent.title}" has been successfully created.` });
   };
 
@@ -183,7 +206,11 @@ export default function AdminEventsPage() {
         </div>
         <Dialog open={isNewEventDialogOpen} onOpenChange={(isOpen) => {
             setIsNewEventDialogOpen(isOpen);
-            if (!isOpen) setImagePreview(null);
+            if (!isOpen) {
+              setImagePreview(null);
+              setEventTitle("");
+              setEventDescription("");
+            }
         }}>
           <DialogTrigger asChild>
             <Button>
@@ -200,15 +227,21 @@ export default function AdminEventsPage() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="title" className="text-right">Title</Label>
-                  <Input id="title" name="title" className="col-span-3" required />
+                  <Input id="title" name="title" className="col-span-3" required value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="date" className="text-right">Date</Label>
                   <Input id="date" name="date" type="date" className="col-span-3" required />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">Description</Label>
-                  <Textarea id="description" name="description" className="col-span-3" required />
+                <div className="relative grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="description" className="text-right pt-2">Description</Label>
+                  <div className="col-span-3">
+                    <Textarea id="description" name="description" className="pr-10" required value={eventDescription} onChange={(e) => setEventDescription(e.target.value)} />
+                     <Button type="button" size="icon" variant="ghost" className="absolute right-1 top-1 h-8 w-8" onClick={handleSuggestDescription} disabled={isSuggesting}>
+                        <Sparkles className={`h-4 w-4 ${isSuggesting ? 'animate-spin' : ''}`} />
+                        <span className="sr-only">Suggest Description</span>
+                    </Button>
+                  </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="image" className="text-right">Image</Label>
