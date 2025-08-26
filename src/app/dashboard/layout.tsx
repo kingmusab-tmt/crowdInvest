@@ -10,6 +10,8 @@ import {
   Mountain,
   PlusSquare,
   HandHelping,
+  TrendingUp,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -33,10 +35,12 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 
 const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/dashboard/deposit", icon: DollarSign, label: "Deposit" },
+    { href: "/dashboard/investments", icon: TrendingUp, label: "Investments" },
     { href: "/dashboard/events", icon: Calendar, label: "Upcoming Events" },
     { href: "/dashboard/submit-event", icon: PlusSquare, label: "Submit Event" },
     { href: "/dashboard/assistance", icon: HandHelping, label: "Financial Assistance" },
@@ -99,6 +103,13 @@ function DashboardHeader() {
           <div className="w-full flex-1">
             {/* Can add a search bar here */}
           </div>
+          <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
+            <Link href="/dashboard/notifications">
+              <Bell />
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">3</Badge>
+              <span className="sr-only">Notifications</span>
+            </Link>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">

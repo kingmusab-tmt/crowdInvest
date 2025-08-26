@@ -1,12 +1,14 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, DollarSign, Users, TrendingUp, Calendar } from "lucide-react";
+import { ArrowUpRight, DollarSign, Users, TrendingUp, Calendar, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const chartData = [
   { month: "January", contributions: 1862 },
@@ -30,18 +32,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Community Fund</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Your Contribution</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$2,350.00</div>
@@ -58,14 +50,24 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">+19% from last month</p>
           </CardContent>
         </Card>
-         <Card>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Community Profit</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">major events planned</p>
+             <div className="text-2xl font-bold text-emerald-600">+$5,231.89</div>
+            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Investments</CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">5</div>
+            <p className="text-xs text-muted-foreground">businesses funded</p>
           </CardContent>
         </Card>
       </div>
@@ -95,6 +97,28 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Member of the Month</CardTitle>
+            <CardDescription>
+              Celebrating our most engaged community member.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center text-center gap-4">
+             <Avatar className="h-24 w-24 border-4 border-primary shadow-lg">
+                <AvatarImage src="https://i.pravatar.cc/150?u=a" alt="Olivia Martin" />
+                <AvatarFallback>OM</AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+                <h3 className="text-xl font-bold">Olivia Martin</h3>
+                <p className="text-muted-foreground">For outstanding contributions and active participation in community events.</p>
+            </div>
+            <Button asChild>
+                <Link href="#">View Profile</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+       <Card>
           <CardHeader className="flex flex-row items-center">
              <div className="grid gap-2">
                 <CardTitle>Recent Fund Usage</CardTitle>
@@ -143,7 +167,6 @@ export default function DashboardPage() {
             </Table>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
