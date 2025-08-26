@@ -16,6 +16,7 @@ import {
   HandHelping,
   Vote,
   PlusCircle,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ const reviewNavItems = [
     { href: "/admin/events", icon: Calendar, label: "Events" },
     { href: "/admin/businesses", icon: Store, label: "Businesses" },
     { href: "/admin/assistance", icon: HandHelping, label: "Assistance" },
+    { href: "/admin/withdrawals", icon: Banknote, label: "Withdrawals" },
 ];
 
 const votingNavItems = [
