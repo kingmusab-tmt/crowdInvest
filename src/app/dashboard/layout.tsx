@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Bell,
   Store,
+  Vote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -44,6 +45,7 @@ const navItems = [
     { href: "/dashboard/investments", icon: TrendingUp, label: "Investments" },
     { href: "/dashboard/member-businesses", icon: Store, label: "Member Businesses" },
     { href: "/dashboard/events", icon: Calendar, label: "Upcoming Events" },
+    { href: "/dashboard/voting", icon: Vote, label: "Voting" },
     { href: "/dashboard/submit-event", icon: PlusSquare, label: "Submit Event" },
     { href: "/dashboard/assistance", icon: HandHelping, label: "Financial Assistance" },
 ];
