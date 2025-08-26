@@ -9,6 +9,7 @@ import {
   Menu,
   Calendar,
   Building2,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,10 +63,17 @@ export default function AdminLayout({
               </Link>
                <Link
                 href="/admin/communities"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Building2 className="h-4 w-4" />
                 Communities
+              </Link>
+               <Link
+                href="/admin/notifications"
+                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+              >
+                <Bell className="h-4 w-4" />
+                Notifications
               </Link>
               <Link
                 href="#"
@@ -130,6 +138,13 @@ export default function AdminLayout({
                 >
                   <Building2 className="h-5 w-5" />
                   Communities
+                </Link>
+                 <Link
+                  href="/admin/notifications"
+                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Bell className="h-5 w-5" />
+                  Notifications
                 </Link>
                 <Link
                   href="#"
