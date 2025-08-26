@@ -1,12 +1,14 @@
 
+"use client";
+
 import Link from "next/link";
+import { usePathname } from 'next/navigation';
 import {
   Home,
   Users,
   CreditCard,
   Settings,
   Mountain,
-  Menu,
   Calendar,
   Building2,
   Bell,
@@ -20,149 +22,72 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  SidebarInset,
+} from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const navItems = [
+    { href: "/admin", icon: Home, label: "Dashboard" },
+    { href: "/admin/events", icon: Calendar, label: "Events" },
+    { href: "/admin/users", icon: Users, label: "Users" },
+    { href: "/admin/communities", icon: Building2, label: "Communities" },
+    { href: "/admin/notifications", icon: Bell, label: "Notifications" },
+    { href: "#", icon: CreditCard, label: "Transactions" },
+    { href: "#", icon: Settings, label: "Settings" },
+];
+
+function AdminSidebar() {
+  const pathname = usePathname();
+
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Mountain className="h-6 w-6 text-primary" />
-              <span className="">CROWD Invest (Admin)</span>
-            </Link>
-          </div>
-          <div className="flex-1">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link
-                href="/admin"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Home className="h-4 w-4" />
-                Dashboard
-              </Link>
-              <Link
-                href="/admin/events"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Calendar className="h-4 w-4" />
-                Events
-              </Link>
-              <Link
-                href="/admin/users"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Users className="h-4 w-4" />
-                Users
-              </Link>
-               <Link
-                href="/admin/communities"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Building2 className="h-4 w-4" />
-                Communities
-              </Link>
-               <Link
-                href="/admin/notifications"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
-              >
-                <Bell className="h-4 w-4" />
-                Notifications
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <CreditCard className="h-4 w-4" />
-                Transactions
-              </Link>
-               <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Settings className="h-4 w-4" />
-                Settings
-              </Link>
-            </nav>
-          </div>
+    <Sidebar>
+      <SidebarHeader>
+        <div className="flex items-center gap-2 p-2">
+           <Mountain className="h-6 w-6 text-primary" />
+           <span className="font-semibold text-lg">CROWD Invest</span>
         </div>
-      </div>
-      <div className="flex flex-col">
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarMenu>
+          {navItems.map((item) => (
+             <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={{
+                      children: item.label,
+                      side: "right",
+                      align: "center",
+                  }}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
+
+function AdminHeader() {
+    return (
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              <nav className="grid gap-2 text-lg font-medium">
-                 <Link
-                  href="/"
-                  className="flex items-center gap-2 text-lg font-semibold mb-4"
-                >
-                  <Mountain className="h-6 w-6 text-primary" />
-                  <span>CROWD Invest (Admin)</span>
-                </Link>
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Home className="h-5 w-5" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin/events"
-                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Calendar className="h-5 w-5" />
-                  Events
-                </Link>
-                <Link
-                  href="/admin/users"
-                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Users
-                </Link>
-                <Link
-                  href="/admin/communities"
-                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Building2 className="h-5 w-5" />
-                  Communities
-                </Link>
-                 <Link
-                  href="/admin/notifications"
-                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Bell className="h-5 w-5" />
-                  Notifications
-                </Link>
-                <Link
-                  href="#"
-                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <CreditCard className="h-5 w-5" />
-                  Transactions
-                </Link>
-                <Link
-                  href="#"
-                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Settings className="h-5 w-5" />
-                  Settings
-                </Link>
-              </nav>
-            </SheetContent>
-          </Sheet>
+          <SidebarTrigger className="shrink-0 md:hidden" />
           <div className="w-full flex-1">
             {/* Can add a search bar here */}
           </div>
@@ -184,10 +109,24 @@ export default function AdminLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background">
-          {children}
-        </main>
-      </div>
-    </div>
+    );
+}
+
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SidebarProvider>
+        <AdminSidebar />
+        <div className="flex flex-col w-full">
+          <AdminHeader />
+          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background overflow-auto">
+            {children}
+          </main>
+        </div>
+    </SidebarProvider>
   );
 }
