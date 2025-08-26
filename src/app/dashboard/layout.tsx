@@ -9,6 +9,7 @@ import {
   Calendar,
   Mountain,
   PlusSquare,
+  HandHelping,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -38,6 +39,7 @@ const navItems = [
     { href: "/dashboard/deposit", icon: DollarSign, label: "Deposit" },
     { href: "/dashboard/events", icon: Calendar, label: "Upcoming Events" },
     { href: "/dashboard/submit-event", icon: PlusSquare, label: "Submit Event" },
+    { href: "/dashboard/assistance", icon: HandHelping, label: "Financial Assistance" },
 ];
 
 function DashboardSidebar() {
