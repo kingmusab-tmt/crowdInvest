@@ -85,6 +85,21 @@ export default function NewBusinessPage() {
                     <Label htmlFor="business-location">Business Location</Label>
                     <Input id="business-location" name="business-location" placeholder="e.g., 123 Main St, Northside" required />
                 </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="contact-email">Contact Email</Label>
+                        <Input id="contact-email" name="contact-email" type="email" placeholder="e.g., contact@bakery.com" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="contact-phone">Contact Phone</Label>
+                        <Input id="contact-phone" name="contact-phone" type="tel" placeholder="e.g., +1 234 567 890" required />
+                    </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="whatsapp-number">WhatsApp Number</Label>
+                    <Input id="whatsapp-number" name="whatsapp-number" type="tel" placeholder="e.g., +1 234 567 890" />
+                    <p className="text-xs text-muted-foreground">Optional: Provide a WhatsApp number for direct messaging.</p>
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="business-nature">Nature of Business</Label>
                     <Textarea
