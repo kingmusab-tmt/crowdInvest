@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, Trash2, Sparkles } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Sparkles, Vote } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -187,6 +187,13 @@ export default function AdminEventsPage() {
     });
   };
 
+  const handlePushToVoting = (event: Event) => {
+    toast({
+      title: "Pushed to Voting",
+      description: `A proposal for the event "${event.title}" has been created.`,
+    });
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -286,6 +293,12 @@ export default function AdminEventsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    {event.status !== 'Completed' && (
+                        <DropdownMenuItem onClick={() => handlePushToVoting(event)}>
+                            <Vote className="mr-2 h-4 w-4" />
+                            Push for Voting
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => handleMarkAsCompleted(event.id)} disabled={event.status === 'Completed'}>
                       Mark as Completed
                     </DropdownMenuItem>
@@ -316,5 +329,3 @@ export default function AdminEventsPage() {
       </div>
     </div>
   );
-
-    

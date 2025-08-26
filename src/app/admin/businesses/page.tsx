@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, CheckCircle, XCircle, Star, Phone, Mail, MessageSquare } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, CheckCircle, XCircle, Star, Phone, Mail, MessageSquare, Vote } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
 
 type BusinessStatus = "Pending" | "Approved" | "Rejected";
@@ -103,6 +103,13 @@ export default function AdminBusinessesPage() {
     }
   }
 
+  const handlePushToVoting = (business: Business) => {
+    toast({
+      title: "Pushed to Voting",
+      description: `A proposal to invest in "${business.name}" has been created.`,
+    });
+  };
+
   return (
     <div>
       <div className="mb-6">
@@ -158,21 +165,34 @@ export default function AdminBusinessesPage() {
                   <TableCell className="text-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={business.status !== 'Pending'}>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
                           <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleStatusChange(business.id, 'Approved')}>
-                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                          Approve
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(business.id, 'Rejected')}>
-                          <XCircle className="mr-2 h-4 w-4 text-red-500" />
-                          Reject
-                        </DropdownMenuItem>
+                        {business.status === 'Pending' && (
+                          <>
+                            <DropdownMenuItem onClick={() => handleStatusChange(business.id, 'Approved')}>
+                              <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                              Approve
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(business.id, 'Rejected')}>
+                              <XCircle className="mr-2 h-4 w-4 text-red-500" />
+                              Reject
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {business.status === 'Approved' && business.seekingInvestment && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handlePushToVoting(business)}>
+                              <Vote className="mr-2 h-4 w-4" />
+                              Push for Investment Vote
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

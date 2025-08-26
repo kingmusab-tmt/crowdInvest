@@ -14,6 +14,8 @@ import {
   Bell,
   Store,
   HandHelping,
+  Vote,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,17 +37,28 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
 
 const navItems = [
     { href: "/admin", icon: Home, label: "Dashboard" },
-    { href: "/admin/events", icon: Calendar, label: "Events" },
     { href: "/admin/users", icon: Users, label: "Users" },
     { href: "/admin/communities", icon: Building2, label: "Communities" },
     { href: "/admin/notifications", icon: Bell, label: "Notifications" },
+];
+
+const reviewNavItems = [
+    { href: "/admin/events", icon: Calendar, label: "Events" },
     { href: "/admin/businesses", icon: Store, label: "Businesses" },
     { href: "/admin/assistance", icon: HandHelping, label: "Assistance" },
+];
+
+const votingNavItems = [
+    { href: "/admin/proposals", icon: PlusCircle, label: "Create Proposal" },
+]
+
+const settingsNavItems = [
     { href: "#", icon: CreditCard, label: "Transactions" },
     { href: "#", icon: Settings, label: "Settings" },
 ];
@@ -64,6 +77,71 @@ function AdminSidebar() {
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) => (
+             <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={{
+                      children: item.label,
+                      side: "right",
+                      align: "center",
+                  }}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+        <SidebarSeparator/>
+         <SidebarMenu>
+             <p className="px-4 py-2 text-xs text-muted-foreground font-semibold">Reviews</p>
+          {reviewNavItems.map((item) => (
+             <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={{
+                      children: item.label,
+                      side: "right",
+                      align: "center",
+                  }}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+        <SidebarSeparator/>
+        <SidebarMenu>
+             <p className="px-4 py-2 text-xs text-muted-foreground font-semibold">Voting</p>
+          {votingNavItems.map((item) => (
+             <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={{
+                      children: item.label,
+                      side: "right",
+                      align: "center",
+                  }}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+        <SidebarSeparator/>
+        <SidebarMenu>
+          {settingsNavItems.map((item) => (
              <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
