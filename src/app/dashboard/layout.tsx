@@ -8,6 +8,7 @@ import {
   DollarSign,
   Calendar,
   Mountain,
+  PlusSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/dashboard/deposit", icon: DollarSign, label: "Deposit" },
     { href: "/dashboard/events", icon: Calendar, label: "Upcoming Events" },
+    { href: "/dashboard/submit-event", icon: PlusSquare, label: "Submit Event" },
 ];
 
 function DashboardSidebar() {
@@ -135,4 +137,3 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
-
