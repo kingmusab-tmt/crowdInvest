@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
 
 type Event = {
   id: number;
@@ -18,6 +20,8 @@ type Event = {
   date: string;
   description: string;
   status: 'Upcoming' | 'Planning' | 'Completed';
+  imageUrl: string;
+  imageHint: string;
 };
 
 const initialEvents: Event[] = [
@@ -27,6 +31,8 @@ const initialEvents: Event[] = [
     date: "2024-08-15",
     description: "Join us for our annual get-together. A day of fun, food, and friendship. Funds will be used for catering, venue rental, and entertainment.",
     status: "Upcoming",
+    imageUrl: "https://picsum.photos/600/400",
+    imageHint: "community party",
   },
   {
     id: 2,
@@ -34,6 +40,8 @@ const initialEvents: Event[] = [
     date: "2024-09-05",
     description: "Let's come together to celebrate the union of two of our beloved members. Contributions will go towards a collective wedding gift.",
     status: "Upcoming",
+    imageUrl: "https://picsum.photos/601/400",
+    imageHint: "wedding celebration",
   },
   {
     id: 3,
@@ -41,6 +49,8 @@ const initialEvents: Event[] = [
     date: "2024-10-20",
     description: "A new addition to our community! Funds will be pooled to buy a special gift for the new parents and their baby.",
     status: "Planning",
+    imageUrl: "https://picsum.photos/600/401",
+    imageHint: "baby gift",
   },
   {
     id: 4,
@@ -48,6 +58,8 @@ const initialEvents: Event[] = [
     date: "2024-06-30",
     description: "Thanks to your contributions, we successfully renovated the community hall with new chairs and a sound system.",
     status: "Completed",
+    imageUrl: "https://picsum.photos/601/401",
+    imageHint: "community hall",
   },
 ];
 
@@ -102,20 +114,30 @@ const Countdown = ({ dateString }: { dateString: string }) => {
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>(initialEvents);
   const [isNewEventDialogOpen, setIsNewEventDialogOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleCreateEvent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const imageFile = formData.get("image") as File;
+    let imageUrl = "https://picsum.photos/600/400"; // default image
+    if (imageFile && imageFile.size > 0) {
+        imageUrl = URL.createObjectURL(imageFile);
+    }
+    
     const newEvent: Event = {
       id: Math.max(0, ...events.map(e => e.id)) + 1,
       title: formData.get("title") as string,
       date: formData.get("date") as string,
       description: formData.get("description") as string,
       status: "Planning",
+      imageUrl: imageUrl,
+      imageHint: "custom event",
     };
     setEvents([newEvent, ...events]);
     setIsNewEventDialogOpen(false);
+    setImagePreview(null);
     toast({ title: "Event Created", description: `"${newEvent.title}" has been successfully created.` });
   };
 
@@ -142,6 +164,16 @@ export default function AdminEventsPage() {
     });
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+        setImagePreview(null);
+    }
+  };
+
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -149,7 +181,10 @@ export default function AdminEventsPage() {
           <h1 className="text-3xl font-bold">Event Management</h1>
           <p className="text-muted-foreground">Create, monitor, and manage community events.</p>
         </div>
-        <Dialog open={isNewEventDialogOpen} onOpenChange={setIsNewEventDialogOpen}>
+        <Dialog open={isNewEventDialogOpen} onOpenChange={(isOpen) => {
+            setIsNewEventDialogOpen(isOpen);
+            if (!isOpen) setImagePreview(null);
+        }}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -175,6 +210,15 @@ export default function AdminEventsPage() {
                   <Label htmlFor="description" className="text-right">Description</Label>
                   <Textarea id="description" name="description" className="col-span-3" required />
                 </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="image" className="text-right">Image</Label>
+                  <Input id="image" name="image" type="file" className="col-span-3" accept="image/*" onChange={handleImageChange}/>
+                </div>
+                {imagePreview && (
+                  <div className="col-span-4 flex justify-center">
+                    <Image src={imagePreview} alt="Image Preview" width={200} height={200} className="rounded-md object-cover" />
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button type="submit">Create Event</Button>
@@ -186,7 +230,17 @@ export default function AdminEventsPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {events.map((event) => (
-          <Card key={event.id} className="flex flex-col">
+          <Card key={event.id} className="flex flex-col overflow-hidden">
+             <div className="relative">
+                <Image
+                    src={event.imageUrl}
+                    alt={event.title}
+                    width={600}
+                    height={400}
+                    className="w-full h-48 object-cover"
+                    data-ai-hint={event.imageHint}
+                />
+            </div>
             <CardHeader>
               <div className="flex justify-between items-start">
                 <CardTitle className="mb-1">{event.title}</CardTitle>
@@ -229,4 +283,5 @@ export default function AdminEventsPage() {
       </div>
     </div>
   );
-}
+
+    
