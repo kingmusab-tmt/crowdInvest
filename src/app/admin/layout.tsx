@@ -12,6 +12,8 @@ import {
   Calendar,
   Building2,
   Bell,
+  Store,
+  HandHelping,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +44,8 @@ const navItems = [
     { href: "/admin/users", icon: Users, label: "Users" },
     { href: "/admin/communities", icon: Building2, label: "Communities" },
     { href: "/admin/notifications", icon: Bell, label: "Notifications" },
+    { href: "/admin/businesses", icon: Store, label: "Businesses" },
+    { href: "/admin/assistance", icon: HandHelping, label: "Assistance" },
     { href: "#", icon: CreditCard, label: "Transactions" },
     { href: "#", icon: Settings, label: "Settings" },
 ];
