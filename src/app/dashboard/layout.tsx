@@ -15,6 +15,7 @@ import {
   Store,
   Vote,
   Banknote,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -44,6 +45,7 @@ const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/dashboard/deposit", icon: DollarSign, label: "Deposit" },
     { href: "/dashboard/withdrawal", icon: Banknote, label: "Withdraw" },
+    { href: "/dashboard/transactions", icon: CreditCard, label: "Transactions" },
     { href: "/dashboard/investments", icon: TrendingUp, label: "Investments" },
     { href: "/dashboard/member-businesses", icon: Store, label: "Member Businesses" },
     { href: "/dashboard/events", icon: Calendar, label: "Upcoming Events" },
