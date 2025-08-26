@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Mountain } from "lucide-react";
 import Link from "next/link";
@@ -11,13 +12,16 @@ export default function Home() {
           <Mountain className="h-6 w-6 text-primary" />
           <span className="ml-2">CROWD Invest</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
+        <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
           <Link href="/dashboard" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
             Dashboard
           </Link>
           <Link href="/admin" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
             Admin
           </Link>
+           <Link href="/login" prefetch={false}>
+             <Button variant="outline">Login</Button>
+           </Link>
         </nav>
       </header>
       <main className="flex-1">
