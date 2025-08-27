@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, PlusCircle, Trash2, Users } from "lucide-react";
@@ -12,70 +12,69 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-type Community = {
-  id: number;
-  name: string;
-  description: string;
-  memberCount: number;
-};
-
-const initialCommunities: Community[] = [
-  {
-    id: 1,
-    name: "Northside",
-    description: "The vibrant community in the northern district.",
-    memberCount: 152,
-  },
-  {
-    id: 2,
-    name: "Southside",
-    description: "A close-knit community known for its annual festivals.",
-    memberCount: 98,
-  },
-  {
-    id: 3,
-    name: "West End",
-    description: "Home to the city's arts and culture scene.",
-    memberCount: 213,
-  },
-  {
-    id: 4,
-    name: "Downtown",
-    description: "The central hub for business and urban living.",
-    memberCount: 305,
-  },
-];
+import { getCommunities, createCommunity, deleteCommunity, Community } from "@/services/communityService";
 
 export default function AdminCommunitiesPage() {
-  const [communities, setCommunities] = useState<Community[]>(initialCommunities);
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isNewCommunityDialogOpen, setIsNewCommunityDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleCreateCommunity = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    const fetchCommunities = async () => {
+      try {
+        const fetchedCommunities = await getCommunities();
+        setCommunities(fetchedCommunities);
+      } catch (error) {
+        console.error("Failed to fetch communities:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load community data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCommunities();
+  }, [toast]);
+
+  const handleCreateCommunity = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     
-    const newCommunity: Community = {
-      id: Math.max(0, ...communities.map(c => c.id)) + 1,
+    const newCommunityData: Omit<Community, 'id'> = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       memberCount: 0,
     };
     
-    setCommunities([newCommunity, ...communities]);
-    setIsNewCommunityDialogOpen(false);
-    toast({ title: "Community Created", description: `"${newCommunity.name}" has been successfully created.` });
+    try {
+      const newCommunity = await createCommunity(newCommunityData);
+      setCommunities([newCommunity, ...communities]);
+      setIsNewCommunityDialogOpen(false);
+      toast({ title: "Community Created", description: `"${newCommunity.name}" has been successfully created.` });
+    } catch (error) {
+       toast({ title: "Error", description: "Failed to create community.", variant: "destructive" });
+    }
   };
 
-  const handleDeleteCommunity = (communityId: number) => {
+  const handleDeleteCommunity = async (communityId: string) => {
     const communityToDelete = communities.find(c => c.id === communityId);
-    setCommunities(communities.filter((community) => community.id !== communityId));
-    toast({
-      title: "Community Deleted",
-      description: `"${communityToDelete?.name}" has been deleted.`,
-      variant: "destructive",
-    });
+    if (!communityToDelete) return;
+    
+    try {
+      await deleteCommunity(communityId);
+      setCommunities(communities.filter((community) => community.id !== communityId));
+      toast({
+        title: "Community Deleted",
+        description: `"${communityToDelete.name}" has been deleted.`,
+        variant: "destructive",
+      });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to delete community.", variant: "destructive" });
+    }
   };
 
   return (
@@ -132,7 +131,11 @@ export default function AdminCommunitiesPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                {communities.map((community) => (
+                {loading ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center">Loading communities...</TableCell>
+                    </TableRow>
+                ) : communities.map((community) => (
                     <TableRow key={community.id}>
                         <TableCell className="font-medium">{community.name}</TableCell>
                         <TableCell className="text-muted-foreground">{community.description}</TableCell>
