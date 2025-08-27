@@ -24,23 +24,55 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Info, Send } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { createAssistanceRequest } from "@/services/assistanceService";
+import { getUsers } from "@/services/userService";
+
+// In a real app, you would get the logged-in user's ID/email from an auth context
+const LOGGED_IN_USER_EMAIL = "olivia.martin@email.com";
 
 export default function AssistancePage() {
   const { toast } = useToast();
   const [purpose, setPurpose] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setIsSubmitting(true);
     const formData = new FormData(event.currentTarget);
-    const amount = formData.get("amount");
+    const amount = parseFloat(formData.get("amount") as string);
 
-    toast({
-      title: "Request Submitted",
-      description: `Your request for financial assistance of $${amount} has been sent for admin review.`,
-    });
+    try {
+        // In a real app, user data would come from an auth context
+        const users = await getUsers();
+        const currentUser = users.find(u => u.email === LOGGED_IN_USER_EMAIL);
 
-    event.currentTarget.reset();
-    setPurpose("");
+        if (!currentUser) {
+            throw new Error("Current user not found.");
+        }
+
+        await createAssistanceRequest({
+            userName: currentUser.name,
+            userEmail: currentUser.email,
+            community: currentUser.community || "N/A",
+            purpose: formData.get("purpose") as string,
+            amount: amount,
+            returnDate: formData.get("return-date") as string,
+            status: "Pending",
+        });
+
+        toast({
+            title: "Request Submitted",
+            description: `Your request for financial assistance of $${amount.toFixed(2)} has been sent for admin review.`,
+        });
+
+        (event.currentTarget as HTMLFormElement).reset();
+        setPurpose("");
+    } catch (error) {
+        console.error("Assistance request failed:", error);
+        toast({ title: "Request Failed", description: "There was an error submitting your request. Please try again.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   return (
@@ -63,11 +95,11 @@ export default function AssistancePage() {
                     <SelectValue placeholder="Select a purpose" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="family">Family Issue</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="health">Health Emergency</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Business">Business</SelectItem>
+                    <SelectItem value="Family Issue">Family Issue</SelectItem>
+                    <SelectItem value="Education">Education</SelectItem>
+                    <SelectItem value="Health Emergency">Health Emergency</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -90,7 +122,7 @@ export default function AssistancePage() {
               </div>
             </div>
             
-            {purpose === "business" && (
+            {purpose === "Business" && (
               <div className="space-y-6 p-4 border rounded-md bg-muted/50">
                 <div className="space-y-2">
                     <Label htmlFor="business-nature">Nature of Business</Label>
@@ -150,9 +182,13 @@ export default function AssistancePage() {
             </Alert>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" type="submit">
-              <Send className="mr-2 h-4 w-4" />
-              Submit Request for Review
+            <Button className="w-full" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Submit Request for Review
+                </>
+              )}
             </Button>
           </CardFooter>
         </form>
