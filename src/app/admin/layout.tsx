@@ -94,7 +94,7 @@ function AdminSidebar() {
                   }}
                 >
                   <Link href={item.href}>
-                    <item.icon />
+                    <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -116,7 +116,7 @@ function AdminSidebar() {
                   }}
                 >
                   <Link href={item.href}>
-                    <item.icon />
+                    <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -138,7 +138,7 @@ function AdminSidebar() {
                   }}
                 >
                   <Link href={item.href}>
-                    <item.icon />
+                    <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -159,7 +159,7 @@ function AdminSidebar() {
                   }}
                 >
                   <Link href={item.href}>
-                    <item.icon />
+                    <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>

@@ -103,7 +103,7 @@ export default function InvestmentDetailPage({ params: { id } }: { params: { id:
         <div className="mb-6">
             <Button variant="outline" asChild>
                 <Link href="/dashboard/investments">
-                    <ArrowLeft className="mr-2" />
+                    <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Investments
                 </Link>
             </Button>
@@ -199,15 +199,15 @@ export default function InvestmentDetailPage({ params: { id } }: { params: { id:
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center"><TrendingUp className="mr-2" /> Projected ROI</span>
+                            <span className="text-muted-foreground flex items-center"><TrendingUp className="mr-2 h-4 w-4" /> Projected ROI</span>
                             <span className="font-bold">{investment.projectedROI}</span>
                         </div>
                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center"><Clock className="mr-2" /> Term</span>
+                            <span className="text-muted-foreground flex items-center"><Clock className="mr-2 h-4 w-4" /> Term</span>
                             <span className="font-bold">{investment.term}</span>
                         </div>
                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center"><Target className="mr-2" /> Risk Level</span>
+                            <span className="text-muted-foreground flex items-center"><Target className="mr-2 h-4 w-4" /> Risk Level</span>
                             <Badge variant={investment.risk === 'Low' ? 'secondary' : 'default'}>{investment.risk}</Badge>
                         </div>
                     </CardContent>

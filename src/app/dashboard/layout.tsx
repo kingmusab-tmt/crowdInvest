@@ -79,7 +79,7 @@ function DashboardSidebar() {
                   }}
                 >
                   <Link href={item.href}>
-                    <item.icon />
+                    <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -113,7 +113,7 @@ function DashboardHeader() {
           </div>
           <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
             <Link href="/dashboard/notifications">
-              <Bell />
+              <Bell className="h-4 w-4" />
               <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">3</Badge>
               <span className="sr-only">Notifications</span>
             </Link>
