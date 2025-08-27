@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,12 +17,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { getProposals, createProposal, deleteProposal, Proposal, ProposalStatus } from "@/services/proposalService";
 import { getUsers } from "@/services/userService";
 
-export default function AdminProposalsPage() {
+function ProposalsPageContent() {
     const { toast } = useToast();
+    const searchParams = useSearchParams();
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [loading, setLoading] = useState(true);
     const [isNewProposalDialogOpen, setIsNewProposalDialogOpen] = useState(false);
     const [totalMembers, setTotalMembers] = useState(0);
+    
+    // State for pre-filled data
+    const [prefilledTitle, setPrefilledTitle] = useState(searchParams.get('title') || "");
+    const [prefilledShortDesc, setPrefilledShortDesc] = useState(searchParams.get('shortDescription') || "");
+    const [prefilledLongDesc, setPrefilledLongDesc] = useState(searchParams.get('longDescription') || "");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -40,7 +47,12 @@ export default function AdminProposalsPage() {
             }
         };
         fetchData();
-    }, [toast]);
+        
+        // If query params exist, open the dialog
+        if (searchParams.get('title')) {
+            setIsNewProposalDialogOpen(true);
+        }
+    }, [toast, searchParams]);
 
     async function handleCreateProposal(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -60,6 +72,10 @@ export default function AdminProposalsPage() {
             const newProposal = await createProposal(newProposalData);
             setProposals([newProposal, ...proposals]);
             setIsNewProposalDialogOpen(false);
+            // Clear pre-filled state after submission
+            setPrefilledTitle("");
+            setPrefilledShortDesc("");
+            setPrefilledLongDesc("");
             toast({
                 title: "Proposal Created",
                 description: `The proposal "${newProposal.title}" is now active for voting.`,
@@ -117,15 +133,15 @@ export default function AdminProposalsPage() {
                     <CardContent className="space-y-6 p-0 pt-4">
                         <div className="space-y-2">
                             <Label htmlFor="title">Proposal Title</Label>
-                            <Input id="title" name="title" placeholder="e.g., Invest in 'Olivia's Artisan Bakery'?" required />
+                            <Input id="title" name="title" placeholder="e.g., Invest in 'Olivia's Artisan Bakery'?" required defaultValue={prefilledTitle}/>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="short-description">Short Description</Label>
-                            <Textarea id="short-description" name="short-description" placeholder="A brief one-sentence summary of the proposal." required rows={2} />
+                            <Textarea id="short-description" name="short-description" placeholder="A brief one-sentence summary of the proposal." required rows={2} defaultValue={prefilledShortDesc}/>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="long-description">Full Description</Label>
-                            <Textarea id="long-description" name="long-description" placeholder="Provide a detailed description of the proposal." required rows={6} />
+                            <Textarea id="long-description" name="long-description" placeholder="Provide a detailed description of the proposal." required rows={6} defaultValue={prefilledLongDesc}/>
                         </div>
                     </CardContent>
                     <DialogFooter className="pt-6">
@@ -184,4 +200,13 @@ export default function AdminProposalsPage() {
       </Card>
     </div>
   );
+}
+
+// Wrap the component in a Suspense boundary to use searchParams
+export default function AdminProposalsPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ProposalsPageContent />
+        </Suspense>
+    );
 }

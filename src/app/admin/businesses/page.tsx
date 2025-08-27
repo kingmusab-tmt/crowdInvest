@@ -11,11 +11,13 @@ import { MoreHorizontal, CheckCircle, XCircle, Star, Phone, Mail, MessageSquare,
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
 import { getBusinesses, updateBusiness, Business, BusinessStatus } from "@/services/businessService";
+import { useRouter } from "next/navigation";
 
 export default function AdminBusinessesPage() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchBusinesses = async () => {
@@ -66,10 +68,17 @@ export default function AdminBusinessesPage() {
   }
 
   const handlePushToVoting = (business: Business) => {
-    toast({
-      title: "Pushed to Voting",
-      description: `A proposal to invest in "${business.name}" has been created.`,
-    });
+    const title = `Invest in '${business.name}'?`;
+    const shortDescription = `Proposal to invest from the community fund to help ${business.ownerName} grow the business '${business.name}'.`;
+    const longDescription = business.description;
+    
+    const query = new URLSearchParams({
+        title,
+        shortDescription,
+        longDescription,
+    }).toString();
+    
+    router.push(`/admin/proposals?${query}`);
   };
 
   return (

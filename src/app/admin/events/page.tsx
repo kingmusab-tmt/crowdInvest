@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { suggestEventDescription } from "@/ai/flows/suggest-event-flow";
 import { getEvents, createEvent, deleteEvent, updateEvent, Event } from "@/services/eventService";
+import { useRouter } from "next/navigation";
 
 const Countdown = ({ dateString }: { dateString: string }) => {
   const [timeLeft, setTimeLeft] = useState({
@@ -73,6 +74,7 @@ export default function AdminEventsPage() {
   const [eventDescription, setEventDescription] = useState("");
   const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -183,10 +185,17 @@ export default function AdminEventsPage() {
   };
 
   const handlePushToVoting = (event: Event) => {
-    toast({
-      title: "Pushed to Voting",
-      description: `A proposal for the event "${event.title}" has been created.`,
-    });
+    const title = `Fund the '${event.title}' event?`;
+    const shortDescription = `Proposal to allocate community funds for the upcoming event: ${event.title}.`;
+    const longDescription = event.description;
+    
+    const query = new URLSearchParams({
+        title,
+        shortDescription,
+        longDescription,
+    }).toString();
+    
+    router.push(`/admin/proposals?${query}`);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
