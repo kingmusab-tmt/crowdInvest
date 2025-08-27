@@ -1,102 +1,76 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Info, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { Check, Info, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getProposals, updateProposal, Proposal, ProposalStatus } from "@/services/proposalService";
+import { Skeleton } from "@/components/ui/skeleton";
 
-type ProposalStatus = "Active" | "Passed" | "Failed";
 type UserVote = "Accepted" | "Rejected" | null;
-
-type Proposal = {
-  id: number;
-  title: string;
-  description: string;
-  longDescription: string;
-  status: ProposalStatus;
-  acceptedVotes: number;
-  rejectedVotes: number;
-  totalMembers: number;
-  userVote: UserVote;
-};
-
-const initialProposals: Proposal[] = [
-  {
-    id: 1,
-    title: "Invest in 'Olivia's Artisan Bakery'?",
-    description: "Proposal to invest $5,000 from the community fund to help Olivia expand her bakery business.",
-    longDescription: "Olivia Martin is seeking a $5,000 investment to purchase a new industrial oven and expand her product line. This expansion is projected to increase her revenue by 40% within the first year. She has agreed to a 15% return on investment to the community fund over 3 years. This is a great opportunity to support a promising local business.",
-    status: "Active",
-    acceptedVotes: 68,
-    rejectedVotes: 12,
-    totalMembers: 152,
-    userVote: null,
-  },
-  {
-    id: 2,
-    title: "Fund the Annual Summer Festival",
-    description: "Allocate $3,000 for the upcoming Annual Summer Festival for logistics, food, and entertainment.",
-    longDescription: "The Annual Summer Festival is a cherished tradition. The requested $3,000 will cover venue rental, catering for 200 members, a live band, and activities for children. This event strengthens our community bonds and provides a day of enjoyment for all families.",
-    status: "Passed",
-    acceptedVotes: 121,
-    rejectedVotes: 5,
-    totalMembers: 152,
-    userVote: "Accepted",
-  },
-  {
-    id: 3,
-    title: "Purchase New Chairs for Community Hall?",
-    description: "Proposal to spend $1,200 on new, more comfortable seating for the community hall.",
-    longDescription: "The current chairs in the community hall are over 10 years old and showing significant wear. This proposal is to purchase 50 new padded, stackable chairs to improve comfort and aesthetics for all community gatherings.",
-    status: "Failed",
-    acceptedVotes: 45,
-    rejectedVotes: 53,
-    totalMembers: 152,
-    userVote: "Rejected",
-  },
-];
+type ProposalWithVote = Proposal & { userVote: UserVote };
 
 export default function VotingPage() {
-  const [proposals, setProposals] = useState<Proposal[]>(initialProposals);
-  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [proposals, setProposals] = useState<ProposalWithVote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProposal, setSelectedProposal] = useState<ProposalWithVote | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleViewDetails = (proposal: Proposal) => {
+  useEffect(() => {
+    const fetchProposals = async () => {
+      try {
+        const fetchedProposals = await getProposals();
+        // In a real app, user's vote would be stored per-user. We'll simulate it client-side.
+        setProposals(fetchedProposals.map(p => ({ ...p, userVote: null })));
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to load proposals.", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProposals();
+  }, [toast]);
+
+
+  const handleViewDetails = (proposal: ProposalWithVote) => {
     setSelectedProposal(proposal);
     setIsModalOpen(true);
   };
 
-  const handleVote = (vote: 'Accepted' | 'Rejected') => {
+  const handleVote = async (vote: 'Accepted' | 'Rejected') => {
     if (!selectedProposal) return;
+    
+    const updatedProposalData = {
+        acceptedVotes: vote === 'Accepted' ? selectedProposal.acceptedVotes + 1 : selectedProposal.acceptedVotes,
+        rejectedVotes: vote === 'Rejected' ? selectedProposal.rejectedVotes + 1 : selectedProposal.rejectedVotes,
+    };
+    
+    try {
+        await updateProposal(selectedProposal.id, updatedProposalData);
+        
+        const updatedProposals = proposals.map((p) => {
+          if (p.id === selectedProposal.id) {
+            return { ...p, ...updatedProposalData, userVote: vote };
+          }
+          return p;
+        });
 
-    const updatedProposals = proposals.map((p) => {
-      if (p.id === selectedProposal.id) {
-        // Prevent re-voting
-        if (p.userVote !== null) return p;
-
-        return {
-          ...p,
-          userVote: vote,
-          acceptedVotes: vote === 'Accepted' ? p.acceptedVotes + 1 : p.acceptedVotes,
-          rejectedVotes: vote === 'Rejected' ? p.rejectedVotes + 1 : p.rejectedVotes,
-        };
-      }
-      return p;
-    });
-
-    setProposals(updatedProposals);
-    setIsModalOpen(false);
-    toast({
-      title: "Vote Cast!",
-      description: `You have successfully voted to ${vote.toLowerCase()} the proposal: "${selectedProposal.title}".`,
-    });
+        setProposals(updatedProposals);
+        setIsModalOpen(false);
+        toast({
+          title: "Vote Cast!",
+          description: `You have successfully voted to ${vote.toLowerCase()} the proposal.`,
+        });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to cast your vote.", variant: "destructive" });
+    }
   };
 
   const getStatusBadgeVariant = (status: ProposalStatus) => {
@@ -106,6 +80,19 @@ export default function VotingPage() {
       default: return "default";
     }
   };
+
+  if (loading) {
+      return (
+          <div>
+            <div className="mb-6"><Skeleton className="h-9 w-1/3"/><Skeleton className="h-5 w-2/3 mt-2"/></div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {[...Array(3)].map((_, i) => (
+                    <Card key={i}><CardHeader><Skeleton className="h-6 w-3/4 mb-2"/><Skeleton className="h-5 w-full"/></CardHeader><CardContent className="space-y-4"><Skeleton className="h-12 w-full"/><Skeleton className="h-8 w-full"/></CardContent><CardFooter><Skeleton className="h-10 w-full"/></CardFooter></Card>
+                ))}
+            </div>
+          </div>
+      );
+  }
 
   return (
     <div>
