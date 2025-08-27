@@ -78,7 +78,7 @@ export default function BusinessDetailPage({ params: { id } }: { params: { id: s
         <div className="mb-6">
             <Button variant="outline" asChild>
                 <Link href="/dashboard/member-businesses">
-                    <ArrowLeft className="mr-2" />
+                    <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Member Businesses
                 </Link>
             </Button>
@@ -119,14 +119,14 @@ export default function BusinessDetailPage({ params: { id } }: { params: { id: s
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <Button variant="outline" className="w-full justify-start" asChild>
-                            <a href={`mailto:${business.contactEmail}`}><Mail className="mr-2"/>{business.contactEmail}</a>
+                            <a href={`mailto:${business.contactEmail}`}><Mail className="mr-2 h-4 w-4"/>{business.contactEmail}</a>
                         </Button>
                          <Button variant="outline" className="w-full justify-start" asChild>
-                            <a href={`tel:${business.contactPhone}`}><Phone className="mr-2"/>{business.contactPhone}</a>
+                            <a href={`tel:${business.contactPhone}`}><Phone className="mr-2 h-4 w-4"/>{business.contactPhone}</a>
                         </Button>
                         {business.whatsapp && (
                              <Button variant="outline" className="w-full justify-start" asChild>
-                                <a href={`https://wa.me/${business.whatsapp.replace(/\D/g, '')}`} target="_blank"><MessageSquare className="mr-2"/>WhatsApp</a>
+                                <a href={`https://wa.me/${business.whatsapp.replace(/\D/g, '')}`} target="_blank"><MessageSquare className="mr-2 h-4 w-4"/>WhatsApp</a>
                             </Button>
                         )}
                     </CardContent>
@@ -135,7 +135,7 @@ export default function BusinessDetailPage({ params: { id } }: { params: { id: s
                 {business.seekingInvestment && (
                     <Card className="bg-primary/5 border-primary/20">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-primary"><Star/> Seeking Investment</CardTitle>
+                            <CardTitle className="flex items-center gap-2 text-primary"><Star className="h-4 w-4"/> Seeking Investment</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-primary/80 mb-4">This business is looking for funding from the community. A formal investment proposal will be available for voting soon.</p>
@@ -144,10 +144,10 @@ export default function BusinessDetailPage({ params: { id } }: { params: { id: s
                             </Button>
                         </CardContent>
                     </Card>
+                </Card>
                 )}
             </div>
         </div>
     </div>
   );
 }
-

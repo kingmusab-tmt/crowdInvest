@@ -102,7 +102,7 @@ export default function MemberBusinessesPage() {
                 <CardDescription>By {business.ownerName}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-              <p className="text-sm text-muted-foreground">{business.description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-3">{business.description}</p>
             </CardContent>
             <CardFooter className="flex-col items-start gap-4">
                 <div className="flex justify-between w-full">
