@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,71 +9,51 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
-type RequestStatus = "Pending" | "Approved" | "Rejected";
-
-type AssistanceRequest = {
-  id: number;
-  userName: string;
-  userEmail: string;
-  community: string;
-  purpose: string;
-  amount: number;
-  returnDate: string;
-  status: RequestStatus;
-};
-
-const initialRequests: AssistanceRequest[] = [
-  {
-    id: 1,
-    userName: "Olivia Martin",
-    userEmail: "olivia.martin@email.com",
-    community: "Northside",
-    purpose: "Business",
-    amount: 1500,
-    returnDate: "2025-06-30",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    userName: "Liam Johnson",
-    userEmail: "liam@example.com",
-    community: "Northside",
-    purpose: "Health Emergency",
-    amount: 750,
-    returnDate: "2025-01-15",
-    status: "Approved",
-  },
-  {
-    id: 3,
-    userName: "Ethan Jones",
-    userEmail: "ethan.jones@email.com",
-    community: "Southside",
-    purpose: "Education",
-    amount: 2000,
-    returnDate: "2026-08-01",
-    status: "Rejected",
-  },
-];
+import { getAssistanceRequests, updateAssistanceRequest, AssistanceRequest, RequestStatus } from "@/services/assistanceService";
 
 export default function AdminAssistancePage() {
-  const [requests, setRequests] = useState<AssistanceRequest[]>(initialRequests);
+  const [requests, setRequests] = useState<AssistanceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleStatusChange = (requestId: number, newStatus: RequestStatus) => {
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const fetchedRequests = await getAssistanceRequests();
+        setRequests(fetchedRequests);
+      } catch (error) {
+        console.error("Failed to fetch assistance requests:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load assistance request data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, [toast]);
+
+  const handleStatusChange = async (requestId: string, newStatus: RequestStatus) => {
     const requestToUpdate = requests.find(r => r.id === requestId);
     if (!requestToUpdate) return;
     
-    setRequests(
-      requests.map((request) =>
-        request.id === requestId ? { ...request, status: newStatus } : request
-      )
-    );
-    
-    toast({
-      title: `Request ${newStatus}`,
-      description: `${requestToUpdate.userName}'s request has been ${newStatus.toLowerCase()}.`,
-    });
+    try {
+      await updateAssistanceRequest(requestId, { status: newStatus });
+      setRequests(
+        requests.map((request) =>
+          request.id === requestId ? { ...request, status: newStatus } : request
+        )
+      );
+      toast({
+        title: `Request ${newStatus}`,
+        description: `${requestToUpdate.userName}'s request has been ${newStatus.toLowerCase()}.`,
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update request status.", variant: "destructive" });
+    }
   };
 
   const getStatusBadgeVariant = (status: RequestStatus) => {
@@ -110,7 +90,11 @@ export default function AdminAssistancePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.map((request) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">Loading requests...</TableCell>
+                </TableRow>
+              ) : requests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell>
                     <div className="font-medium">{request.userName}</div>
