@@ -1,9 +1,13 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, getDocs, doc, updateDoc, setDoc, addDoc, query, where } from 'firebase/firestore';
-import type { User as FirebaseAuthUser } from 'firebase/auth';
+import { 
+    User as FirebaseAuthUser, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword 
+} from 'firebase/auth';
 
 // Define the User type matching the structure in Firestore and the application
 export type UserRole = "User" | "Community Admin" | "General Admin";
@@ -38,16 +42,31 @@ export type User = {
 };
 
 /**
+ * Signs in a user with their email and password.
+ * @param email The user's email.
+ * @param password The user's password.
+ * @returns The Firebase Auth user object upon successful login.
+ */
+export async function signInWithEmail(email: string, password: string): Promise<FirebaseAuthUser> {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
+}
+
+/**
  * Creates a new user in Firestore from email/password signup.
  * This is used during the signup process.
  * @param userData The essential data for the new user from the signup form.
  */
-export async function createUser(userData: Pick<User, 'name' | 'email' | 'community'>): Promise<User> {
+export async function createUser(userData: Pick<User, 'name' | 'email' | 'community'>, password: string): Promise<User> {
+    // 1. Create user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, userData.email, password);
+    const firebaseUser = userCredential.user;
+
+    // 2. Create user document in Firestore
     const usersCollection = collection(db, 'users');
-    
     const newUser: Omit<User, 'id'> = {
         ...userData,
-        avatarUrl: `https://i.pravatar.cc/150?u=${Math.random().toString(36).substring(7)}`,
+        avatarUrl: `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
         role: 'User',
         status: 'Active',
         balance: 0,
