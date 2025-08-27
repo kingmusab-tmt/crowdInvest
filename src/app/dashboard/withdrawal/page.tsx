@@ -24,6 +24,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TrendingUp } from "lucide-react";
 import { createWithdrawalRequest } from "@/services/withdrawalService";
+import { createTransaction } from "@/services/transactionService";
 import { getUsers } from "@/services/userService";
 import { useState } from "react";
 
@@ -52,6 +53,7 @@ export default function WithdrawalPage() {
             throw new Error("Current user not found.");
         }
         
+        // 1. Create the withdrawal request
         await createWithdrawalRequest({
             userName: currentUser.name,
             userEmail: currentUser.email,
@@ -60,6 +62,16 @@ export default function WithdrawalPage() {
             accountNumber: accountNumber,
             status: "Pending",
             requestDate: new Date().toISOString(),
+        });
+
+        // 2. Create a corresponding transaction
+        await createTransaction({
+            userName: currentUser.name,
+            userEmail: currentUser.email,
+            type: "Withdrawal",
+            status: "Pending",
+            amount: -amount, // Withdrawals are negative amounts
+            date: new Date().toISOString(),
         });
 
         toast({

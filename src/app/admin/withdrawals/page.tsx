@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MoreHorizontal, CheckCircle, Clock, Truck } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { getWithdrawalRequests, updateWithdrawalRequest, WithdrawalRequest, RequestStatus } from "@/services/withdrawalService";
+import { getTransactions, updateTransactionStatusByWithdrawal, TransactionStatus as TxStatus } from "@/services/transactionService";
 
 export default function AdminWithdrawalsPage() {
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
@@ -41,7 +42,19 @@ export default function AdminWithdrawalsPage() {
     if (!requestToUpdate) return;
     
     try {
+      // 1. Update the withdrawal request status
       await updateWithdrawalRequest(requestId, { status: newStatus });
+
+      // 2. Map withdrawal status to transaction status and update the transaction
+      let transactionStatus: TxStatus = "Pending";
+      if (newStatus === "Completed") transactionStatus = "Completed";
+      
+      await updateTransactionStatusByWithdrawal(
+        requestToUpdate.userEmail,
+        requestToUpdate.requestDate,
+        transactionStatus
+      );
+
       setRequests(
         requests.map((request) =>
           request.id === requestId ? { ...request, status: newStatus } : request

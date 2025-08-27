@@ -76,7 +76,7 @@ async function seedInitialWithdrawalRequests(): Promise<WithdrawalRequest[]> {
         bankName: "Community Trust Bank",
         accountNumber: "0123456789",
         status: "Pending",
-        requestDate: "2024-08-10",
+        requestDate: "2024-08-10T18:00:00.000Z",
       },
       {
         userName: "Noah Williams",
@@ -85,7 +85,7 @@ async function seedInitialWithdrawalRequests(): Promise<WithdrawalRequest[]> {
         bankName: "First National",
         accountNumber: "9876543210",
         status: "Approved",
-        requestDate: "2024-08-09",
+        requestDate: "2024-08-09T14:30:00.000Z",
       },
       {
         userName: "Jackson Lee",
@@ -94,7 +94,7 @@ async function seedInitialWithdrawalRequests(): Promise<WithdrawalRequest[]> {
         bankName: "Community Trust Bank",
         accountNumber: "5551234567",
         status: "Completed",
-        requestDate: "2024-08-05",
+        requestDate: "2024-08-05T09:45:00.000Z",
       },
     ];
 
