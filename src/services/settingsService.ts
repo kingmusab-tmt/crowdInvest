@@ -121,5 +121,3 @@ async function seedInitialUserSettings(userId: string): Promise<UserSettings> {
 }
 
 export type { UserSettings };
-
-    

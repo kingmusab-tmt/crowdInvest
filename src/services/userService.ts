@@ -74,8 +74,10 @@ export async function createUser(userData: Pick<User, 'name' | 'email' | 'commun
         dateJoined: new Date().toISOString(),
     };
 
-    const docRef = await addDoc(usersCollection, newUser);
-    return { id: docRef.id, ...newUser };
+    // Use the UID from Auth as the document ID in Firestore for a direct link
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    await setDoc(userDocRef, newUser);
+    return { id: firebaseUser.uid, ...newUser };
 }
 
 /**
@@ -83,14 +85,12 @@ export async function createUser(userData: Pick<User, 'name' | 'email' | 'commun
  * @param firebaseUser The user object from Firebase Auth.
  */
 export async function createOrRetrieveUserFromGoogle(firebaseUser: FirebaseAuthUser): Promise<User> {
-    const usersCollection = collection(db, 'users');
-    const q = query(usersCollection, where("email", "==", firebaseUser.email));
-    const userSnapshot = await getDocs(q);
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    const userSnapshot = await getDoc(userDocRef);
 
-    if (!userSnapshot.empty) {
+    if (userSnapshot.exists()) {
         // User already exists, return the existing user data
-        const existingUserDoc = userSnapshot.docs[0];
-        return { id: existingUserDoc.id, ...existingUserDoc.data() } as User;
+        return { id: userSnapshot.id, ...userSnapshot.data() } as User;
     } else {
         // New user, create a new document in Firestore
         const newUser: Omit<User, 'id'> = {
@@ -105,8 +105,8 @@ export async function createOrRetrieveUserFromGoogle(firebaseUser: FirebaseAuthU
             community: undefined, // Google sign-up users need to select this later
         };
 
-        const docRef = await addDoc(usersCollection, newUser);
-        return { id: docRef.id, ...newUser };
+        await setDoc(userDocRef, newUser);
+        return { id: firebaseUser.uid, ...newUser };
     }
 }
 
@@ -162,21 +162,20 @@ export async function updateUser(userId: string, data: Partial<User>): Promise<v
  * Seeds the database with initial user data if it's empty.
  */
 async function seedInitialUsers(): Promise<User[]> {
-    const initialUsers: Omit<User, 'id'>[] = [
-      { name: 'Olivia Martin', email: 'olivia.martin@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=a', role: 'User', status: 'Active', balance: 1250.75, isTopUser: true, dateJoined: '2024-07-15', community: 'Northside' },
-      { name: 'Jackson Lee', email: 'jackson.lee@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=b', role: 'Community Admin', status: 'Active', balance: 750.00, isTopUser: false, dateJoined: '2024-07-14', community: 'Southside' },
-      { name: 'Liam Johnson', email: 'liam@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c', role: 'User', status: 'Restricted', balance: 300.25, isTopUser: false, dateJoined: '2024-07-12', community: 'Northside' },
-      { name: 'Noah Williams', email: 'noah@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=d', role: 'Community Admin', status: 'Active', balance: 5000.00, isTopUser: true, dateJoined: '2024-07-10', community: 'Northside' },
-      { name: 'Admin User', email: 'admin@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=e', role: 'General Admin', status: 'Active', balance: 0.00, isTopUser: false, dateJoined: '2024-06-01' },
-      { name: 'Ethan Jones', email: 'ethan.jones@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=f', role: 'User', status: 'Active', balance: 250.00, isTopUser: false, dateJoined: '2024-07-18', community: 'Southside' },
+    const initialUsers: { id: string; data: Omit<User, 'id'> }[] = [
+      { id: 'user_olivia', data: { name: 'Olivia Martin', email: 'olivia.martin@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=a', role: 'User', status: 'Active', balance: 1250.75, isTopUser: true, dateJoined: '2024-07-15', community: 'Northside' } },
+      { id: 'user_jackson', data: { name: 'Jackson Lee', email: 'jackson.lee@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=b', role: 'Community Admin', status: 'Active', balance: 750.00, isTopUser: false, dateJoined: '2024-07-14', community: 'Southside' } },
+      { id: 'user_liam', data: { name: 'Liam Johnson', email: 'liam@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c', role: 'User', status: 'Restricted', balance: 300.25, isTopUser: false, dateJoined: '2024-07-12', community: 'Northside' } },
+      { id: 'user_noah', data: { name: 'Noah Williams', email: 'noah@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=d', role: 'Community Admin', status: 'Active', balance: 5000.00, isTopUser: true, dateJoined: '2024-07-10', community: 'Northside' } },
+      { id: 'user_admin', data: { name: 'Admin User', email: 'admin@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=e', role: 'General Admin', status: 'Active', balance: 0.00, isTopUser: false, dateJoined: '2024-06-01' } },
+      { id: 'user_ethan', data: { name: 'Ethan Jones', email: 'ethan.jones@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=f', role: 'User', status: 'Active', balance: 250.00, isTopUser: false, dateJoined: '2024-07-18', community: 'Southside' } },
     ];
 
     const seededUsers: User[] = [];
     for (const userData of initialUsers) {
-        // In a real app, IDs would be generated by auth or Firestore's addDoc
-        const userDocRef = doc(collection(db, 'users'));
-        await setDoc(userDocRef, userData);
-        seededUsers.push({ id: userDocRef.id, ...userData });
+        const userDocRef = doc(db, 'users', userData.id);
+        await setDoc(userDocRef, userData.data);
+        seededUsers.push({ id: userData.id, ...userData.data });
     }
 
     console.log('Database seeded with initial users.');
