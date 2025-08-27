@@ -1,56 +1,107 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, DollarSign, Users, Activity, Building2 } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data - in a real app, this would come from a database
-const communities = [
-  { name: "Northside" },
-  { name: "Southside" },
-  { name: "West End" },
-  { name: "Downtown" },
-];
+import { Community, getCommunities } from "@/services/communityService";
+import { User, getUsers } from "@/services/userService";
+import { Transaction, getTransactions } from "@/services/transactionService";
+import { Event, getEvents } from "@/services/eventService";
 
-const users = [
-  { community: 'Northside', role: 'User', balance: 1250.75 },
-  { community: 'Southside', role: 'Community Admin', balance: 750.00 },
-  { community: 'Northside', role: 'User', balance: 300.25 },
-  { community: 'Northside', role: 'Community Admin', balance: 5000.00 },
-  { community: 'Southside', role: 'User', balance: 250.00 },
-];
-
-const recentUsers = [
-    { name: 'Olivia Martin', email: 'olivia.martin@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=a', dateJoined: '2024-07-15' },
-    { name: 'Jackson Lee', email: 'jackson.lee@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=b', dateJoined: '2024-07-14' },
-]
-
-const recentTransactions = [
-    { name: 'Liam Johnson', email: 'liam@example.com', amount: 250.00 },
-    { name: 'Noah Williams', email: 'noah@example.com', amount: 150.00 },
-]
-
-const communityStats = communities.map(community => {
-    const communityUsers = users.filter(u => u.community === community.name);
-    const userCount = communityUsers.length;
-    const adminCount = communityUsers.filter(u => u.role === 'Community Admin').length;
-    const totalBalance = communityUsers.reduce((sum, u) => sum + u.balance, 0);
-    return {
-        name: community.name,
-        userCount,
-        adminCount,
-        totalBalance,
-    };
-});
-
+type CommunityStat = {
+  name: string;
+  userCount: number;
+  adminCount: number;
+  totalBalance: number;
+};
 
 export default function AdminDashboardPage() {
-  const totalRevenue = users.reduce((sum, user) => sum + user.balance, 0);
-  const totalUsers = users.length;
+  const [loading, setLoading] = useState(true);
+  const [totalFunds, setTotalFunds] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalCommunities, setTotalCommunities] = useState(0);
+  const [activeEvents, setActiveEvents] = useState(0);
+  const [communityStats, setCommunityStats] = useState<CommunityStat[]>([]);
+  const [recentUsers, setRecentUsers] = useState<User[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [communities, users, transactions, events] = await Promise.all([
+          getCommunities(),
+          getUsers(),
+          getTransactions(),
+          getEvents(),
+        ]);
+
+        // Calculate stats
+        const funds = users.reduce((sum, user) => sum + user.balance, 0);
+        setTotalFunds(funds);
+        setTotalUsers(users.length);
+        setTotalCommunities(communities.length);
+        
+        const upcomingEvents = events.filter(e => e.status === 'Upcoming' || e.status === 'Planning').length;
+        setActiveEvents(upcomingEvents);
+
+        const stats = communities.map(community => {
+          const communityUsers = users.filter(u => u.community === community.name);
+          return {
+            name: community.name,
+            userCount: communityUsers.length,
+            adminCount: communityUsers.filter(u => u.role === 'Community Admin').length,
+            totalBalance: communityUsers.reduce((sum, u) => sum + u.balance, 0),
+          };
+        });
+        setCommunityStats(stats);
+        
+        const sortedUsers = [...users].sort((a, b) => new Date(b.dateJoined).getTime() - new Date(a.dateJoined).getTime());
+        setRecentUsers(sortedUsers.slice(0, 2));
+
+        const depositTransactions = transactions.filter(t => t.type === 'Deposit' && t.status === 'Completed');
+        setRecentTransactions(depositTransactions.slice(0, 2));
+
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
+
+  if (loading) {
+    return (
+       <div className="flex flex-col gap-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card><CardHeader><Skeleton className="h-5 w-2/5" /></CardHeader><CardContent><Skeleton className="h-8 w-3/5" /></CardContent></Card>
+          <Card><CardHeader><Skeleton className="h-5 w-2/5" /></CardHeader><CardContent><Skeleton className="h-8 w-3/5" /></CardContent></Card>
+          <Card><CardHeader><Skeleton className="h-5 w-2/5" /></CardHeader><CardContent><Skeleton className="h-8 w-3/5" /></CardContent></Card>
+          <Card><CardHeader><Skeleton className="h-5 w-2/5" /></CardHeader><CardContent><Skeleton className="h-8 w-3/5" /></CardContent></Card>
+        </div>
+        <Card><CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="lg:col-span-4"><CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader><CardContent><Skeleton className="h-32 w-full" /></CardContent></Card>
+          <Card className="lg:col-span-3"><CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader><CardContent><Skeleton className="h-32 w-full" /></CardContent></Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -61,7 +112,7 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            <div className="text-2xl font-bold">${totalFunds.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
             <p className="text-xs text-muted-foreground">Across all communities</p>
           </CardContent>
         </Card>
@@ -81,7 +132,7 @@ export default function AdminDashboardPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{communities.length}</div>
+            <div className="text-2xl font-bold">{totalCommunities}</div>
             <p className="text-xs text-muted-foreground">Actively managed</p>
           </CardContent>
         </Card>
@@ -91,7 +142,7 @@ export default function AdminDashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+3</div>
+            <div className="text-2xl font-bold">+{activeEvents}</div>
              <p className="text-xs text-muted-foreground">Upcoming this month</p>
           </CardContent>
         </Card>
@@ -165,7 +216,7 @@ export default function AdminDashboardPage() {
                                     </div>
                                 </div>
                             </TableCell>
-                            <TableCell>{user.dateJoined}</TableCell>
+                            <TableCell>{new Date(user.dateJoined).toLocaleDateString()}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
@@ -189,10 +240,10 @@ export default function AdminDashboardPage() {
                   </TableHeader>
                   <TableBody>
                      {recentTransactions.map(transaction => (
-                        <TableRow key={transaction.email}>
+                        <TableRow key={transaction.id}>
                           <TableCell>
-                              <p className="font-medium">{transaction.name}</p>
-                              <p className="text-sm text-muted-foreground">{transaction.email}</p>
+                              <p className="font-medium">{transaction.userName}</p>
+                              <p className="text-sm text-muted-foreground">{transaction.userEmail}</p>
                           </TableCell>
                           <TableCell className="text-right font-medium">+${transaction.amount.toFixed(2)}</TableCell>
                       </TableRow>
@@ -205,3 +256,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    
