@@ -18,6 +18,7 @@ import {
   PlusCircle,
   Banknote,
   TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,7 @@ const navItems = [
 ];
 
 const reviewNavItems = [
+    { href: "/admin/kyc", icon: ShieldCheck, label: "KYC Review" },
     { href: "/admin/events", icon: Calendar, label: "Events" },
     { href: "/admin/businesses", icon: Store, label: "Businesses" },
     { href: "/admin/assistance", icon: HandHelping, label: "Assistance" },
