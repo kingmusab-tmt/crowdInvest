@@ -10,6 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Banknote, Copy, CreditCard, Repeat, Calendar as CalendarIcon, DollarSign as DollarSignIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { createTransaction } from "@/services/transactionService";
+import { updateUser, getUsers } from "@/services/userService";
+
+// In a real app, you would get the logged-in user's ID/email from an auth context
+const LOGGED_IN_USER_EMAIL = "olivia.martin@email.com";
 
 export default function DepositPage() {
     const { toast } = useToast();
@@ -17,14 +22,54 @@ export default function DepositPage() {
     const [frequency, setFrequency] = useState("");
     const [day, setDay] = useState("");
     const [amount, setAmount] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function handleCardDeposit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleCardDeposit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        const amount = new FormData(event.currentTarget).get('amount');
-        toast({
-            title: "Deposit Initiated",
-            description: `Your deposit of $${amount} is being processed via Monify.`,
-        });
+        setIsSubmitting(true);
+        const formData = new FormData(event.currentTarget);
+        const depositAmount = parseFloat(formData.get('amount') as string);
+
+        if (isNaN(depositAmount) || depositAmount <= 0) {
+            toast({ title: "Invalid Amount", description: "Please enter a valid deposit amount.", variant: "destructive" });
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+            // In a real app, user data would come from an auth context
+            const users = await getUsers();
+            const currentUser = users.find(u => u.email === LOGGED_IN_USER_EMAIL);
+
+            if (!currentUser) {
+                throw new Error("Current user not found.");
+            }
+
+            // 1. Create a new transaction record
+            await createTransaction({
+                userName: currentUser.name,
+                userEmail: currentUser.email,
+                type: "Deposit",
+                status: "Completed",
+                amount: depositAmount,
+                date: new Date().toISOString(),
+            });
+
+            // 2. Update the user's balance
+            const newBalance = currentUser.balance + depositAmount;
+            await updateUser(currentUser.id, { balance: newBalance });
+            
+            toast({
+                title: "Deposit Successful",
+                description: `Your deposit of $${depositAmount.toFixed(2)} has been processed.`,
+            });
+            (event.target as HTMLFormElement).reset();
+        } catch (error) {
+            console.error("Deposit failed:", error);
+            toast({ title: "Deposit Failed", description: "There was an error processing your deposit. Please try again.", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     const copyToClipboard = (text: string) => {
@@ -103,7 +148,9 @@ export default function DepositPage() {
                                 </div>
                             </CardContent>
                             <CardFooter className="px-0 pt-6">
-                                <Button className="w-full" type="submit">Deposit with Monify</Button>
+                                <Button className="w-full" type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? 'Processing...' : 'Deposit with Monify'}
+                                </Button>
                             </CardFooter>
                         </form>
                     </TabsContent>
@@ -181,3 +228,5 @@ export default function DepositPage() {
     </div>
   );
 }
+
+    
