@@ -17,6 +17,7 @@ import {
   Vote,
   PlusCircle,
   Banknote,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +55,7 @@ const reviewNavItems = [
     { href: "/admin/businesses", icon: Store, label: "Businesses" },
     { href: "/admin/assistance", icon: HandHelping, label: "Assistance" },
     { href: "/admin/withdrawals", icon: Banknote, label: "Withdrawals" },
+    { href: "/admin/investments", icon: TrendingUp, label: "Investments" },
 ];
 
 const votingNavItems = [
