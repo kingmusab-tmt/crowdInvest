@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,89 +10,51 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MoreHorizontal, CheckCircle, XCircle, Star, Phone, Mail, MessageSquare, Vote } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
-
-type BusinessStatus = "Pending" | "Approved" | "Rejected";
-
-type Business = {
-  id: number;
-  name: string;
-  ownerName: string;
-  ownerEmail: string;
-  type: string;
-  location: string;
-  contactEmail: string;
-  contactPhone: string;
-  whatsapp?: string;
-  seekingInvestment: boolean;
-  imageUrl: string;
-  imageHint: string;
-  status: BusinessStatus;
-};
-
-const initialBusinesses: Business[] = [
-  {
-    id: 1,
-    name: "Olivia's Artisan Bakery",
-    ownerName: "Olivia Martin",
-    ownerEmail: "olivia.martin@email.com",
-    type: "Product-Based",
-    location: "123 Main St, Northside",
-    contactEmail: "contact@bakery.com",
-    contactPhone: "+1 234 567 890",
-    seekingInvestment: true,
-    imageUrl: "https://picsum.photos/600/400?random=10",
-    imageHint: "artisan bakery",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    name: "Lee Web Solutions",
-    ownerName: "Jackson Lee",
-    ownerEmail: "jackson.lee@email.com",
-    type: "Service-Based",
-    location: "Remote",
-    contactEmail: "jackson@leeweb.dev",
-    contactPhone: "+1 987 654 321",
-    whatsapp: "+1 987 654 321",
-    seekingInvestment: false,
-    imageUrl: "https://picsum.photos/600/400?random=11",
-    imageHint: "web development",
-    status: "Approved",
-  },
-  {
-    id: 3,
-    name: "Noah's GardenScapes",
-    ownerName: "Noah Williams",
-    ownerEmail: "noah@example.com",
-    type: "Service-Based",
-    location: "456 Oak Ave, Northside",
-    contactEmail: "noah@gardenscapes.com",
-    contactPhone: "+1 555 123 456",
-    seekingInvestment: true,
-    imageUrl: "https://picsum.photos/600/400?random=12",
-    imageHint: "landscaping garden",
-    status: "Rejected",
-  },
-];
+import { getBusinesses, updateBusiness, Business, BusinessStatus } from "@/services/businessService";
 
 export default function AdminBusinessesPage() {
-  const [businesses, setBusinesses] = useState<Business[]>(initialBusinesses);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleStatusChange = (businessId: number, newStatus: BusinessStatus) => {
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const fetchedBusinesses = await getBusinesses();
+        setBusinesses(fetchedBusinesses);
+      } catch (error) {
+        console.error("Failed to fetch businesses:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load business data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBusinesses();
+  }, [toast]);
+
+  const handleStatusChange = async (businessId: string, newStatus: BusinessStatus) => {
     const businessToUpdate = businesses.find(b => b.id === businessId);
     if (!businessToUpdate) return;
     
-    setBusinesses(
-      businesses.map((business) =>
-        business.id === businessId ? { ...business, status: newStatus } : business
-      )
-    );
-    
-    toast({
-      title: `Business ${newStatus}`,
-      description: `"${businessToUpdate.name}" has been ${newStatus.toLowerCase()}.`,
-    });
+    try {
+      await updateBusiness(businessId, { status: newStatus });
+      setBusinesses(
+        businesses.map((business) =>
+          business.id === businessId ? { ...business, status: newStatus } : business
+        )
+      );
+      toast({
+        title: `Business ${newStatus}`,
+        description: `"${businessToUpdate.name}" has been ${newStatus.toLowerCase()}.`,
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update business status.", variant: "destructive" });
+    }
   };
   
   const getStatusBadgeVariant = (status: BusinessStatus) => {
@@ -134,7 +96,11 @@ export default function AdminBusinessesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {businesses.map((business) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">Loading businesses...</TableCell>
+                </TableRow>
+              ) : businesses.map((business) => (
                 <TableRow key={business.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
