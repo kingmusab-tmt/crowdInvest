@@ -1,7 +1,7 @@
 
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence, initializeFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getFirestore, enableIndexedDbPersistence, initializeFirestore, Firestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,25 +15,32 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with a check for the browser environment for persistence
-const db = initializeFirestore(app, {});
+// Initialize Firestore as a singleton
+let db: Firestore;
 
 if (typeof window !== 'undefined') {
+  // Client-side
+  db = initializeFirestore(app, {});
   try {
     enableIndexedDbPersistence(db);
   } catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error) {
-        if ((error as { code: string }).code == 'failed-precondition') {
-            console.warn('Firebase persistence failed: Multiple tabs open');
-        } else if ((error as { code: string }).code == 'unimplemented') {
-            console.warn('Firebase persistence failed: Browser does not support it');
-        }
+      const errorCode = (error as { code: string }).code;
+      if (errorCode == 'failed-precondition') {
+        console.warn('Firebase persistence failed: Multiple tabs open');
+      } else if (errorCode == 'unimplemented') {
+        console.warn('Firebase persistence failed: Browser does not support it');
+      }
     } else {
-        console.error('An unexpected error occurred with Firebase persistence:', error);
+      console.error('An unexpected error occurred with Firebase persistence:', error);
     }
   }
+} else {
+  // Server-side
+  db = getFirestore(app);
 }
+
 
 export { app, db };
