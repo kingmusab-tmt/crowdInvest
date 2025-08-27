@@ -28,6 +28,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBiometricSigningIn, setIsBiometricSigningIn] = useState(false);
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
@@ -77,6 +78,25 @@ export default function LoginPage() {
     }
   };
 
+  const handleFingerprintSignIn = () => {
+    setIsBiometricSigningIn(true);
+    toast({
+      title: "Simulating Biometric Scan",
+      description: "In a real app, this would open your device's fingerprint or face scanner.",
+    });
+
+    // Simulate a delay for the "scan"
+    setTimeout(() => {
+      setIsBiometricSigningIn(false);
+      toast({
+        title: "Biometric Login Successful",
+        description: "Welcome back!",
+      });
+      // Redirect to dashboard to complete the simulation
+      router.push('/dashboard');
+    }, 2000); // 2-second delay
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
       <div className="w-full max-w-md">
@@ -122,8 +142,13 @@ export default function LoginPage() {
                 <Button variant="outline" onClick={handleGoogleSignIn}>
                     <GoogleIcon /> Google
                 </Button>
-                <Button variant="outline">
-                    <Fingerprint /> Fingerprint
+                <Button variant="outline" onClick={handleFingerprintSignIn} disabled={isBiometricSigningIn}>
+                    {isBiometricSigningIn ? (
+                        <Fingerprint className="animate-pulse" />
+                    ) : (
+                        <Fingerprint />
+                    )}
+                    {isBiometricSigningIn ? "Scanning..." : "Fingerprint"}
                 </Button>
             </div>
              <div className="mt-6 text-center text-sm">
