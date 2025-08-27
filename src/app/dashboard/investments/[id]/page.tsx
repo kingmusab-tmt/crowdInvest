@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function InvestmentDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [investment, setInvestment] = useState<Investment | null>(null);
   const [totalFunds, setTotalFunds] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -28,7 +29,7 @@ export default function InvestmentDetailPage({ params }: { params: { id: string 
             getUsers()
         ]);
         
-        const foundInvestment = investments.find(inv => inv.id === params.id);
+        const foundInvestment = investments.find(inv => inv.id === id);
         if (foundInvestment) {
           setInvestment(foundInvestment);
         }
@@ -49,7 +50,7 @@ export default function InvestmentDetailPage({ params }: { params: { id: string 
     };
 
     fetchData();
-  }, [params.id, toast]);
+  }, [id, toast]);
 
   if (loading) {
     return (
