@@ -23,21 +23,57 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TrendingUp } from "lucide-react";
+import { createWithdrawalRequest } from "@/services/withdrawalService";
+import { getUsers } from "@/services/userService";
+import { useState } from "react";
+
+// In a real app, you would get the logged-in user's ID/email from an auth context
+const LOGGED_IN_USER_EMAIL = "olivia.martin@email.com";
 
 export default function WithdrawalPage() {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleWithdrawalSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleWithdrawalSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setIsSubmitting(true);
+
     const formData = new FormData(event.currentTarget);
-    const amount = formData.get("amount");
+    const amount = parseFloat(formData.get("amount") as string);
+    const bankName = formData.get("bank-name") as string;
+    const accountNumber = formData.get("account-number") as string;
 
-    toast({
-      title: "Withdrawal Request Submitted",
-      description: `Your request to withdraw $${amount} has been sent for admin review.`,
-    });
+    try {
+        // In a real app, user data would come from an auth context
+        const users = await getUsers();
+        const currentUser = users.find(u => u.email === LOGGED_IN_USER_EMAIL);
 
-    event.currentTarget.reset();
+        if (!currentUser) {
+            throw new Error("Current user not found.");
+        }
+        
+        await createWithdrawalRequest({
+            userName: currentUser.name,
+            userEmail: currentUser.email,
+            amount: amount,
+            bankName: bankName,
+            accountNumber: accountNumber,
+            status: "Pending",
+            requestDate: new Date().toISOString(),
+        });
+
+        toast({
+            title: "Withdrawal Request Submitted",
+            description: `Your request to withdraw $${amount.toFixed(2)} has been sent for admin review.`,
+        });
+
+        (event.currentTarget as HTMLFormElement).reset();
+    } catch (error) {
+        console.error("Withdrawal request failed:", error);
+        toast({ title: "Request Failed", description: "There was an error submitting your request. Please try again.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   function handleReinvestSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -101,9 +137,9 @@ export default function WithdrawalPage() {
                     <SelectValue placeholder="Select your bank" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="trust-bank">Community Trust Bank</SelectItem>
-                    <SelectItem value="first-national">First National</SelectItem>
-                    <SelectItem value="city-union">City Union Bank</SelectItem>
+                    <SelectItem value="Community Trust Bank">Community Trust Bank</SelectItem>
+                    <SelectItem value="First National">First National</SelectItem>
+                    <SelectItem value="City Union Bank">City Union Bank</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -118,9 +154,13 @@ export default function WithdrawalPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" type="submit">
-                <Send className="mr-2 h-4 w-4" />
-                Submit Withdrawal Request
+              <Button className="w-full" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : (
+                    <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Submit Withdrawal Request
+                    </>
+                )}
               </Button>
             </CardFooter>
           </form>
