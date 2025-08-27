@@ -1,32 +1,61 @@
 
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createKycRequest } from "@/services/kycService";
+import { getUsers } from "@/services/userService";
+
+// In a real app, you would get the logged-in user's ID/email from an auth context
+const LOGGED_IN_USER_EMAIL = "olivia.martin@email.com";
 
 export default function KycPage() {
     const { toast } = useToast();
+    const router = useRouter();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function handleKycSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleKycSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setIsSubmitting(true);
         const formData = new FormData(event.currentTarget);
-        const nin = formData.get('nin');
-        const bvn = formData.get('bvn');
         
-        console.log({ nin, bvn });
+        try {
+            // In a real app, user data would come from an auth context
+            const users = await getUsers();
+            const currentUser = users.find(u => u.email === LOGGED_IN_USER_EMAIL);
 
-        toast({
-            title: "Verification Submitted",
-            description: "Your KYC information has been submitted for verification.",
-        });
-        
-        // In a real application, you would redirect the user after successful submission
-        // For now, we'll just show the toast.
+            if (!currentUser) {
+                throw new Error("Current user not found.");
+            }
+
+            await createKycRequest({
+                userId: currentUser.id,
+                userName: currentUser.name,
+                bvn: formData.get('bvn') as string,
+                nin: formData.get('nin') as string,
+                status: 'Pending',
+                submittedAt: new Date().toISOString(),
+            });
+
+            toast({
+                title: "Verification Submitted",
+                description: "Your KYC information has been submitted and is pending review.",
+            });
+            
+            router.push('/dashboard');
+
+        } catch (error) {
+            console.error("KYC submission failed:", error);
+            toast({ title: "Submission Failed", description: "There was an error submitting your information. Please try again.", variant: "destructive" });
+            setIsSubmitting(false);
+        }
     }
 
   return (
@@ -57,7 +86,10 @@ export default function KycPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col items-start gap-4">
-            <Button className="w-full" type="submit">Submit for Verification</Button>
+            <Button className="w-full" type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? "Submitting..." : "Submit for Verification"}
+            </Button>
             <p className="text-xs text-center text-muted-foreground w-full">
                 By submitting, you agree to our <Link href="#" className="underline">Terms of Service</Link> and <Link href="#" className="underline">Privacy Policy</Link>. Your data is encrypted and stored securely.
             </p>
