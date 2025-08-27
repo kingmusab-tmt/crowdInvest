@@ -13,23 +13,56 @@ import { Switch } from "@/components/ui/switch";
 import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
+import { createBusiness, Business } from "@/services/businessService";
+import { useRouter } from "next/navigation";
+
+// In a real app, this would come from an auth context
+const MOCK_USER = {
+    name: "Olivia Martin",
+    email: "olivia.martin@email.com",
+};
 
 export default function NewBusinessPage() {
     const { toast } = useToast();
+    const router = useRouter();
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setIsSubmitting(true);
         const formData = new FormData(event.currentTarget);
-        const name = formData.get('business-name');
         
-        toast({
-            title: "Business Submitted",
-            description: `Your business "${name}" has been sent for admin review.`,
-        });
+        // In a real app, you would upload the file and get a URL
+        const imageUrl = "https://picsum.photos/600/400?random=" + Math.floor(Math.random() * 100);
 
-        event.currentTarget.reset();
-        setImagePreview(null);
+        const newBusinessData: Omit<Business, 'id'> = {
+            name: formData.get('business-name') as string,
+            ownerName: MOCK_USER.name,
+            ownerEmail: MOCK_USER.email,
+            type: formData.get('business-type') as string,
+            location: formData.get('business-location') as string,
+            description: formData.get('business-nature') as string,
+            contactEmail: formData.get('contact-email') as string,
+            contactPhone: formData.get('contact-phone') as string,
+            whatsapp: formData.get('whatsapp-number') as string || undefined,
+            seekingInvestment: formData.get('seeking-investment') === 'on',
+            status: 'Pending',
+            imageUrl: imageUrl,
+            imageHint: 'custom business',
+        };
+
+        try {
+            await createBusiness(newBusinessData);
+            toast({
+                title: "Business Submitted",
+                description: `Your business "${newBusinessData.name}" has been sent for admin review.`,
+            });
+            router.push('/dashboard/member-businesses');
+        } catch (error) {
+            toast({ title: "Submission Failed", description: "Could not submit your business. Please try again.", variant: "destructive" });
+            setIsSubmitting(false);
+        }
     }
 
      const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,9 +158,13 @@ export default function NewBusinessPage() {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button className="w-full" type="submit">
-                    <Send className="mr-2 h-4 w-4" />
-                    Submit for Review
+                <Button className="w-full" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting..." : (
+                        <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Submit for Review
+                        </>
+                    )}
                 </Button>
             </CardFooter>
             </form>

@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where } from 'firebase/firestore';
 
 // Define the Business types
 export type BusinessStatus = "Pending" | "Approved" | "Rejected";
@@ -14,6 +14,7 @@ export type Business = {
   ownerEmail: string;
   type: string;
   location: string;
+  description: string;
   contactEmail: string;
   contactPhone: string;
   whatsapp?: string;
@@ -24,19 +25,28 @@ export type Business = {
 };
 
 /**
- * Fetches all businesses from the "businesses" collection in Firestore.
+ * Fetches businesses from the "businesses" collection in Firestore.
+ * Can be filtered by status.
+ * @param status Optional status to filter businesses by.
  */
-export async function getBusinesses(): Promise<Business[]> {
+export async function getBusinesses(status?: BusinessStatus): Promise<Business[]> {
   const businessesCollection = collection(db, 'businesses');
-  const businessSnapshot = await getDocs(businessesCollection);
-  const businessList = businessSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Business));
+  const q = status ? query(businessesCollection, where('status', '==', status)) : businessesCollection;
+  const businessSnapshot = await getDocs(q);
   
-  // Seed data if the collection is empty
-  if (businessList.length === 0) {
-    return seedInitialBusinesses();
+  if (businessSnapshot.empty) {
+    // If the main collection is empty, seed it.
+    const allBusinessesSnapshot = await getDocs(collection(db, 'businesses'));
+    if (allBusinessesSnapshot.empty) {
+        const seeded = await seedInitialBusinesses();
+        if (status) {
+            return seeded.filter(b => b.status === status);
+        }
+        return seeded;
+    }
   }
 
-  return businessList;
+  return businessSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Business));
 }
 
 /**
@@ -79,6 +89,7 @@ async function seedInitialBusinesses(): Promise<Business[]> {
         ownerEmail: "olivia.martin@email.com",
         type: "Product-Based",
         location: "123 Main St, Northside",
+        description: "Handcrafted bread, pastries, and cakes made with locally-sourced ingredients. A staple in the Northside community.",
         contactEmail: "contact@bakery.com",
         contactPhone: "+1 234 567 890",
         seekingInvestment: true,
@@ -92,6 +103,7 @@ async function seedInitialBusinesses(): Promise<Business[]> {
         ownerEmail: "jackson.lee@email.com",
         type: "Service-Based",
         location: "Remote",
+        description: "Professional web design and development services for small businesses and startups. Helping local businesses grow online.",
         contactEmail: "jackson@leeweb.dev",
         contactPhone: "+1 987 654 321",
         whatsapp: "+1 987 654 321",
@@ -106,6 +118,7 @@ async function seedInitialBusinesses(): Promise<Business[]> {
         ownerEmail: "noah@example.com",
         type: "Service-Based",
         location: "456 Oak Ave, Northside",
+        description: "Complete landscaping and garden maintenance services. From design to regular upkeep, we make your green spaces beautiful.",
         contactEmail: "noah@gardenscapes.com",
         contactPhone: "+1 555 123 456",
         seekingInvestment: true,

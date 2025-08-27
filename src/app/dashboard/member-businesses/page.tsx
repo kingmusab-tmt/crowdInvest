@@ -1,45 +1,73 @@
 
+"use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { PlusCircle, Star } from "lucide-react";
-
-const businesses = [
-  {
-    id: "olivia-bakery",
-    name: "Olivia's Artisan Bakery",
-    owner: "Olivia Martin",
-    category: "Food & Beverage",
-    description: "Handcrafted bread, pastries, and cakes made with locally-sourced ingredients. A staple in the Northside community.",
-    seekingInvestment: true,
-    imageUrl: "https://picsum.photos/600/400?random=10",
-    imageHint: "artisan bakery",
-  },
-  {
-    id: "lee-web-dev",
-    name: "Lee Web Solutions",
-    owner: "Jackson Lee",
-    category: "Technology",
-    description: "Professional web design and development services for small businesses and startups. Helping local businesses grow online.",
-    seekingInvestment: false,
-    imageUrl: "https://picsum.photos/600/400?random=11",
-    imageHint: "web development",
-  },
-  {
-    id: "noah-landscaping",
-    name: "Noah's GardenScapes",
-    owner: "Noah Williams",
-    category: "Home & Garden",
-    description: "Complete landscaping and garden maintenance services. From design to regular upkeep, we make your green spaces beautiful.",
-    seekingInvestment: true,
-    imageUrl: "https://picsum.photos/600/400?random=12",
-    imageHint: "landscaping garden",
-  },
-];
+import { getBusinesses, Business } from "@/services/businessService";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MemberBusinessesPage() {
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const fetchedBusinesses = await getBusinesses("Approved");
+        setBusinesses(fetchedBusinesses);
+      } catch (error) {
+        console.error("Failed to fetch businesses:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load business data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBusinesses();
+  }, [toast]);
+
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <Skeleton className="h-9 w-1/3" />
+            <Skeleton className="h-5 w-2/3 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <Skeleton className="h-48 w-full" />
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-5 w-1/2 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-10 w-full" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -71,14 +99,14 @@ export default function MemberBusinessesPage() {
             </div>
             <CardHeader>
                 <CardTitle className="mb-1">{business.name}</CardTitle>
-                <CardDescription>By {business.owner}</CardDescription>
+                <CardDescription>By {business.ownerName}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
               <p className="text-sm text-muted-foreground">{business.description}</p>
             </CardContent>
             <CardFooter className="flex-col items-start gap-4">
                 <div className="flex justify-between w-full">
-                    <Badge variant="secondary">{business.category}</Badge>
+                    <Badge variant="secondary">{business.type}</Badge>
                     {business.seekingInvestment && (
                         <Badge variant="default" className="gap-1">
                             <Star className="h-3 w-3" />
