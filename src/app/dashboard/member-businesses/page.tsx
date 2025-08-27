@@ -115,7 +115,7 @@ export default function MemberBusinessesPage() {
                     )}
                 </div>
                 <Button variant="outline" className="w-full mt-2" asChild>
-                  <Link href={`#`}>View Details</Link>
+                  <Link href={`/dashboard/member-businesses/${business.id}`}>View Details</Link>
                 </Button>
             </CardFooter>
           </Card>
