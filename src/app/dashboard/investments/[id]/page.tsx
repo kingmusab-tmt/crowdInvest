@@ -15,7 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function InvestmentDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
   const [investment, setInvestment] = useState<Investment | null>(null);
   const [totalFunds, setTotalFunds] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -24,6 +23,7 @@ export default function InvestmentDetailPage({ params }: { params: { id: string 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const id = params.id;
         const [investments, users] = await Promise.all([
             getInvestments(),
             getUsers()
@@ -50,7 +50,7 @@ export default function InvestmentDetailPage({ params }: { params: { id: string 
     };
 
     fetchData();
-  }, [id, toast]);
+  }, [params.id, toast]);
 
   if (loading) {
     return (
