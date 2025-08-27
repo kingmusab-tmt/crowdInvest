@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,71 +9,51 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, CheckCircle, Clock, Truck } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-
-type RequestStatus = "Pending" | "Approved" | "Initiated" | "Completed";
-
-type WithdrawalRequest = {
-  id: number;
-  userName: string;
-  userEmail: string;
-  amount: number;
-  bankName: string;
-  accountNumber: string;
-  status: RequestStatus;
-  requestDate: string;
-};
-
-const initialRequests: WithdrawalRequest[] = [
-  {
-    id: 1,
-    userName: "Olivia Martin",
-    userEmail: "olivia.martin@email.com",
-    amount: 123.45,
-    bankName: "Community Trust Bank",
-    accountNumber: "0123456789",
-    status: "Pending",
-    requestDate: "2024-08-10",
-  },
-  {
-    id: 2,
-    userName: "Noah Williams",
-    userEmail: "noah@example.com",
-    amount: 50.00,
-    bankName: "First National",
-    accountNumber: "9876543210",
-    status: "Approved",
-    requestDate: "2024-08-09",
-  },
-  {
-    id: 3,
-    userName: "Jackson Lee",
-    userEmail: "jackson.lee@email.com",
-    amount: 250.00,
-    bankName: "Community Trust Bank",
-    accountNumber: "5551234567",
-    status: "Completed",
-    requestDate: "2024-08-05",
-  },
-];
+import { getWithdrawalRequests, updateWithdrawalRequest, WithdrawalRequest, RequestStatus } from "@/services/withdrawalService";
 
 export default function AdminWithdrawalsPage() {
-  const [requests, setRequests] = useState<WithdrawalRequest[]>(initialRequests);
+  const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleStatusChange = (requestId: number, newStatus: RequestStatus) => {
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const fetchedRequests = await getWithdrawalRequests();
+        setRequests(fetchedRequests);
+      } catch (error) {
+        console.error("Failed to fetch withdrawal requests:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load withdrawal request data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, [toast]);
+
+  const handleStatusChange = async (requestId: string, newStatus: RequestStatus) => {
     const requestToUpdate = requests.find(r => r.id === requestId);
     if (!requestToUpdate) return;
     
-    setRequests(
-      requests.map((request) =>
-        request.id === requestId ? { ...request, status: newStatus } : request
-      )
-    );
-    
-    toast({
-      title: `Request ${newStatus}`,
-      description: `${requestToUpdate.userName}'s withdrawal has been marked as ${newStatus.toLowerCase()}.`,
-    });
+    try {
+      await updateWithdrawalRequest(requestId, { status: newStatus });
+      setRequests(
+        requests.map((request) =>
+          request.id === requestId ? { ...request, status: newStatus } : request
+        )
+      );
+      toast({
+        title: `Request ${newStatus}`,
+        description: `${requestToUpdate.userName}'s withdrawal has been marked as ${newStatus.toLowerCase()}.`,
+      });
+    } catch (error) {
+       toast({ title: "Error", description: "Failed to update request status.", variant: "destructive" });
+    }
   };
 
   const getStatusBadgeVariant = (status: RequestStatus) => {
@@ -110,7 +90,11 @@ export default function AdminWithdrawalsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.map((request) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">Loading requests...</TableCell>
+                </TableRow>
+              ) : requests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell>
                     <div className="font-medium">{request.userName}</div>
