@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { getInvestments, createInvestment, deleteInvestment, updateInvestment, Investment, InvestmentStatus, RiskLevel } from "@/services/investmentService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 
 export default function AdminInvestmentsPage() {
   const [investments, setInvestments] = useState<Investment[]>([]);
@@ -46,12 +47,15 @@ export default function AdminInvestmentsPage() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     
+    const amount = parseFloat(formData.get("amount") as string);
+    const goal = parseFloat(formData.get("goal") as string);
+
     const investmentData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       longDescription: formData.get("longDescription") as string,
-      amount: parseFloat(formData.get("amount") as string),
-      goal: parseFloat(formData.get("goal") as string),
+      amount: amount,
+      goal: goal,
       investors: parseInt(formData.get("investors") as string),
       status: formData.get("status") as InvestmentStatus,
       projectedROI: formData.get("projectedROI") as string,
@@ -59,19 +63,19 @@ export default function AdminInvestmentsPage() {
       risk: formData.get("risk") as RiskLevel,
       imageUrl: formData.get("imageUrl") as string,
       imageHint: formData.get("imageHint") as string,
+      progress: Math.round((amount / goal) * 100),
     };
 
     try {
       if (editingInvestment) {
         // Update existing investment
-        const updatedInvestment = { ...editingInvestment, ...investmentData, progress: Math.round((investmentData.amount / investmentData.goal) * 100) };
+        const updatedInvestment = { ...editingInvestment, ...investmentData };
         await updateInvestment(editingInvestment.id, updatedInvestment);
         setInvestments(investments.map(inv => inv.id === editingInvestment.id ? updatedInvestment : inv));
         toast({ title: "Investment Updated", description: `"${updatedInvestment.title}" has been updated.` });
       } else {
         // Create new investment
-        const newInvestmentData = { ...investmentData, progress: Math.round((investmentData.amount / investmentData.goal) * 100) };
-        const newInvestment = await createInvestment(newInvestmentData);
+        const newInvestment = await createInvestment(investmentData);
         setInvestments([newInvestment, ...investments]);
         toast({ title: "Investment Created", description: `"${newInvestment.title}" has been created.` });
       }
@@ -237,12 +241,18 @@ export default function AdminInvestmentsPage() {
                 </DropdownMenu>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">${investment.amount.toLocaleString()} / ${investment.goal.toLocaleString()}</p>
-                <Badge variant={investment.status === 'Completed' ? 'secondary' : 'default'}>{investment.status}</Badge>
+                <p className="text-2xl font-bold text-primary">${investment.amount.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">of ${investment.goal.toLocaleString()}</span></p>
+                <Badge variant={investment.status === 'Completed' || investment.status === 'Funded' ? 'secondary' : 'default'}>{investment.status}</Badge>
               </div>
             </CardHeader>
             <CardContent className="flex-grow">
-              <CardDescription>{investment.description}</CardDescription>
+               <div className="w-full">
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Funding Progress</span>
+                        <span>{investment.progress}%</span>
+                    </div>
+                    <Progress value={investment.progress} />
+                </div>
             </CardContent>
           </Card>
         ))}
