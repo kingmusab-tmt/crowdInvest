@@ -14,55 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { suggestEventDescription } from "@/ai/flows/suggest-event-flow";
-
-type Event = {
-  id: number;
-  title: string;
-  date: string;
-  description: string;
-  status: 'Upcoming' | 'Planning' | 'Completed';
-  imageUrl: string;
-  imageHint: string;
-};
-
-const initialEvents: Event[] = [
-  {
-    id: 1,
-    title: "Annual Community Reunion",
-    date: "2024-08-15",
-    description: "Join us for our annual get-together. A day of fun, food, and friendship. Funds will be used for catering, venue rental, and entertainment.",
-    status: "Upcoming",
-    imageUrl: "https://picsum.photos/600/400",
-    imageHint: "community party",
-  },
-  {
-    id: 2,
-    title: "The Smith's Wedding Fund",
-    date: "2024-09-05",
-    description: "Let's come together to celebrate the union of two of our beloved members. Contributions will go towards a collective wedding gift.",
-    status: "Upcoming",
-    imageUrl: "https://picsum.photos/601/400",
-    imageHint: "wedding celebration",
-  },
-  {
-    id: 3,
-    title: "Welcome Baby Doe",
-    date: "2024-10-20",
-    description: "A new addition to our community! Funds will be pooled to buy a special gift for the new parents and their baby.",
-    status: "Planning",
-    imageUrl: "https://picsum.photos/600/401",
-    imageHint: "baby gift",
-  },
-  {
-    id: 4,
-    title: "Community Hall Renovation",
-    date: "2024-06-30",
-    description: "Thanks to your contributions, we successfully renovated the community hall with new chairs and a sound system.",
-    status: "Completed",
-    imageUrl: "https://picsum.photos/601/401",
-    imageHint: "community hall",
-  },
-];
+import { getEvents, createEvent, deleteEvent, updateEvent, Event } from "@/services/eventService";
 
 const Countdown = ({ dateString }: { dateString: string }) => {
   const [timeLeft, setTimeLeft] = useState({
@@ -113,13 +65,34 @@ const Countdown = ({ dateString }: { dateString: string }) => {
 };
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isNewEventDialogOpen, setIsNewEventDialogOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
   const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const fetchedEvents = await getEvents();
+        setEvents(fetchedEvents);
+      } catch (error) {
+        console.error("Failed to fetch events:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load event data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [toast]);
 
   const handleSuggestDescription = async () => {
     if (!eventTitle) {
@@ -138,53 +111,75 @@ export default function AdminEventsPage() {
     }
   };
 
-  const handleCreateEvent = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateEvent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const imageFile = formData.get("image") as File;
     let imageUrl = "https://picsum.photos/600/400"; // default image
+    
+    // In a real app, you'd upload the file to a storage service (like Firebase Storage)
+    // and get a URL. For this example, we'll keep using a placeholder.
     if (imageFile && imageFile.size > 0) {
-        imageUrl = URL.createObjectURL(imageFile);
+        // This creates a temporary local URL, it won't persist.
+        // For a real implementation, replace this with your file upload logic.
+        imageUrl = URL.createObjectURL(imageFile); 
     }
     
-    const newEvent: Event = {
-      id: Math.max(0, ...events.map(e => e.id)) + 1,
+    const newEventData: Omit<Event, 'id'> = {
       title: formData.get("title") as string,
       date: formData.get("date") as string,
       description: formData.get("description") as string,
       status: "Planning",
-      imageUrl: imageUrl,
+      imageUrl: imageUrl, // Use the placeholder or temp URL
       imageHint: "custom event",
     };
-    setEvents([newEvent, ...events]);
-    setIsNewEventDialogOpen(false);
-    setImagePreview(null);
-    setEventTitle("");
-    setEventDescription("");
-    toast({ title: "Event Created", description: `"${newEvent.title}" has been successfully created.` });
+
+    try {
+        const newEvent = await createEvent(newEventData);
+        setEvents([newEvent, ...events]);
+        setIsNewEventDialogOpen(false);
+        setImagePreview(null);
+        setEventTitle("");
+        setEventDescription("");
+        toast({ title: "Event Created", description: `"${newEvent.title}" has been successfully created.` });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to create event.", variant: "destructive" });
+    }
   };
 
-  const handleDeleteEvent = (eventId: number) => {
+  const handleDeleteEvent = async (eventId: string) => {
     const eventToDelete = events.find(e => e.id === eventId);
-    setEvents(events.filter((event) => event.id !== eventId));
-    toast({
-      title: "Event Deleted",
-      description: `"${eventToDelete?.title}" has been deleted.`,
-      variant: "destructive",
-    });
+    if (!eventToDelete) return;
+    try {
+        await deleteEvent(eventId);
+        setEvents(events.filter((event) => event.id !== eventId));
+        toast({
+          title: "Event Deleted",
+          description: `"${eventToDelete?.title}" has been deleted.`,
+          variant: "destructive",
+        });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to delete event.", variant: "destructive" });
+    }
   };
 
-  const handleMarkAsCompleted = (eventId: number) => {
+  const handleMarkAsCompleted = async (eventId: string) => {
     const eventToUpdate = events.find(e => e.id === eventId);
-    setEvents(
-      events.map((event) =>
-        event.id === eventId ? { ...event, status: "Completed" } : event
-      )
-    );
-    toast({
-      title: "Event Completed",
-      description: `"${eventToUpdate?.title}" has been marked as completed.`,
-    });
+    if (!eventToUpdate) return;
+    try {
+        await updateEvent(eventId, { status: "Completed" });
+        setEvents(
+          events.map((event) =>
+            event.id === eventId ? { ...event, status: "Completed" } : event
+          )
+        );
+        toast({
+          title: "Event Completed",
+          description: `"${eventToUpdate?.title}" has been marked as completed.`,
+        });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to update event status.", variant: "destructive" });
+    }
   };
 
   const handlePushToVoting = (event: Event) => {
@@ -269,7 +264,9 @@ export default function AdminEventsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
+        {loading ? (
+            <p>Loading events...</p>
+        ) : events.map((event) => (
           <Card key={event.id} className="flex flex-col overflow-hidden">
              <div className="relative">
                 <Image
@@ -329,3 +326,4 @@ export default function AdminEventsPage() {
       </div>
     </div>
   );
+}
