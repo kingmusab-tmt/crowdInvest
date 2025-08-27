@@ -8,6 +8,20 @@ import { collection, getDocs, doc, updateDoc, setDoc } from 'firebase/firestore'
 export type UserRole = "User" | "Community Admin" | "General Admin";
 export type UserStatus = "Active" | "Restricted";
 
+export type UserSettings = {
+  enableBiometrics: boolean;
+  theme: 'light' | 'dark' | 'system';
+  profileVisible: boolean;
+  notifications: {
+    email: {
+      announcements: boolean;
+      investments: boolean;
+      withdrawals: boolean;
+    };
+    push: boolean;
+  };
+};
+
 export type User = {
   id: string;
   name: string;
@@ -73,3 +87,5 @@ async function seedInitialUsers(): Promise<User[]> {
     console.log('Database seeded with initial users.');
     return seededUsers;
 }
+
+    
