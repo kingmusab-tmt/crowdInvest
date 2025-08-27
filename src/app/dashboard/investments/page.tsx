@@ -1,59 +1,70 @@
 
+"use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-
-const investments = [
-  {
-    id: "innovate-tech-solutions",
-    title: "InnovateTech Solutions",
-    description: "A startup developing cutting-edge software for small businesses. Funds are being used for product development and marketing.",
-    amount: "15,000",
-    goal: "20,000",
-    progress: 75,
-    status: "Active",
-    imageUrl: "https://picsum.photos/600/400",
-    imageHint: "tech startup",
-  },
-  {
-    id: "greenleaf-organics-farm",
-    title: "GreenLeaf Organics Farm",
-    description: "Expanding a local organic farm to supply fresh produce to the community. Investment covers new equipment and land.",
-    amount: "25,000",
-    goal: "25,000",
-    progress: 100,
-    status: "Funded",
-    imageUrl: "https://picsum.photos/601/400",
-    imageHint: "organic farm",
-  },
-  {
-    id: "the-corner-bookstore",
-    title: "The Corner Bookstore",
-    description: "Renovating a beloved local bookstore to create a modern and inviting space for readers of all ages.",
-    amount: "8,500",
-    goal: "21,250",
-    progress: 40,
-    status: "Active",
-    imageUrl: "https://picsum.photos/600/401",
-    imageHint: "bookstore interior",
-  },
-  {
-    id: "artisan-bakery-co",
-    title: "Artisan Bakery Co.",
-    description: "Successfully launched a new bakery in the downtown area, now serving fresh bread and pastries daily.",
-    amount: "12,000",
-    goal: "12,000",
-    progress: 100,
-    status: "Completed",
-    imageUrl: "https://picsum.photos/601/401",
-    imageHint: "artisan bread",
-  },
-];
+import { getInvestments, Investment } from "@/services/investmentService";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function InvestmentsPage() {
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchInvestments = async () => {
+      try {
+        const fetchedInvestments = await getInvestments();
+        setInvestments(fetchedInvestments);
+      } catch (error) {
+        console.error("Failed to fetch investments:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load investment data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvestments();
+  }, [toast]);
+
+  if (loading) {
+    return (
+      <div>
+        <div className="mb-6">
+          <Skeleton className="h-9 w-1/3" />
+          <Skeleton className="h-5 w-2/3 mt-2" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <Skeleton className="h-48 w-full" />
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-8 w-1/2 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-10 w-full" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -82,7 +93,7 @@ export default function InvestmentsPage() {
                   {investment.status}
                 </Badge>
               </div>
-               <p className="text-2xl font-bold text-primary">${investment.amount} <span className="text-sm font-normal text-muted-foreground">raised of ${investment.goal}</span></p>
+               <p className="text-2xl font-bold text-primary">${investment.amount.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">raised of ${investment.goal.toLocaleString()}</span></p>
             </CardHeader>
             <CardContent className="flex-grow">
               <CardDescription>{investment.description}</CardDescription>
