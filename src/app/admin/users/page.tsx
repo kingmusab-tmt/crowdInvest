@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -44,37 +44,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-
-type UserRole = "User" | "Community Admin" | "General Admin";
-type UserStatus = "Active" | "Restricted";
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string;
-  role: UserRole;
-  status: UserStatus;
-  balance: number;
-  isTopUser: boolean;
-  dateJoined: string;
-  community?: string;
-};
-
-const initialUsers: User[] = [
-  { id: 'usr_1', name: 'Olivia Martin', email: 'olivia.martin@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=a', role: 'User', status: 'Active', balance: 1250.75, isTopUser: true, dateJoined: '2024-07-15', community: 'Northside' },
-  { id: 'usr_2', name: 'Jackson Lee', email: 'jackson.lee@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=b', role: 'Community Admin', status: 'Active', balance: 750.00, isTopUser: false, dateJoined: '2024-07-14', community: 'Southside' },
-  { id: 'usr_3', name: 'Liam Johnson', email: 'liam@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c', role: 'User', status: 'Restricted', balance: 300.25, isTopUser: false, dateJoined: '2024-07-12', community: 'Northside' },
-  { id: 'usr_4', name: 'Noah Williams', email: 'noah@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=d', role: 'Community Admin', status: 'Active', balance: 5000.00, isTopUser: true, dateJoined: '2024-07-10', community: 'Northside' },
-  { id: 'usr_5', name: 'Admin User', email: 'admin@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=e', role: 'General Admin', status: 'Active', balance: 0.00, isTopUser: false, dateJoined: '2024-06-01' },
-  { id: 'usr_6', name: 'Ethan Jones', email: 'ethan.jones@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=f', role: 'User', status: 'Active', balance: 250.00, isTopUser: false, dateJoined: '2024-07-18', community: 'Southside' },
-];
+import { getUsers, updateUser, User, UserRole, UserStatus } from "@/services/userService";
 
 const communities = ["Northside", "Southside", "West End", "Downtown"];
 
 export default function AdminUsersPage() {
-    const [users, setUsers] = useState<User[]>(initialUsers);
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isFundDialogOpen, setIsFundDialogOpen] = useState(false);
     const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -84,6 +60,26 @@ export default function AdminUsersPage() {
     const [selectedCommunity, setSelectedCommunity] = useState<string | undefined>(undefined);
     const { toast } = useToast();
 
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const fetchedUsers = await getUsers();
+                setUsers(fetchedUsers);
+            } catch (error) {
+                console.error("Failed to fetch users:", error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load user data.",
+                    variant: "destructive",
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, [toast]);
+
     const openFundDialog = (user: User, action: "add" | "debit") => {
         setSelectedUser(user);
         setFundAction(action);
@@ -91,31 +87,40 @@ export default function AdminUsersPage() {
         setIsFundDialogOpen(true);
     };
     
-    const handleFundAction = (e: React.FormEvent) => {
+    const handleFundAction = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser || !fundAmount) return;
 
         const amount = parseFloat(fundAmount);
-        setUsers(users.map(u => 
-            u.id === selectedUser.id 
-            ? { ...u, balance: fundAction === "add" ? u.balance + amount : u.balance - amount }
-            : u
-        ));
-        toast({
-            title: `Funds ${fundAction === "add" ? "Added" : "Debited"}`,
-            description: `$${amount.toFixed(2)} has been ${fundAction === "add" ? "added to" : "debited from"} ${selectedUser.name}'s account.`,
-        });
-        setIsFundDialogOpen(false);
+        const newBalance = fundAction === "add" ? selectedUser.balance + amount : selectedUser.balance - amount;
+
+        try {
+            await updateUser(selectedUser.id, { balance: newBalance });
+            setUsers(users.map(u => u.id === selectedUser.id ? { ...u, balance: newBalance } : u));
+            toast({
+                title: `Funds ${fundAction === "add" ? "Added" : "Debited"}`,
+                description: `$${amount.toFixed(2)} has been ${fundAction === "add" ? "added to" : "debited from"} ${selectedUser.name}'s account.`,
+            });
+            setIsFundDialogOpen(false);
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to update user balance.", variant: "destructive" });
+        }
     };
 
-    const handleToggleRestrict = (userId: string) => {
+    const handleToggleRestrict = async (userId: string) => {
         const user = users.find(u => u.id === userId)!;
         const newStatus: UserStatus = user.status === "Active" ? "Restricted" : "Active";
-        setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
-        toast({
-            title: `User ${newStatus === "Restricted" ? "Restricted" : "Unrestricted"}`,
-            description: `${user.name} has been ${newStatus === "Restricted" ? "restricted" : "unrestricted"}.`,
-        });
+        
+        try {
+            await updateUser(userId, { status: newStatus });
+            setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+            toast({
+                title: `User ${newStatus === "Restricted" ? "Restricted" : "Unrestricted"}`,
+                description: `${user.name} has been ${newStatus === "Restricted" ? "restricted" : "unrestricted"}.`,
+            });
+        } catch (error) {
+             toast({ title: "Error", description: "Failed to update user status.", variant: "destructive" });
+        }
     };
     
     const openRoleDialog = (user: User) => {
@@ -125,7 +130,7 @@ export default function AdminUsersPage() {
         setIsRoleDialogOpen(true);
     };
 
-    const handleRoleChange = (e: React.FormEvent) => {
+    const handleRoleChange = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser) return;
         if (selectedUser.email === 'admin@example.com') {
@@ -135,26 +140,38 @@ export default function AdminUsersPage() {
         }
 
         const community = selectedRole === "Community Admin" ? selectedCommunity : undefined;
-        setUsers(users.map(u => 
-            u.id === selectedUser.id ? { ...u, role: selectedRole, community: community } : u
-        ));
+        const updatedData: Partial<User> = { role: selectedRole, community: community };
 
-        toast({
-            title: `User Role Changed`,
-            description: `${selectedUser.name}'s role has been updated to ${selectedRole}.`,
-        });
-        setIsRoleDialogOpen(false);
+        try {
+            await updateUser(selectedUser.id, updatedData);
+            setUsers(users.map(u => 
+                u.id === selectedUser.id ? { ...u, role: selectedRole, community: community } : u
+            ));
+
+            toast({
+                title: `User Role Changed`,
+                description: `${selectedUser.name}'s role has been updated to ${selectedRole}.`,
+            });
+            setIsRoleDialogOpen(false);
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to update user role.", variant: "destructive" });
+        }
     };
 
-
-    const handleToggleTopUser = (userId: string) => {
+    const handleToggleTopUser = async (userId: string) => {
         const user = users.find(u => u.id === userId)!;
         const newIsTopUser = !user.isTopUser;
-        setUsers(users.map(u => u.id === userId ? { ...u, isTopUser: newIsTopUser } : u));
-        toast({
-            title: `User Highlight Updated`,
-            description: `${user.name} has been ${newIsTopUser ? "marked as a top user" : "unmarked as a top user"}.`,
-        });
+
+        try {
+            await updateUser(userId, { isTopUser: newIsTopUser });
+            setUsers(users.map(u => u.id === userId ? { ...u, isTopUser: newIsTopUser } : u));
+            toast({
+                title: `User Highlight Updated`,
+                description: `${user.name} has been ${newIsTopUser ? "marked as a top user" : "unmarked as a top user"}.`,
+            });
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to update user highlight status.", variant: "destructive" });
+        }
     };
 
     const getRoleBadgeVariant = (role: UserRole) => {
@@ -189,7 +206,11 @@ export default function AdminUsersPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {users.map((user) => (
+                    {loading ? (
+                        <TableRow>
+                            <TableCell colSpan={6} className="text-center">Loading users...</TableCell>
+                        </TableRow>
+                    ) : users.map((user) => (
                         <TableRow key={user.id}>
                             <TableCell>
                                 <div className="flex items-center gap-3">
@@ -319,7 +340,7 @@ export default function AdminUsersPage() {
                         {selectedRole === 'Community Admin' && (
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="community" className="text-right">Community</Label>
-                                <Select value={selectedCommunity} onValueChange={setSelectedCommunity}>
+                                <Select value={selectedCommunity} onValueChange={setSelectedCommunity} required>
                                     <SelectTrigger className="col-span-3">
                                         <SelectValue placeholder="Select a community" />
                                     </SelectTrigger>
@@ -342,5 +363,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    
