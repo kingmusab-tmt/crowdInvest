@@ -1,10 +1,17 @@
 
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mountain, Fingerprint } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { auth } from "@/lib/firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { createOrRetrieveUserFromGoogle } from "@/services/userService";
 
 const GoogleIcon = () => (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -17,6 +24,31 @@ const GoogleIcon = () => (
 
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      await createOrRetrieveUserFromGoogle(user);
+      
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${user.displayName}!`,
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+      toast({
+        title: "Login Failed",
+        description: "Could not sign in with Google. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
       <div className="w-full max-w-md">
@@ -59,7 +91,7 @@ export default function LoginPage() {
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleGoogleSignIn}>
                     <GoogleIcon /> Google
                 </Button>
                 <Button variant="outline">

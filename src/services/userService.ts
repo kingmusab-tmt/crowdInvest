@@ -2,7 +2,8 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, setDoc, addDoc, query, where } from 'firebase/firestore';
+import type { User as FirebaseAuthUser } from 'firebase/auth';
 
 // Define the User type matching the structure in Firestore and the application
 export type UserRole = "User" | "Community Admin" | "General Admin";
@@ -36,7 +37,7 @@ export type User = {
 };
 
 /**
- * Creates a new user in Firestore.
+ * Creates a new user in Firestore from email/password signup.
  * This is used during the signup process.
  * @param userData The essential data for the new user from the signup form.
  */
@@ -56,6 +57,39 @@ export async function createUser(userData: Pick<User, 'name' | 'email' | 'commun
     const docRef = await addDoc(usersCollection, newUser);
     return { id: docRef.id, ...newUser };
 }
+
+/**
+ * Creates or retrieves a user from Firestore after Google Sign-In.
+ * @param firebaseUser The user object from Firebase Auth.
+ */
+export async function createOrRetrieveUserFromGoogle(firebaseUser: FirebaseAuthUser): Promise<User> {
+    const usersCollection = collection(db, 'users');
+    const q = query(usersCollection, where("email", "==", firebaseUser.email));
+    const userSnapshot = await getDocs(q);
+
+    if (!userSnapshot.empty) {
+        // User already exists, return the existing user data
+        const existingUserDoc = userSnapshot.docs[0];
+        return { id: existingUserDoc.id, ...existingUserDoc.data() } as User;
+    } else {
+        // New user, create a new document in Firestore
+        const newUser: Omit<User, 'id'> = {
+            name: firebaseUser.displayName || 'New User',
+            email: firebaseUser.email!,
+            avatarUrl: firebaseUser.photoURL || `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
+            role: 'User',
+            status: 'Active',
+            balance: 0,
+            isTopUser: false,
+            dateJoined: new Date().toISOString(),
+            community: undefined, // Google sign-up users need to select this later
+        };
+
+        const docRef = await addDoc(usersCollection, newUser);
+        return { id: docRef.id, ...newUser };
+    }
+}
+
 
 /**
  * Fetches all users from the "users" collection in Firestore.

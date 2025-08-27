@@ -12,7 +12,9 @@ import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { createUser } from "@/services/userService";
+import { createUser, createOrRetrieveUserFromGoogle } from "@/services/userService";
+import { auth } from "@/lib/firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const communities = ["Northside", "Southside", "West End", "Downtown"];
 
@@ -74,6 +76,36 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   }
+
+  const handleGoogleSignUp = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const dbUser = await createOrRetrieveUserFromGoogle(user);
+      
+      toast({
+        title: "Account Created!",
+        description: `Welcome, ${user.displayName}!`,
+      });
+      
+      // If the user is brand new (doesn't have a community), send to KYC/Verification
+      if (!dbUser.community) {
+          router.push('/signup/verification');
+      } else {
+          router.push('/dashboard');
+      }
+
+    } catch (error) {
+      console.error("Google Sign-Up Error:", error);
+      toast({
+        title: "Sign-Up Failed",
+        description: "Could not sign up with Google. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
@@ -144,7 +176,7 @@ export default function SignupPage() {
                 </div>
             </div>
             <div className="grid grid-cols-1">
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleGoogleSignUp}>
                     <GoogleIcon /> Sign up with Google
                 </Button>
             </div>
