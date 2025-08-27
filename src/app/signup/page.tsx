@@ -1,4 +1,8 @@
 
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +11,8 @@ import { Mountain } from "lucide-react";
 import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { createUser } from "@/services/userService";
 
 const communities = ["Northside", "Southside", "West End", "Downtown"];
 
@@ -19,8 +25,56 @@ const GoogleIcon = () => (
     </svg>
 );
 
-
 export default function SignupPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    const formData = new FormData(event.currentTarget);
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirm-password') as string;
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        description: "Please check your password and try again.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      await createUser({
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        community: formData.get('community') as string,
+        // In a real app, you'd handle the password securely (hashing, etc.)
+        // The verification info would be stored and used in an admin approval flow.
+      });
+
+      toast({
+        title: "Account Created!",
+        description: "Welcome! Please complete your profile verification.",
+      });
+
+      router.push('/dashboard/kyc');
+
+    } catch (error) {
+      console.error("Signup failed:", error);
+      toast({
+        title: "Signup Failed",
+        description: "There was an error creating your account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
       <div className="w-full max-w-md">
@@ -36,26 +90,26 @@ export default function SignupPage() {
             <CardDescription>Enter your details below to get started.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <form onSubmit={handleSignup} className="space-y-4">
                <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" type="text" placeholder="John Doe" required />
+                <Input id="name" name="name" type="text" placeholder="John Doe" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required />
+                <Input id="email" name="email" type="email" placeholder="m@example.com" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
+                <Input id="password" name="password" type="password" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input id="confirm-password" type="password" required />
+                <Input id="confirm-password" name="confirm-password" type="password" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="community">Community</Label>
-                <Select>
+                <Select name="community" required>
                   <SelectTrigger id="community">
                     <SelectValue placeholder="Select your community" />
                   </SelectTrigger>
@@ -72,14 +126,15 @@ export default function SignupPage() {
                 <Label htmlFor="verification">Verification Information</Label>
                 <Textarea
                   id="verification"
+                  name="verification"
                   placeholder="Provide information for your community admin to verify your identity (e.g., your address, family name, or a reference)."
                   required
                 />
               </div>
-               <Button type="submit" className="w-full">
-                Create Account
+               <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Creating Account...' : 'Create Account'}
               </Button>
-            </div>
+            </form>
             <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />

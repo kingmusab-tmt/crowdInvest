@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
 
 // Define the User type matching the structure in Firestore and the application
 export type UserRole = "User" | "Community Admin" | "General Admin";
@@ -34,6 +34,28 @@ export type User = {
   dateJoined: string;
   community?: string;
 };
+
+/**
+ * Creates a new user in Firestore.
+ * This is used during the signup process.
+ * @param userData The essential data for the new user from the signup form.
+ */
+export async function createUser(userData: Pick<User, 'name' | 'email' | 'community'>): Promise<User> {
+    const usersCollection = collection(db, 'users');
+    
+    const newUser: Omit<User, 'id'> = {
+        ...userData,
+        avatarUrl: `https://i.pravatar.cc/150?u=${Math.random().toString(36).substring(7)}`,
+        role: 'User',
+        status: 'Active',
+        balance: 0,
+        isTopUser: false,
+        dateJoined: new Date().toISOString(),
+    };
+
+    const docRef = await addDoc(usersCollection, newUser);
+    return { id: docRef.id, ...newUser };
+}
 
 /**
  * Fetches all users from the "users" collection in Firestore.
@@ -87,5 +109,3 @@ async function seedInitialUsers(): Promise<User[]> {
     console.log('Database seeded with initial users.');
     return seededUsers;
 }
-
-    
