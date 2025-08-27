@@ -10,24 +10,45 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Upload } from "lucide-react";
+import { createEvent } from "@/services/eventService";
+import { useRouter } from "next/navigation";
 
 export default function SubmitEventPage() {
     const { toast } = useToast();
+    const router = useRouter();
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setIsSubmitting(true);
         const formData = new FormData(event.currentTarget);
-        const title = formData.get('title');
-        
-        toast({
-            title: "Event Submitted",
-            description: `Your event "${title}" has been sent for admin review.`,
-        });
+        const title = formData.get('title') as string;
 
-        // Reset form
-        event.currentTarget.reset();
-        setImagePreview(null);
+        // In a real app, you would handle file uploads to a storage service.
+        // For this demo, we'll use a placeholder image.
+        const imageUrl = `https://picsum.photos/600/400?random=${Math.floor(Math.random() * 1000)}`;
+
+        try {
+            await createEvent({
+                title: title,
+                date: formData.get('date') as string,
+                description: formData.get('description') as string,
+                status: 'Planning', // New events from users default to 'Planning' for admin review
+                imageUrl: imageUrl,
+                imageHint: 'custom event',
+            });
+            
+            toast({
+                title: "Event Submitted",
+                description: `Your event "${title}" has been sent for admin review.`,
+            });
+
+            router.push('/dashboard/events');
+        } catch (error) {
+            toast({ title: "Submission Failed", description: "Could not submit your event. Please try again.", variant: "destructive" });
+            setIsSubmitting(false);
+        }
     }
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,9 +101,13 @@ export default function SubmitEventPage() {
             )}
           </CardContent>
           <CardFooter>
-            <Button className="w-full" type="submit">
-                <Upload className="mr-2 h-4 w-4" />
-                Submit for Review
+            <Button className="w-full" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : (
+                    <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Submit for Review
+                    </>
+                )}
             </Button>
           </CardFooter>
         </form>
