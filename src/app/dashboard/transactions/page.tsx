@@ -1,35 +1,43 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowUpRight, ArrowDownLeft, DollarSign, PiggyBank, Briefcase } from "lucide-react";
+import { getTransactions, Transaction, TransactionType, TransactionStatus } from "@/services/transactionService";
+import { useToast } from "@/hooks/use-toast";
 
-type TransactionType = "Deposit" | "Withdrawal" | "Investment" | "Profit Share" | "Assistance";
-type TransactionStatus = "Completed" | "Pending" | "Failed";
-
-type Transaction = {
-  id: string;
-  type: TransactionType;
-  status: TransactionStatus;
-  amount: number;
-  date: string;
-  description: string;
-};
-
-// Mock data for the logged-in user
-const initialTransactions: Transaction[] = [
-  { id: "txn_1", type: "Deposit", status: "Completed", amount: 250.00, date: "2024-08-12", description: "Card deposit via Monify" },
-  { id: "txn_4", type: "Profit Share", status: "Completed", amount: 123.45, date: "2024-08-09", description: "From 'GreenLeaf Organics' investment" },
-  { id: "txn_7", type: "Investment", status: "Completed", amount: -500.00, date: "2024-08-05", description: "Investment in 'InnovateTech Solutions'" },
-  { id: "txn_8", type: "Withdrawal", status: "Pending", amount: -75.00, date: "2024-08-13", description: "Request to Community Trust Bank" },
-];
-
+// In a real app, you would get the logged-in user's ID/email from an auth context
+const LOGGED_IN_USER_EMAIL = "olivia.martin@email.com";
 
 export default function UserTransactionsPage() {
-  const [transactions] = useState<Transaction[]>(initialTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const allTransactions = await getTransactions();
+        const userTransactions = allTransactions.filter(t => t.userEmail === LOGGED_IN_USER_EMAIL);
+        setTransactions(userTransactions);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load your transaction history.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTransactions();
+  }, [toast]);
+
 
   const getTypeBadgeInfo = (type: TransactionType) => {
     switch (type) {
@@ -48,6 +56,17 @@ export default function UserTransactionsPage() {
         case 'Failed': return 'destructive';
         default: return 'outline';
     }
+  }
+  
+  const getTransactionDescription = (transaction: Transaction) => {
+      switch (transaction.type) {
+          case 'Deposit': return 'Card deposit via Monify';
+          case 'Withdrawal': return `Request to ${transaction.userName}'s Bank`;
+          case 'Investment': return `Investment in a community project`;
+          case 'Profit Share': return `From a community investment`;
+          case 'Assistance': return 'Financial assistance from community';
+          default: return 'Transaction';
+      }
   }
 
   return (
@@ -73,13 +92,17 @@ export default function UserTransactionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((transaction) => {
+              {loading ? (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center">Loading your transactions...</TableCell>
+                </TableRow>
+              ) : transactions.map((transaction) => {
                 const { variant, icon } = getTypeBadgeInfo(transaction.type);
                 const isNegative = transaction.amount < 0;
                 return (
                  <TableRow key={transaction.id}>
                     <TableCell>
-                        <div className="font-medium">{transaction.description}</div>
+                        <div className="font-medium">{getTransactionDescription(transaction)}</div>
                     </TableCell>
                     <TableCell>
                         <Badge variant={variant} className="gap-1">
