@@ -1,39 +1,38 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileDown, ArrowUpRight, ArrowDownLeft, DollarSign, PiggyBank, Briefcase } from "lucide-react";
-
-type TransactionType = "Deposit" | "Withdrawal" | "Investment" | "Profit Share" | "Assistance";
-type TransactionStatus = "Completed" | "Pending" | "Failed";
-
-type Transaction = {
-  id: string;
-  userName: string;
-  userEmail: string;
-  type: TransactionType;
-  status: TransactionStatus;
-  amount: number;
-  date: string;
-};
-
-const initialTransactions: Transaction[] = [
-  { id: "txn_1", userName: "Olivia Martin", userEmail: "olivia.martin@email.com", type: "Deposit", status: "Completed", amount: 250.00, date: "2024-08-12" },
-  { id: "txn_2", userName: "Noah Williams", userEmail: "noah@example.com", type: "Withdrawal", status: "Pending", amount: 50.00, date: "2024-08-11" },
-  { id: "txn_3", userName: "Community Fund", userEmail: "fund@invest.com", type: "Investment", status: "Completed", amount: -5000.00, date: "2024-08-10" },
-  { id: "txn_4", userName: "Jackson Lee", userEmail: "jackson.lee@email.com", type: "Profit Share", status: "Completed", amount: 123.45, date: "2024-08-09" },
-  { id: "txn_5", userName: "Liam Johnson", userEmail: "liam@example.com", type: "Assistance", status: "Completed", amount: -750.00, date: "2024-08-08" },
-  { id: "txn_6", userName: "Ethan Jones", userEmail: "ethan.jones@email.com", type: "Deposit", status: "Failed", amount: 100.00, date: "2024-08-07" },
-];
+import { getTransactions, Transaction, TransactionType, TransactionStatus } from "@/services/transactionService";
 
 export default function AdminTransactionsPage() {
-  const [transactions] = useState<Transaction[]>(initialTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const fetchedTransactions = await getTransactions();
+        setTransactions(fetchedTransactions);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load transaction data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, [toast]);
 
   const handleExport = () => {
     toast({
@@ -92,7 +91,11 @@ export default function AdminTransactionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((transaction) => {
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">Loading transactions...</TableCell>
+                </TableRow>
+              ) : transactions.map((transaction) => {
                 const { variant, icon } = getTypeBadgeInfo(transaction.type);
                 const isNegative = transaction.amount < 0;
                 return (
