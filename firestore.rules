@@ -3,8 +3,104 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // By default, deny all reads and writes
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
+    }
+
+    // Get a user's role from their document in the 'users' collection
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+    
+    // Check if a user is a General Admin
+    function isGeneralAdmin(userId) {
+      return getUserRole(userId) == 'General Admin';
+    }
+
+    // Check if a user is any kind of Admin (General or Community)
+    function isAdmin(userId) {
+        let userRole = getUserRole(userId);
+        return userRole == 'General Admin' || userRole == 'Community Admin';
+    }
+
+    // USERS Collection
+    // - Authenticated users can read their own data.
+    // - Authenticated users can update their own data.
+    // - Admins can read all user data.
+    match /users/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && isAdmin(request.auth.uid);
+      // Create is handled by server-side functions
+    }
+    
+    // USER SETTINGS Collection
+    // - Users can read and write their own settings document.
+    match /userSettings/{userId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // KYC INFO Collection
+    // - Authenticated users can create their own KYC document.
+    // - Admins can read KYC documents.
+    // - No one can update a KYC doc from the client to prevent tampering.
+    match /kycInfo/{kycId} {
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow read: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    // READ-ONLY for authenticated users, managed by Admins.
+    match /communities/{communityId} {
+        allow read: if request.auth != null;
+    }
+    match /events/{eventId} {
+        allow read: if request.auth != null;
+    }
+    match /investments/{investmentId} {
+        allow read: if request.auth != null;
+    }
+    match /proposals/{proposalId} {
+        allow read: if request.auth != null;
+    }
+
+    // USER SUBMISSIONS: Users can create, but not modify or delete.
+    match /assistanceRequests/{reqId} {
+        allow create: if request.auth != null;
+        allow read: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    match /businesses/{businessId} {
+        allow create: if request.auth != null;
+        // Allow users to read approved businesses
+        allow read: if request.auth != null && resource.data.status == 'Approved';
+        // Allow admins to read all businesses
+        allow read: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    match /withdrawalRequests/{reqId} {
+        allow create: if request.auth != null;
+        allow read: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // TRANSACTIONS
+    // - Users can read their own transactions.
+    // - Admins can read all transactions.
+    // - Create is handled by server-side functions.
+    match /transactions/{transactionId} {
+        allow read: if request.auth != null && resource.data.userEmail == request.auth.token.email;
+        allow read: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    // NOTIFICATIONS
+    // - Read-only for users (future implementation). For now, restricted.
+    // - Writable only by Admins (handled server-side for now).
+     match /notifications/{notificationId} {
+      allow read: if request.auth != null; // Let users read notifications
+    }
+    
+    // SETTINGS (Admin settings)
+    // - Only readable/writable by General Admins
+    match /settings/admin_settings {
+        allow read, write: if request.auth != null && isGeneralAdmin(request.auth.uid);
     }
   }
 }
