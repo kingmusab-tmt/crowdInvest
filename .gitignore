@@ -39,10 +39,6 @@ next-env.d.ts
 
 .genkit/*
 
-# firebase
-firebase-debug.log
-firestore-debug.log
-
 .env.local
 .env.development.local
 .env.test.local
