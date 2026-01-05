@@ -52,7 +52,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const ext = filename.split(".").pop();
-    const newFileName = `steelbuilder${uuidv4()}.${ext}`;
+    const newFileName = `crowdsource${uuidv4()}.${ext}`;
 
     const blob = await put(newFileName, file.stream(), {
       access: "public",

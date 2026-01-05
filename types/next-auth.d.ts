@@ -11,6 +11,8 @@ declare module "next-auth" {
       isActive: boolean | null;
       id: string | null;
       profileCompleted: boolean | null;
+      community?: string | null;
+      permissions?: any;
     } & DefaultSession["user"];
   }
   interface Session {
@@ -19,6 +21,7 @@ declare module "next-auth" {
     image: string | null;
     isActive: boolean | null;
     profileCompleted: boolean | null;
+    community?: string | null;
   }
 
   interface User {
@@ -27,6 +30,7 @@ declare module "next-auth" {
     image: string | null;
     isActive: boolean | null;
     profileCompleted: boolean | null;
+    community?: string | null;
   }
 }
 declare module "next-auth/jwt" {
@@ -36,5 +40,7 @@ declare module "next-auth/jwt" {
     image: string | null;
     isActive: boolean | null;
     profileCompleted: boolean | null;
+    community?: string | null;
+    permissions?: any;
   }
 }

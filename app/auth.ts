@@ -115,10 +115,13 @@ export const authOptions = {
         token.email = user.email;
         token.name = user.name;
         token.id = user.id;
-        token.image = user.image;
+        // Prefer persisted avatarUrl if present, otherwise fall back to provider image
+        token.image = (user as any).avatarUrl || user.image;
         token.isActive = user.isActive;
         token.role = user.role;
         token.profileCompleted = user.profileCompleted;
+        token.community = user.community;
+        token.permissions = (user as any).permissions;
       } else {
         // Always sync latest user data from database to ensure token is up-to-date
         // This ensures changes to role, profileCompleted, etc. are reflected in the token
@@ -129,10 +132,13 @@ export const authOptions = {
             token.email = dbUser.email;
             token.name = dbUser.name;
             token.id = dbUser._id;
-            token.image = dbUser.avatarUrl;
+            token.image =
+              dbUser.avatarUrl || (dbUser as any).image || token.image;
             token.isActive = dbUser.status === "Active";
             token.role = dbUser.role;
             token.profileCompleted = dbUser.profileCompleted;
+            token.community = dbUser.community;
+            token.permissions = dbUser.permissions;
           }
         } catch (error) {
           console.error("❌ [AUTH JWT] Error syncing user data:", error);
@@ -151,10 +157,13 @@ export const authOptions = {
           session.user.email = dbUser.email;
           session.user.name = dbUser.name;
           session.user.id = dbUser.id;
-          session.user.image = dbUser.image;
+          session.user.image =
+            dbUser.avatarUrl || (dbUser as any).image || token.image;
           session.user.isActive = dbUser.isActive;
           session.user.role = dbUser.role;
           session.user.profileCompleted = dbUser.profileCompleted;
+          session.user.community = dbUser.community?.toString();
+          session.user.permissions = dbUser.permissions;
         } else {
           session.user.email = token.email;
           session.user.name = token.name;
@@ -163,6 +172,8 @@ export const authOptions = {
           session.user.isActive = token.isActive;
           session.user.role = token.role;
           session.user.profileCompleted = token.profileCompleted;
+          session.user.community = token.community as string | null | undefined;
+          session.user.permissions = token.permissions as any;
         }
         return session;
       } catch (error) {

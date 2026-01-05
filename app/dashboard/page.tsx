@@ -63,42 +63,61 @@ function StatsCard({ title, value, icon, color, action }: any) {
 // Investment Card Component
 function InvestmentCard({ investment }: any) {
   const router = useRouter();
-  const progress = (investment.amount / investment.goal) * 100;
+
+  // Handle both MemberInvestment and community investment formats
+  const progress = investment.currentValue
+    ? (investment.currentValue / investment.totalInvested) * 100
+    : 0;
+  const title = investment.title || "Investment";
+  const profitOrLoss = investment.profitOrLoss || 0;
+  const profitOrLossPercentage = investment.profitOrLossPercentage || 0;
+  const status = investment.status || "Active";
 
   return (
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          {investment.title}
+          {title}
         </Typography>
         <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          {investment.description}
+          {investment.investmentType &&
+            `${
+              investment.investmentType.charAt(0).toUpperCase() +
+              investment.investmentType.slice(1)
+            } Investment`}
         </Typography>
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="body2">Progress</Typography>
+            <Typography variant="body2">Value</Typography>
             <Typography variant="body2">{progress.toFixed(1)}%</Typography>
           </Box>
-          <LinearProgress variant="determinate" value={progress} />
+          <LinearProgress
+            variant="determinate"
+            value={Math.min(progress, 100)}
+          />
         </Box>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
           <Typography variant="body2" color="textSecondary">
-            ₦{investment.amount.toLocaleString()} raised
+            ₦{(investment.totalInvested || 0).toLocaleString()} invested
           </Typography>
           <Chip
-            label={investment.risk}
+            label={status}
             size="small"
             color={
-              investment.risk === "Low"
+              status === "Active"
                 ? "success"
-                : investment.risk === "Medium"
+                : status === "Completed"
                 ? "warning"
                 : "error"
             }
           />
         </Box>
-        <Typography variant="caption" color="textSecondary">
-          {investment.investors} investors • {investment.projectedROI} ROI
+        <Typography
+          variant="caption"
+          color={profitOrLoss >= 0 ? "success.main" : "error.main"}
+        >
+          Profit/Loss: ₦{profitOrLoss.toLocaleString()} (
+          {profitOrLossPercentage.toFixed(2)}%)
         </Typography>
       </CardContent>
       <CardActions>
@@ -107,9 +126,6 @@ function InvestmentCard({ investment }: any) {
           onClick={() => router.push(`/dashboard/investments`)}
         >
           View Details
-        </Button>
-        <Button size="small" variant="contained">
-          Invest Now
         </Button>
       </CardActions>
     </Card>
@@ -273,7 +289,14 @@ export default function UserDashboard() {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+        }}
+      >
         <Box>
           <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
             Welcome back, {session?.user?.name}!
@@ -282,7 +305,7 @@ export default function UserDashboard() {
             Here's what's happening with your investments today.
           </Typography>
         </Box>
-        
+
         {/* Admin Dashboard Buttons */}
         {session?.user?.role === "General Admin" && (
           <Button

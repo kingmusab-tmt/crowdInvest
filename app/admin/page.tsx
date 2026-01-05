@@ -29,6 +29,7 @@ import GroupIcon from "@mui/icons-material/Group";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 interface StatsData {
   totalUsers: number;
@@ -77,8 +78,20 @@ export default function AdminDashboard() {
   const [success, setSuccess] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // Redirect Community Admins to their community dashboard
+    if (session?.user?.role === "Community Admin") {
+      router.push("/admin/community");
+      return;
+    }
+
+    // Only allow General Admins to access this page
+    if (session && session.user?.role !== "General Admin") {
+      router.push("/dashboard");
+      return;
+    }
+
     fetchData();
-  }, []);
+  }, [session, router]);
 
   async function fetchData() {
     try {
@@ -262,6 +275,39 @@ export default function AdminDashboard() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Seed Data Section */}
+      <Paper
+        sx={{ p: 3, mb: 4, bgcolor: "#fff3e0", border: "2px dashed #ff9800" }}
+      >
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={{
+            alignItems: { xs: "flex-start", sm: "center" },
+            justifyContent: "space-between",
+          }}
+        >
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              🌱 Seed Sample Data
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Quickly populate all communities with sample investment data for
+              testing and demonstration purposes.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<CloudUploadIcon />}
+            onClick={() => router.push("/admin/seed-investments")}
+            sx={{ whiteSpace: "nowrap" }}
+          >
+            Seed Investments
+          </Button>
+        </Stack>
+      </Paper>
 
       {/* Communities Section */}
       <Box sx={{ mb: 4 }}>

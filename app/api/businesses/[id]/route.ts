@@ -5,19 +5,20 @@ import { Types } from "mongoose";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid business ID" },
         { status: 400 }
       );
     }
 
-    const business = await Business.findById(params.id).select("-__v");
+    const business = await Business.findById(id).select("-__v");
 
     if (!business) {
       return NextResponse.json(
@@ -38,12 +39,13 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid business ID" },
         { status: 400 }
@@ -51,7 +53,24 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const business = await Business.findByIdAndUpdate(params.id, body, {
+
+    // Normalize status to allowed enum values
+    const normalizedStatus = (() => {
+      const raw = body.status;
+      if (!raw) return undefined;
+      const lower = String(raw).toLowerCase();
+      if (lower === "approved" || lower === "approve") return "Approved";
+      if (lower === "pending") return "Pending";
+      if (lower === "rejected" || lower === "reject") return "Rejected";
+      return undefined;
+    })();
+
+    const updatePayload = {
+      ...body,
+      ...(normalizedStatus ? { status: normalizedStatus } : {}),
+    };
+
+    const business = await Business.findByIdAndUpdate(id, updatePayload, {
       new: true,
       runValidators: true,
     }).select("-__v");
@@ -75,19 +94,20 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid business ID" },
         { status: 400 }
       );
     }
 
-    const business = await Business.findByIdAndDelete(params.id);
+    const business = await Business.findByIdAndDelete(id);
 
     if (!business) {
       return NextResponse.json(

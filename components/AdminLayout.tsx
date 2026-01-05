@@ -35,7 +35,8 @@ import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import GroupsIcon from "@mui/icons-material/Groups";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useRouter, usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import NotificationBell from "./NotificationBell";
 
 const drawerWidth = 260;
 
@@ -109,10 +110,40 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   ...theme.mixins.toolbar,
 }));
 
-const menuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, path: "/admin" },
+const generalAdminMenuItems = [
+  { text: "Dashboard", icon: <DashboardIcon />, path: null }, // Dynamic path based on role
   { text: "Users", icon: <PeopleIcon />, path: "/admin/users" },
   { text: "Communities", icon: <GroupsIcon />, path: "/admin/communities" },
+  { text: "Businesses", icon: <BusinessIcon />, path: "/admin/businesses" },
+  {
+    text: "Investments",
+    icon: <AccountBalanceIcon />,
+    path: "/admin/investments",
+  },
+  { text: "Proposals", icon: <HowToVoteIcon />, path: "/admin/proposals" },
+  {
+    text: "Transactions",
+    icon: <MonetizationOnIcon />,
+    path: "/admin/transactions",
+  },
+  { text: "Events", icon: <EventIcon />, path: "/admin/events" },
+  { text: "KYC Verification", icon: <VerifiedUserIcon />, path: "/admin/kyc" },
+  { text: "Assistance", icon: <HelpIcon />, path: "/admin/assistance" },
+  {
+    text: "Withdrawals",
+    icon: <MonetizationOnIcon />,
+    path: "/admin/withdrawals",
+  },
+  { text: "Settings", icon: <SettingsIcon />, path: "/admin/settings" },
+];
+
+const communityAdminMenuItems = [
+  { text: "Dashboard", icon: <DashboardIcon />, path: null }, // Dynamic path based on role
+  {
+    text: "Community Members",
+    icon: <PeopleIcon />,
+    path: "/admin/community-members",
+  },
   { text: "Businesses", icon: <BusinessIcon />, path: "/admin/businesses" },
   {
     text: "Investments",
@@ -143,8 +174,20 @@ export default function AdminLayout({
 }) {
   const [open, setOpen] = React.useState(true);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [communityName, setCommunityName] = React.useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const currentRole = session?.user?.role;
+
+  React.useEffect(() => {
+    if (session?.user?.role === "Community Admin" && session?.user?.community) {
+      fetch(`/api/communities/${session.user.community}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => data && setCommunityName(data.name))
+        .catch(() => {});
+    }
+  }, [session]);
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -176,18 +219,19 @@ export default function AdminLayout({
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            CrowdInvest Admin
+            {session?.user?.role === "Community Admin" && communityName
+              ? `${communityName} Admin`
+              : "CrowdInvest Admin"}
           </Typography>
 
-          <IconButton color="inherit" sx={{ mr: 2 }}>
-            <Badge badgeContent={4} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
+          <NotificationBell />
 
           <Tooltip title="Account settings">
-            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0 }}>
-              <Avatar alt="Admin" src="/avatar.png" />
+            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0, ml: 1 }}>
+              <Avatar
+                alt={session?.user?.name || "Admin"}
+                src={session?.user?.image || ""}
+              />
             </IconButton>
           </Tooltip>
           <Menu
@@ -221,11 +265,30 @@ export default function AdminLayout({
         </DrawerHeader>
         <Divider />
         <List>
-          {menuItems.map((item) => (
+          {(currentRole === "Community Admin"
+            ? communityAdminMenuItems
+            : generalAdminMenuItems
+          ).map((item) => (
             <ListItem key={item.text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
-                selected={pathname === item.path}
-                onClick={() => router.push(item.path)}
+                selected={
+                  pathname ===
+                  (item.path ||
+                    (currentRole === "Community Admin"
+                      ? "/admin/community"
+                      : "/admin"))
+                }
+                onClick={() => {
+                  if (item.text === "Dashboard") {
+                    router.push(
+                      currentRole === "Community Admin"
+                        ? "/admin/community"
+                        : "/admin"
+                    );
+                  } else if (item.path) {
+                    router.push(item.path);
+                  }
+                }}
                 sx={{
                   minHeight: 48,
                   justifyContent: open ? "initial" : "center",

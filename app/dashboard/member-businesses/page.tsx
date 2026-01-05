@@ -20,11 +20,74 @@ import {
   Alert,
   CircularProgress,
   Chip,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  InputAdornment,
 } from "@mui/material";
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import SearchIcon from "@mui/icons-material/Search";
 import { useSession } from "next-auth/react";
 import { uploadFileToServer } from "@/utils/uploadHandler";
+
+const CATEGORY_OPTIONS = [
+  "Technology",
+  "Finance",
+  "Retail",
+  "Food & Beverage",
+  "Health",
+  "Education",
+  "Agriculture",
+  "Logistics",
+  "Construction",
+  "Manufacturing",
+  "Services",
+  "Creative",
+  "Other",
+];
+
+const NIGERIA_STATES = [
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
+  "FCT",
+];
 
 interface Business {
   _id: string;
@@ -32,6 +95,7 @@ interface Business {
   description: string;
   category: string;
   location: string;
+  fullAddress?: string;
   contactEmail: string;
   contactPhone: string;
   website?: string;
@@ -52,6 +116,7 @@ export default function MemberBusinessesPage() {
     description: "",
     category: "",
     location: "",
+    fullAddress: "",
     contactEmail: session?.user?.email || "",
     contactPhone: "",
     website: "",
@@ -60,6 +125,10 @@ export default function MemberBusinessesPage() {
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState("All");
+  const [categoryFilter, setCategoryFilter] = React.useState("All");
+  const [locationFilter, setLocationFilter] = React.useState("All");
 
   React.useEffect(() => {
     fetchBusinesses();
@@ -111,7 +180,8 @@ export default function MemberBusinessesPage() {
       !formData.name ||
       !formData.description ||
       !formData.category ||
-      !formData.location
+      !formData.location ||
+      !formData.fullAddress
     ) {
       setSubmitError("Please fill in all required fields");
       return;
@@ -156,6 +226,7 @@ export default function MemberBusinessesPage() {
         description: "",
         category: "",
         location: "",
+        fullAddress: "",
         contactEmail: session?.user?.email || "",
         contactPhone: "",
         website: "",
@@ -178,6 +249,32 @@ export default function MemberBusinessesPage() {
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const categories = React.useMemo(() => CATEGORY_OPTIONS, []);
+
+  const filtered = businesses.filter((b) => {
+    const matchesSearch = [
+      b.name,
+      b.category,
+      b.location,
+      b.fullAddress,
+      b.ownerName,
+      b.description,
+    ]
+      .filter(Boolean)
+      .some((field) => field.toLowerCase().includes(search.toLowerCase()));
+
+    const matchesStatus =
+      statusFilter === "All" || b.status?.toLowerCase() === statusFilter.toLowerCase();
+
+    const matchesCategory =
+      categoryFilter === "All" || b.category === categoryFilter;
+
+    const matchesLocation =
+      locationFilter === "All" || b.location === locationFilter;
+
+    return matchesSearch && matchesStatus && matchesCategory && matchesLocation;
+  });
 
   if (loading) {
     return (
@@ -214,6 +311,66 @@ export default function MemberBusinessesPage() {
         </Button>
       </Box>
 
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search business name, category, owner, location"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <MenuItem value="All">All</MenuItem>
+            <MenuItem value="Pending">Pending</MenuItem>
+            <MenuItem value="Approved">Approved</MenuItem>
+            <MenuItem value="Rejected">Rejected</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Category</InputLabel>
+          <Select
+            label="Category"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <MenuItem value="All">All</MenuItem>
+            {categories.map((cat) => (
+              <MenuItem key={cat} value={cat}>
+                {cat}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Location</InputLabel>
+          <Select
+            label="Location"
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+          >
+            <MenuItem value="All">All</MenuItem>
+            {NIGERIA_STATES.map((state) => (
+              <MenuItem key={state} value={state}>
+                {state}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
       {businesses.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: "center" }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -232,7 +389,7 @@ export default function MemberBusinessesPage() {
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {businesses.map((business) => (
+          {filtered.map((business) => (
             <Grid item xs={12} sm={6} md={4} key={business._id}>
               <Card
                 sx={{
@@ -274,28 +431,38 @@ export default function MemberBusinessesPage() {
                   >
                     📍 {business.location}
                   </Typography>
+                  {business.fullAddress && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
+                      🏠 {business.fullAddress}
+                    </Typography>
+                  )}
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     display="block"
                   >
-                    👤 {business.ownerName}
+                    👤 Owner: {business.ownerName}
                   </Typography>
+                  <Box sx={{ mt: 1, display: "grid", gap: 0.5 }}>
+                    <Typography variant="body2" color="text.primary">
+                      Contact Email: {business.contactEmail}
+                    </Typography>
+                    {business.contactPhone && (
+                      <Typography variant="body2" color="text.primary">
+                        Contact Phone: {business.contactPhone}
+                      </Typography>
+                    )}
+                    {business.website && (
+                      <Typography variant="body2" color="text.primary">
+                        Website: {business.website}
+                      </Typography>
+                    )}
+                  </Box>
                 </CardContent>
-                <CardActions>
-                  {business.website && (
-                    <Button
-                      size="small"
-                      href={business.website}
-                      target="_blank"
-                    >
-                      Visit Website
-                    </Button>
-                  )}
-                  <Button size="small" href={`mailto:${business.contactEmail}`}>
-                    Contact
-                  </Button>
-                </CardActions>
               </Card>
             </Grid>
           ))}
@@ -337,26 +504,47 @@ export default function MemberBusinessesPage() {
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Category"
-                fullWidth
-                value={formData.category}
-                onChange={(e) => handleInputChange("category", e.target.value)}
-                placeholder="e.g., Retail, Services, Food"
-                required
-              />
+              <FormControl fullWidth required>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  label="Category"
+                  value={formData.category}
+                  onChange={(e) => handleInputChange("category", e.target.value)}
+                >
+                  {categories.map((cat) => (
+                    <MenuItem key={cat} value={cat}>
+                      {cat}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Location"
-                fullWidth
-                value={formData.location}
-                onChange={(e) => handleInputChange("location", e.target.value)}
-                placeholder="Business location"
-                required
-              />
+              <FormControl fullWidth required>
+                <InputLabel>Location (State)</InputLabel>
+                <Select
+                  label="Location (State)"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange("location", e.target.value)}
+                >
+                  {NIGERIA_STATES.map((state) => (
+                    <MenuItem key={state} value={state}>
+                      {state}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
+
+          <TextField
+            label="Full Business Address"
+            fullWidth
+            value={formData.fullAddress}
+            onChange={(e) => handleInputChange("fullAddress", e.target.value)}
+            placeholder="Street, city, state"
+            required
+          />
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>

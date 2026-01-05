@@ -58,17 +58,32 @@ export interface IUser extends Document {
     canModifyCommunityFunctions: boolean;
   };
   verificationInfo?: string;
+  kyc?: {
+    isVerified: boolean;
+    verifiedAt?: Date;
+    verifiedBy?: mongoose.Types.ObjectId;
+    verificationNotes?: string;
+    rejectionReason?: string;
+    rejectionDate?: Date;
+    idType?: string;
+    idNumber?: string;
+    submittedAt?: Date;
+  };
   settings?: {
     enableBiometrics: boolean;
     theme: "light" | "dark" | "system";
     profileVisible: boolean;
     notifications: {
-      email: {
+      inApp: boolean; // In-app notifications
+      email: boolean; // Email notifications
+      emailPreferences: {
         announcements: boolean;
         investments: boolean;
         withdrawals: boolean;
+        kyc: boolean;
+        proposals: boolean;
+        events: boolean;
       };
-      push: boolean;
     };
   };
   createdAt: Date;
@@ -139,6 +154,17 @@ const UserSchema = new Schema<IUser>(
       canModifyCommunityFunctions: { type: Boolean, default: false },
     },
     verificationInfo: String,
+    kyc: {
+      isVerified: { type: Boolean, default: false },
+      verifiedAt: Date,
+      verifiedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      verificationNotes: String,
+      rejectionReason: String,
+      rejectionDate: Date,
+      idType: String,
+      idNumber: String,
+      submittedAt: Date,
+    },
     settings: {
       enableBiometrics: { type: Boolean, default: false },
       theme: {
@@ -148,12 +174,16 @@ const UserSchema = new Schema<IUser>(
       },
       profileVisible: { type: Boolean, default: true },
       notifications: {
-        email: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        emailPreferences: {
           announcements: { type: Boolean, default: true },
           investments: { type: Boolean, default: true },
           withdrawals: { type: Boolean, default: true },
+          kyc: { type: Boolean, default: true },
+          proposals: { type: Boolean, default: true },
+          events: { type: Boolean, default: true },
         },
-        push: { type: Boolean, default: true },
       },
     },
   },

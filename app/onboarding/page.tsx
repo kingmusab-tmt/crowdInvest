@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Avatar,
 } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -55,13 +56,18 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
+  const [uploadingImage, setUploadingImage] = React.useState(false);
   const [communities, setCommunities] = React.useState<Community[]>([]);
   const [error, setError] = React.useState<string | null>(null);
   const [termsOpen, setTermsOpen] = React.useState(false);
   const [privacyOpen, setPrivacyOpen] = React.useState(false);
+  const [profileImage, setProfileImage] = React.useState<string | null>(
+    session?.user?.image || null
+  );
 
   const [formData, setFormData] = React.useState({
     community: "",
+    profileImageUrl: session?.user?.image || "",
     name: session?.user?.name || "",
     dateOfBirth: null as Date | null,
     placeOfWork: "",
@@ -99,6 +105,49 @@ export default function OnboardingPage() {
     }
     fetchCommunities();
   }, [session, router]);
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const formDataFile = new FormData();
+      formDataFile.append("file", file);
+      formDataFile.append("folder", "profiles");
+
+      // Generate filename from file name and timestamp
+      const timestamp = Date.now();
+      const filename = `profile-${timestamp}-${file.name}`;
+
+      const response = await fetch(
+        `/api/newupload?filename=${encodeURIComponent(filename)}`,
+        {
+          method: "POST",
+          body: formDataFile,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to upload image");
+      }
+
+      const data = await response.json();
+      const imageUrl = data.link || data.url; // API returns 'link' but also support 'url'
+
+      setProfileImage(imageUrl);
+      setFormData({ ...formData, profileImageUrl: imageUrl });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   async function fetchCommunities() {
     try {
@@ -161,10 +210,16 @@ export default function OnboardingPage() {
     setError(null);
 
     try {
+      const submissionData = {
+        ...formData,
+        // Use the uploaded image URL or fall back to Google image
+        profileImageUrl: formData.profileImageUrl || session?.user?.image || "",
+      };
+
       const response = await fetch("/api/users/complete-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
       if (!response.ok) {
@@ -264,6 +319,49 @@ export default function OnboardingPage() {
               Personal Information
             </Typography>
             <Grid container spacing={3}>
+              {/* Profile Image Section */}
+              <Grid item xs={12} sx={{ textAlign: "center", mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                  Profile Photo
+                </Typography>
+                <Box
+                  sx={{
+                    mb: 2,
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Avatar
+                    src={profileImage || session?.user?.image || ""}
+                    alt="Profile"
+                    sx={{ width: 120, height: 120 }}
+                  />
+                </Box>
+                {session?.user?.image && !profileImage && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 1 }}
+                  >
+                    Using your Google account image
+                  </Typography>
+                )}
+                <Button
+                  variant="outlined"
+                  component="label"
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? "Uploading..." : "Upload New Photo"}
+                  <input
+                    hidden
+                    accept="image/*"
+                    type="file"
+                    onChange={handleImageUpload}
+                  />
+                </Button>
+              </Grid>
+
               <Grid item xs={12} md={6}>
                 <TextField
                   label="Full Name *"

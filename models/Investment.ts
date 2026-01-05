@@ -2,18 +2,15 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IInvestment extends Document {
   title: string;
-  description: string;
-  longDescription: string;
-  amount: number;
-  goal: number;
-  progress: number;
-  investors: number;
-  status: "Active" | "Funded" | "Completed";
-  imageUrl: string;
-  imageHint: string;
-  projectedROI: string;
-  term: string;
-  risk: "Low" | "Medium" | "High";
+  description?: string;
+  investmentType: "stock" | "business" | "crypto" | "real-estate";
+  basePrice: number;
+  currentPrice: number;
+  quantity: number;
+  totalInvested: number;
+  dividendReceived: number;
+  status: "Active" | "Completed" | "Sold";
+  community?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,25 +18,25 @@ export interface IInvestment extends Document {
 const InvestmentSchema = new Schema<IInvestment>(
   {
     title: { type: String, required: true },
-    description: { type: String, required: true },
-    longDescription: { type: String, required: true },
-    amount: { type: Number, required: true },
-    goal: { type: Number, required: true },
-    progress: { type: Number, default: 0 },
-    investors: { type: Number, default: 0 },
+    description: String,
+    investmentType: {
+      type: String,
+      enum: ["stock", "business", "crypto", "real-estate"],
+      required: true,
+    },
+    basePrice: { type: Number, required: true },
+    currentPrice: { type: Number, required: true },
+    quantity: { type: Number, required: true },
+    totalInvested: { type: Number, required: true },
+    dividendReceived: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["Active", "Funded", "Completed"],
+      enum: ["Active", "Completed", "Sold"],
       default: "Active",
     },
-    imageUrl: String,
-    imageHint: String,
-    projectedROI: String,
-    term: String,
-    risk: {
-      type: String,
-      enum: ["Low", "Medium", "High"],
-      default: "Medium",
+    community: {
+      type: Schema.Types.ObjectId,
+      ref: "Community",
     },
   },
   { timestamps: true }

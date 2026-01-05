@@ -8,146 +8,169 @@ import {
   Typography,
   Paper,
   Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  LinearProgress,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Alert,
   CircularProgress,
   Stack,
+  Alert,
+  Tabs,
+  Tab,
+  Chip,
   Divider,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import GroupIcon from "@mui/icons-material/Group";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useSession } from "next-auth/react";
+import MemberInvestmentCard from "@/components/MemberInvestmentCard";
+import InvestmentSuggestionForm from "@/components/InvestmentSuggestionForm";
+import {
+  getCommunityInvestments,
+  getCommunityInvestmentSuggestions,
+} from "@/services/investmentService";
 
-interface Investment {
-  _id: string;
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`investment-tabpanel-${index}`}
+      aria-labelledby={`investment-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+interface CommunityInvestment {
+  id: string;
   title: string;
+  investmentType: "stock" | "business" | "crypto" | "real-estate";
+  basePrice: number;
+  currentPrice: number;
+  quantity: number;
+  totalInvested: number;
+  currentValue: number;
+  profitOrLoss: number;
+  profitOrLossPercentage: number;
+  dividendReceived: number;
+  status: "Active" | "Completed" | "Sold";
+  purchaseDate: string | Date;
+}
+
+interface InvestmentSuggestion {
+  id: string;
+  title: string;
+  investmentType: "stock" | "business" | "crypto" | "real-estate";
   description: string;
-  longDescription: string;
-  amount: number;
-  goal: number;
-  progress: number;
-  investors: number;
-  status: "Active" | "Funded" | "Completed";
-  imageUrl?: string;
-  projectedROI?: string;
-  term?: string;
-  risk: "Low" | "Medium" | "High";
+  reason: string;
+  amountRequired: number;
+  timeframe: string;
+  riskLevel: "Low" | "Medium" | "High";
+  status: "Pending" | "Approved" | "Rejected" | "Voting";
+  suggestedBy: { name?: string; email?: string } | any;
   createdAt: string;
 }
 
 export default function InvestmentsPage() {
   const { data: session } = useSession();
-  const [investments, setInvestments] = React.useState<Investment[]>([]);
+  const [tabValue, setTabValue] = React.useState(0);
+  const [communityInvestments, setCommunityInvestments] = React.useState<
+    CommunityInvestment[]
+  >([]);
+  const [suggestions, setSuggestions] = React.useState<InvestmentSuggestion[]>(
+    []
+  );
+  const [allCommunityVotingSuggestions, setAllCommunityVotingSuggestions] =
+    React.useState<InvestmentSuggestion[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [selectedInvestment, setSelectedInvestment] =
-    React.useState<Investment | null>(null);
-  const [investDialogOpen, setInvestDialogOpen] = React.useState(false);
-  const [investAmount, setInvestAmount] = React.useState("");
-  const [investError, setInvestError] = React.useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [suggestionFormOpen, setSuggestionFormOpen] = React.useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    fetchInvestments();
-  }, []);
+    if (session?.user?.community) {
+      loadInvestments();
+    }
+  }, [session?.user?.community]);
 
-  async function fetchInvestments() {
+  async function loadInvestments() {
     try {
-      const res = await fetch("/api/investments");
-      if (res.ok) {
-        const data = await res.json();
-        setInvestments(data);
-      }
+      setError(null);
+      const [investments, suggestions] = await Promise.all([
+        getCommunityInvestments(session?.user?.community || ""),
+        getCommunityInvestmentSuggestions(session?.user?.community || ""),
+      ]);
+      setCommunityInvestments(investments as unknown as CommunityInvestment[]);
+
+      // Filter suggestions - all suggestions for display
+      const allSuggestions = suggestions as unknown as InvestmentSuggestion[];
+      setSuggestions(allSuggestions);
+
+      // Filter only voting suggestions for the voting tab
+      const votingSuggestions = allSuggestions.filter(
+        (s) => s.status === "Voting" || s.status === "Approved"
+      );
+      setAllCommunityVotingSuggestions(votingSuggestions);
     } catch (err) {
       console.error("Failed to load investments", err);
+      setError("Failed to load investments");
     } finally {
       setLoading(false);
     }
   }
 
-  const handleInvestClick = (investment: Investment) => {
-    setSelectedInvestment(investment);
-    setInvestDialogOpen(true);
-    setInvestAmount("");
-    setInvestError(null);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadInvestments();
+    setRefreshing(false);
   };
 
-  const handleInvest = async () => {
-    setInvestError(null);
-
-    const amount = parseFloat(investAmount);
-    if (!amount || amount <= 0) {
-      setInvestError("Please enter a valid amount");
-      return;
-    }
-
-    if (!selectedInvestment) return;
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/investments/invest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          investmentId: selectedInvestment._id,
-          amount,
-          userId: session?.user?.id,
-          userEmail: session?.user?.email,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to process investment");
-      }
-
-      setInvestDialogOpen(false);
-      setInvestAmount("");
-      fetchInvestments();
-    } catch (error) {
-      setInvestError(
-        error instanceof Error ? error.message : "Failed to process investment"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
   };
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case "Low":
-        return "success";
-      case "Medium":
-        return "warning";
-      case "High":
-        return "error";
-      default:
-        return "default";
-    }
+  const calculateTotalStats = () => {
+    return {
+      totalInvested: communityInvestments.reduce(
+        (sum, inv) => sum + inv.totalInvested,
+        0
+      ),
+      totalCurrentValue: communityInvestments.reduce(
+        (sum, inv) => sum + inv.currentValue,
+        0
+      ),
+      totalProfitLoss: communityInvestments.reduce(
+        (sum, inv) => sum + inv.profitOrLoss,
+        0
+      ),
+      totalDividends: communityInvestments.reduce(
+        (sum, inv) => sum + inv.dividendReceived,
+        0
+      ),
+      activeInvestments: communityInvestments.filter(
+        (inv) => inv.status === "Active"
+      ).length,
+    };
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "primary";
-      case "Funded":
-        return "success";
-      case "Completed":
-        return "default";
-      default:
-        return "default";
-    }
-  };
+  // Get only suggestions made by current user
+  const userSuggestions = suggestions.filter(
+    (s) =>
+      s.suggestedBy?.email === session?.user?.email ||
+      s.suggestedBy?.name === session?.user?.name
+  );
+
+  const stats = calculateTotalStats();
+  const totalReturn = stats.totalProfitLoss + stats.totalDividends;
+  const overallROI =
+    stats.totalInvested > 0 ? (totalReturn / stats.totalInvested) * 100 : 0;
 
   if (loading) {
     return (
@@ -159,91 +182,201 @@ export default function InvestmentsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-          Investment Opportunities
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Browse and invest in community-backed opportunities
-        </Typography>
-      </Box>
-
-      {/* Summary Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, textAlign: "center" }}>
-            <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
-              {investments.filter((i) => i.status === "Active").length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Active Opportunities
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, textAlign: "center" }}>
-            <Typography
-              variant="h4"
-              color="success.main"
-              sx={{ fontWeight: 600 }}
-            >
-              ₦
-              {investments
-                .reduce((sum, inv) => sum + inv.amount, 0)
-                .toLocaleString()}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total Invested
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, textAlign: "center" }}>
-            <Typography
-              variant="h4"
-              color="warning.main"
-              sx={{ fontWeight: 600 }}
-            >
-              {investments.reduce((sum, inv) => sum + inv.investors, 0)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total Investors
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Investments Grid */}
-      {investments.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: "center" }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No investment opportunities available
+      {/* Header */}
+      <Box
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "start",
+        }}
+      >
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+            Investments
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Check back soon for new opportunities!
+            View your portfolio and explore investment opportunities
           </Typography>
-        </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {investments.map((investment) => (
-            <Grid item xs={12} md={6} lg={4} key={investment._id}>
-              <Card
+        </Box>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            startIcon={<RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setSuggestionFormOpen(true)}
+          >
+            Suggest Investment
+          </Button>
+        </Box>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Overall Stats */}
+      {communityInvestments.length > 0 && (
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="caption" color="textSecondary">
+                Total Invested
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, color: "#1976d2" }}
+              >
+                $
+                {stats.totalInvested.toLocaleString("en-US", {
+                  maximumFractionDigits: 2,
+                })}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="caption" color="textSecondary">
+                Current Value
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, color: "#2e7d32" }}
+              >
+                $
+                {stats.totalCurrentValue.toLocaleString("en-US", {
+                  maximumFractionDigits: 2,
+                })}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="caption" color="textSecondary">
+                Profit/Loss
+              </Typography>
+              <Typography
+                variant="h6"
                 sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
+                  fontWeight: 700,
+                  color: stats.totalProfitLoss >= 0 ? "#4caf50" : "#f44336",
                 }}
               >
-                {investment.imageUrl && (
-                  <CardMedia
-                    component="img"
-                    height="180"
-                    image={investment.imageUrl}
-                    alt={investment.title}
-                    sx={{ objectFit: "cover" }}
-                  />
-                )}
-                <CardContent sx={{ flexGrow: 1 }}>
+                {stats.totalProfitLoss >= 0 ? "+" : ""}$
+                {stats.totalProfitLoss.toLocaleString("en-US", {
+                  maximumFractionDigits: 2,
+                })}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="caption" color="textSecondary">
+                Overall ROI
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: overallROI >= 0 ? "#4caf50" : "#f44336",
+                }}
+              >
+                {overallROI >= 0 ? "+" : ""}
+                {overallROI.toFixed(2)}%
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+      )}
+
+      {/* Tabs */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="Investment tabs"
+          sx={{
+            borderBottom: 1,
+            borderColor: "divider",
+            bgcolor: "background.paper",
+          }}
+        >
+          <Tab
+            label={`Community Investments (${communityInvestments.length})`}
+            id="investment-tab-0"
+            aria-controls="investment-tabpanel-0"
+          />
+          <Tab
+            label={`Your Suggestions (${userSuggestions.length})`}
+            id="investment-tab-1"
+            aria-controls="investment-tabpanel-1"
+          />
+          <Tab
+            label={`Investment Voting (${allCommunityVotingSuggestions.length})`}
+            id="investment-tab-2"
+            aria-controls="investment-tabpanel-2"
+          />
+        </Tabs>
+
+        {/* Tab 1: Community Investments */}
+        <TabPanel value={tabValue} index={0}>
+          {communityInvestments.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No community investments yet
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                Start by suggesting an investment opportunity for your community
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setSuggestionFormOpen(true)}
+              >
+                Suggest Investment
+              </Button>
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {communityInvestments.map((investment) => (
+                <Grid item xs={12} md={6} lg={4} key={investment.id}>
+                  <MemberInvestmentCard {...investment} />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </TabPanel>
+
+        {/* Tab 2: Your Investment Suggestions */}
+        <TabPanel value={tabValue} index={1}>
+          {userSuggestions.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No investment suggestions yet
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                Be the first to suggest an investment opportunity
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setSuggestionFormOpen(true)}
+              >
+                Suggest Investment
+              </Button>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {userSuggestions.map((suggestion) => (
+                <Paper key={suggestion.id} sx={{ p: 2 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -252,197 +385,320 @@ export default function InvestmentsPage() {
                       mb: 1,
                     }}
                   >
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {investment.title}
-                    </Typography>
-                    <Chip
-                      label={investment.status}
-                      color={getStatusColor(investment.status) as any}
-                      size="small"
-                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        {suggestion.title}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Your Suggestion
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={1}>
+                      <Chip
+                        label={suggestion.investmentType}
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Chip
+                        label={suggestion.status}
+                        size="small"
+                        color={
+                          suggestion.status === "Voting"
+                            ? "success"
+                            : suggestion.status === "Approved"
+                            ? "warning"
+                            : suggestion.status === "Pending"
+                            ? "info"
+                            : "default"
+                        }
+                      />
+                    </Stack>
                   </Box>
 
                   <Typography
                     variant="body2"
-                    color="text.secondary"
+                    color="textSecondary"
                     sx={{ mb: 2 }}
                   >
-                    {investment.description}
+                    {suggestion.description}
                   </Typography>
 
-                  <Box sx={{ mb: 2 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        mb: 1,
-                      }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Progress
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {investment.progress}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={investment.progress}
-                      sx={{ height: 8, borderRadius: 4 }}
-                    />
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        mt: 0.5,
-                      }}
-                    >
-                      <Typography variant="caption" color="text.secondary">
-                        ₦{investment.amount.toLocaleString()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Goal: ₦{investment.goal.toLocaleString()}
-                      </Typography>
-                    </Box>
+                  <Box
+                    sx={{ mb: 2, p: 1.5, bgcolor: "#f5f5f5", borderRadius: 1 }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Why this is genuine & profitable:
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {suggestion.reason}
+                    </Typography>
                   </Box>
 
-                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                    <Chip
-                      icon={<TrendingUpIcon />}
-                      label={`${investment.projectedROI || "N/A"} ROI`}
-                      size="small"
-                      variant="outlined"
-                    />
-                    <Chip
-                      icon={<GroupIcon />}
-                      label={`${investment.investors} investors`}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </Stack>
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Amount Required
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          $
+                          {suggestion.amountRequired.toLocaleString("en-US", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Timeframe
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {suggestion.timeframe}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Risk Level
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            color:
+                              suggestion.riskLevel === "High"
+                                ? "#f44336"
+                                : suggestion.riskLevel === "Medium"
+                                ? "#ff9800"
+                                : "#4caf50",
+                          }}
+                        >
+                          {suggestion.riskLevel}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Suggested On
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {new Date(suggestion.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
 
-                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                    <Chip
-                      label={investment.risk}
-                      color={getRiskColor(investment.risk) as any}
-                      size="small"
-                    />
-                    {investment.term && (
+                  <Divider />
+
+                  <Box sx={{ mt: 2, pt: 2 }}>
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      sx={{ display: "block", mb: 1 }}
+                    >
+                      Status Updates:
+                    </Typography>
+                    {suggestion.status === "Pending" && (
+                      <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
+                        ⏳ Awaiting review by community admin
+                      </Alert>
+                    )}
+                    {suggestion.status === "Approved" && (
+                      <Alert severity="success" sx={{ fontSize: "0.875rem" }}>
+                        ✓ Approved! Moving to voting phase
+                      </Alert>
+                    )}
+                    {suggestion.status === "Voting" && (
+                      <Alert severity="warning" sx={{ fontSize: "0.875rem" }}>
+                        🗳️ Your suggestion is now in voting phase. Community
+                        members are reviewing it
+                      </Alert>
+                    )}
+                    {suggestion.status === "Rejected" && (
+                      <Alert severity="error" sx={{ fontSize: "0.875rem" }}>
+                        ✗ This suggestion was not approved
+                      </Alert>
+                    )}
+                  </Box>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </TabPanel>
+
+        {/* Tab 3: Investment Voting */}
+        <TabPanel value={tabValue} index={2}>
+          {allCommunityVotingSuggestions.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No investments available for voting
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                Check back later when community members submit investment
+                suggestions
+              </Typography>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {allCommunityVotingSuggestions.map((suggestion) => (
+                <Paper
+                  key={suggestion.id}
+                  sx={{ p: 2, border: "2px solid #1976d2" }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "start",
+                      mb: 1,
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        {suggestion.title}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Suggested by:{" "}
+                        {suggestion.suggestedBy?.name || "Community Member"}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={1}>
                       <Chip
-                        icon={<AccessTimeIcon />}
-                        label={investment.term}
+                        label={suggestion.investmentType}
                         size="small"
                         variant="outlined"
                       />
-                    )}
-                  </Stack>
+                      <Chip
+                        label={suggestion.status}
+                        size="small"
+                        color={
+                          suggestion.status === "Voting"
+                            ? "success"
+                            : suggestion.status === "Approved"
+                            ? "warning"
+                            : "default"
+                        }
+                      />
+                    </Stack>
+                  </Box>
 
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={() => handleInvestClick(investment)}
-                    disabled={investment.status !== "Active"}
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ mb: 2 }}
                   >
-                    {investment.status === "Active"
-                      ? "Invest Now"
-                      : investment.status}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+                    {suggestion.description}
+                  </Typography>
 
-      {/* Invest Dialog */}
-      <Dialog
-        open={investDialogOpen}
-        onClose={() => setInvestDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Invest in {selectedInvestment?.title}</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          {investError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {investError}
-            </Alert>
+                  <Box
+                    sx={{ mb: 2, p: 1.5, bgcolor: "#f5f5f5", borderRadius: 1 }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Why this is genuine & profitable:
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {suggestion.reason}
+                    </Typography>
+                  </Box>
+
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Amount Required
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          $
+                          {suggestion.amountRequired.toLocaleString("en-US", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Timeframe
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {suggestion.timeframe}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Risk Level
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            color:
+                              suggestion.riskLevel === "High"
+                                ? "#f44336"
+                                : suggestion.riskLevel === "Medium"
+                                ? "#ff9800"
+                                : "#4caf50",
+                          }}
+                        >
+                          {suggestion.riskLevel}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">
+                          Suggested On
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {new Date(suggestion.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  <Divider />
+
+                  <Box sx={{ mt: 2, pt: 2 }}>
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      sx={{ display: "block", mb: 2, fontWeight: 600 }}
+                    >
+                      Vote on this investment proposal:
+                    </Typography>
+                    <Stack direction="row" spacing={2}>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        sx={{ flex: 1 }}
+                      >
+                        👍 Vote Yes
+                      </Button>
+                      <Button variant="outlined" color="error" sx={{ flex: 1 }}>
+                        👎 Vote No
+                      </Button>
+                    </Stack>
+                  </Box>
+                </Paper>
+              ))}
+            </Stack>
           )}
+        </TabPanel>
+      </Paper>
 
-          {selectedInvestment && (
-            <>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {selectedInvestment.longDescription ||
-                  selectedInvestment.description}
-              </Typography>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Projected ROI
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {selectedInvestment.projectedROI || "N/A"}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Risk Level
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {selectedInvestment.risk}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Term
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {selectedInvestment.term || "N/A"}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Current Investors
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {selectedInvestment.investors}
-                  </Typography>
-                </Grid>
-              </Grid>
-
-              <Divider sx={{ my: 2 }} />
-
-              <TextField
-                label="Investment Amount"
-                fullWidth
-                type="number"
-                value={investAmount}
-                onChange={(e) => setInvestAmount(e.target.value)}
-                placeholder="Enter amount in Naira"
-                InputProps={{
-                  startAdornment: <Typography sx={{ mr: 1 }}>₦</Typography>,
-                }}
-                helperText={`Remaining to goal: ₦${(
-                  selectedInvestment.goal - selectedInvestment.amount
-                ).toLocaleString()}`}
-              />
-            </>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setInvestDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleInvest}
-            variant="contained"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Processing..." : "Confirm Investment"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Investment Suggestion Form Modal */}
+      <InvestmentSuggestionForm
+        open={suggestionFormOpen}
+        onClose={() => setSuggestionFormOpen(false)}
+        communityId={session?.user?.community || ""}
+        userId={session?.user?.id || ""}
+        onSuccess={handleRefresh}
+      />
     </Container>
   );
 }

@@ -20,8 +20,6 @@ import Avatar from "@mui/material/Avatar";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
-import Badge from "@mui/material/Badge";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
@@ -32,8 +30,10 @@ import HelpIcon from "@mui/icons-material/Help";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import LogoutIcon from "@mui/icons-material/Logout";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import NotificationBell from "./NotificationBell";
 
 const drawerWidth = 260;
 
@@ -120,9 +120,9 @@ const menuItems = [
     path: "/dashboard/member-businesses",
   },
   {
-    text: "Voting & Proposals",
+    text: "Proposals",
     icon: <HowToVoteIcon />,
-    path: "/dashboard/voting",
+    path: "/dashboard/proposals",
   },
   // Combined Events + Submit Event into a single section
   { text: "Events", icon: <EventIcon />, path: "/dashboard/events" },
@@ -197,17 +197,13 @@ export default function UserDashboardLayout({
             Balance: ₦{(session?.user as any)?.balance?.toLocaleString() || "0"}
           </Typography>
 
-          <IconButton color="inherit" sx={{ mr: 2 }}>
-            <Badge badgeContent={3} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
+          <NotificationBell />
 
           <Tooltip title="Account settings">
-            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0 }}>
+            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0, ml: 1 }}>
               <Avatar
                 alt={session?.user?.name || "User"}
-                src={session?.user?.image || "/avatar.png"}
+                src={session?.user?.image || ""}
               />
             </IconButton>
           </Tooltip>

@@ -8,145 +8,197 @@ import {
   Typography,
   Paper,
   Grid,
+  CircularProgress,
+  Stack,
+  Alert,
+  Tabs,
+  Tab,
+  Chip,
+  Divider,
   Card,
   CardContent,
-  CardActions,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Alert,
-  CircularProgress,
-  Stack,
-  Divider,
-  MenuItem,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import HelpIcon from "@mui/icons-material/Help";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import { useSession } from "next-auth/react";
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`assistance-tabpanel-${index}`}
+      aria-labelledby={`assistance-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 interface AssistanceRequest {
   _id: string;
-  userName: string;
-  userEmail: string;
+  title: string;
+  description: string;
+  assistanceType: string;
+  status: "Pending" | "Approved" | "Rejected" | "Voting";
+  requestedBy: { name?: string; email?: string } | any;
   community: string;
-  purpose: string;
-  amount: number;
-  returnDate: string;
-  status: "Pending" | "Approved" | "Rejected";
   createdAt: string;
+  rejectionReason?: string;
+  votes?: Array<{
+    userId: string;
+    vote: "assist" | "not-assist";
+  }>;
 }
 
 export default function AssistancePage() {
   const { data: session } = useSession();
-  const [requests, setRequests] = React.useState<AssistanceRequest[]>([]);
+  const [tabValue, setTabValue] = React.useState(0);
+  const [communityRequests, setCommunityRequests] = React.useState<
+    AssistanceRequest[]
+  >([]);
+  const [userRequests, setUserRequests] = React.useState<AssistanceRequest[]>(
+    []
+  );
+  const [votingRequests, setVotingRequests] = React.useState<
+    AssistanceRequest[]
+  >([]);
   const [loading, setLoading] = React.useState(true);
-  const [openDialog, setOpenDialog] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    community: "",
-    purpose: "",
-    amount: "",
-    returnDate: "",
+  const [requestFormOpen, setRequestFormOpen] = React.useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [success, setSuccess] = React.useState<string | null>(null);
+  const [requestForm, setRequestForm] = React.useState({
+    title: "",
+    description: "",
+    assistanceType: "financial",
   });
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    fetchRequests();
-  }, []);
+    if (session?.user?.community) {
+      loadRequests();
+    }
+  }, [session?.user?.community]);
 
-  async function fetchRequests() {
+  async function loadRequests() {
     try {
-      const res = await fetch("/api/assistance");
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(data);
+      setError(null);
+      setLoading(true);
+
+      const queryParams = `?community=${session?.user?.community}`;
+      const userQueryParams = `?community=${session?.user?.community}&email=${session?.user?.email}`;
+
+      const [allRes, userRes] = await Promise.all([
+        fetch(`/api/assistance${queryParams}`),
+        fetch(`/api/assistance/user${userQueryParams}`),
+      ]);
+
+      if (allRes.ok) {
+        const allRequests = await allRes.json();
+        setCommunityRequests(allRequests);
+
+        // Filter voting requests
+        const votingReqs = allRequests.filter(
+          (r: AssistanceRequest) =>
+            r.status === "Voting" || r.status === "Approved"
+        );
+        setVotingRequests(votingReqs);
+      }
+
+      if (userRes.ok) {
+        const userReqs = await userRes.json();
+        setUserRequests(userReqs);
       }
     } catch (err) {
       console.error("Failed to load assistance requests", err);
+      setError("Failed to load assistance requests");
     } finally {
       setLoading(false);
     }
   }
 
-  const handleSubmit = async () => {
-    setSubmitError(null);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadRequests();
+    setRefreshing(false);
+  };
 
-    if (
-      !formData.community ||
-      !formData.purpose ||
-      !formData.amount ||
-      !formData.returnDate
-    ) {
-      setSubmitError("Please fill in all required fields");
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!requestForm.title || !requestForm.description) {
+      setError("Please fill in all fields");
       return;
     }
-
-    const amount = parseFloat(formData.amount);
-    if (!amount || amount <= 0) {
-      setSubmitError("Please enter a valid amount");
-      return;
-    }
-
-    setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/assistance", {
+      const res = await fetch("/api/assistance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          community: formData.community,
-          purpose: formData.purpose,
-          amount,
-          returnDate: formData.returnDate,
-          userId: session?.user?.id,
-          userEmail: session?.user?.email,
-          userName: session?.user?.name,
+          ...requestForm,
+          community: session?.user?.community,
+          requestedBy: session?.user?.email,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to submit assistance request");
+      if (res.ok) {
+        setSuccess("Assistance request created successfully");
+        setRequestForm({
+          title: "",
+          description: "",
+          assistanceType: "financial",
+        });
+        setRequestFormOpen(false);
+        loadRequests();
+      } else {
+        setError("Failed to create assistance request");
       }
+    } catch (err) {
+      setError("Error creating assistance request");
+    }
+  };
 
-      setFormData({
-        community: "",
-        purpose: "",
-        amount: "",
-        returnDate: "",
+  const handleVote = async (
+    requestId: string,
+    vote: "assist" | "not-assist"
+  ) => {
+    try {
+      const res = await fetch(`/api/assistance/${requestId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vote, userId: session?.user?.email }),
       });
-      setOpenDialog(false);
-      fetchRequests();
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "Failed to submit request"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Approved":
-        return "success";
-      case "Pending":
-        return "warning";
-      case "Rejected":
-        return "error";
-      default:
-        return "default";
+      if (res.ok) {
+        setSuccess(
+          `Vote recorded: ${vote === "assist" ? "ASSIST" : "NOT ASSIST"}`
+        );
+        loadRequests();
+      } else {
+        setError("Failed to record vote");
+      }
+    } catch (err) {
+      setError("Error recording vote");
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   if (loading) {
@@ -157,272 +209,413 @@ export default function AssistancePage() {
     );
   }
 
-  const userRequests = requests.filter(
-    (r) => r.userEmail === session?.user?.email
-  );
-  const approved = requests.filter((r) => r.status === "Approved").length;
-  const pending = requests.filter((r) => r.status === "Pending").length;
-
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header */}
       <Box
         sx={{
+          mb: 4,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 4,
         }}
       >
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-            Request Assistance
+            Community Assistance
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Request financial assistance from the community
+          <Typography variant="body2" color="textSecondary">
+            Request assistance and help other community members
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenDialog(true)}
-        >
-          New Request
-        </Button>
-      </Box>
-
-      {/* Summary Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, textAlign: "center" }}>
-            <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
-              {userRequests.length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Your Requests
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, textAlign: "center" }}>
-            <Typography
-              variant="h4"
-              color="success.main"
-              sx={{ fontWeight: 600 }}
-            >
-              {approved}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Approved
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, textAlign: "center" }}>
-            <Typography
-              variant="h4"
-              color="warning.main"
-              sx={{ fontWeight: 600 }}
-            >
-              {pending}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Pending Review
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Requests Grid */}
-      {userRequests.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: "center" }}>
-          <HelpIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No assistance requests yet
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Submit a request to get financial assistance from the community
-          </Typography>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            startIcon={<RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            Refresh
+          </Button>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setOpenDialog(true)}
+            onClick={() => setRequestFormOpen(true)}
           >
-            Submit Request
+            Request Assistance
           </Button>
-        </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {userRequests.map((request) => (
-            <Grid item xs={12} md={6} key={request._id}>
-              <Card
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  borderLeft: 4,
-                  borderLeftColor: `${getStatusColor(request.status)}.main`,
-                }}
-              >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                      mb: 2,
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {request.purpose}
-                    </Typography>
-                    <Chip
-                      label={request.status}
-                      color={getStatusColor(request.status) as any}
-                      size="small"
-                    />
-                  </Box>
+        </Box>
+      </Box>
 
-                  <Divider sx={{ my: 1.5 }} />
-
-                  <Grid container spacing={1.5}>
-                    <Grid item xs={6}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                      >
-                        Amount Requested
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 600, color: "primary.main" }}
-                      >
-                        ₦{request.amount.toLocaleString()}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                      >
-                        Return Date
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {formatDate(request.returnDate)}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                      >
-                        Community
-                      </Typography>
-                      <Typography variant="body2">
-                        {request.community}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                      >
-                        Submitted
-                      </Typography>
-                      <Typography variant="body2">
-                        {formatDate(request.createdAt)}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert
+          severity="success"
+          sx={{ mb: 3 }}
+          onClose={() => setSuccess(null)}
+        >
+          {success}
+        </Alert>
       )}
 
-      {/* New Request Dialog */}
+      {/* Tabs */}
+      <Paper>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="Assistance tabs"
+          sx={{ borderBottom: 1, borderColor: "divider" }}
+        >
+          <Tab
+            label={`Community Requests (${communityRequests.length})`}
+            id="assistance-tab-0"
+            aria-controls="assistance-tabpanel-0"
+          />
+          <Tab
+            label={`My Requests (${userRequests.length})`}
+            id="assistance-tab-1"
+            aria-controls="assistance-tabpanel-1"
+          />
+          <Tab
+            label={`Voting (${votingRequests.length})`}
+            id="assistance-tab-2"
+            aria-controls="assistance-tabpanel-2"
+          />
+        </Tabs>
+
+        {/* Tab 1: Community Requests */}
+        <TabPanel value={tabValue} index={0}>
+          {communityRequests.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No assistance requests yet
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                Be the first to request assistance
+              </Typography>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {communityRequests.map((request) => (
+                <Card key={request._id}>
+                  <CardContent>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 2,
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {request.title}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          By: {request.requestedBy?.name || "Community Member"}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={request.status}
+                        color={
+                          request.status === "Approved"
+                            ? "success"
+                            : request.status === "Rejected"
+                            ? "error"
+                            : request.status === "Voting"
+                            ? "info"
+                            : "default"
+                        }
+                      />
+                    </Box>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                      {request.description}
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <Chip
+                        label={request.assistanceType}
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Typography variant="caption" color="textSecondary">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </TabPanel>
+
+        {/* Tab 2: My Requests */}
+        <TabPanel value={tabValue} index={1}>
+          {userRequests.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                You haven't requested assistance yet
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                Start by requesting assistance from your community
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setRequestFormOpen(true)}
+              >
+                Request Assistance
+              </Button>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {userRequests.map((request) => (
+                <Card key={request._id}>
+                  <CardContent>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 2,
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {request.title}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={request.status}
+                        color={
+                          request.status === "Approved"
+                            ? "success"
+                            : request.status === "Rejected"
+                            ? "error"
+                            : request.status === "Voting"
+                            ? "info"
+                            : "default"
+                        }
+                      />
+                    </Box>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                      {request.description}
+                    </Typography>
+                    {request.status === "Rejected" &&
+                      request.rejectionReason && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                          <Typography variant="caption">
+                            <strong>Rejection Reason:</strong>{" "}
+                            {request.rejectionReason}
+                          </Typography>
+                        </Alert>
+                      )}
+                    <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+                      <Chip
+                        label={request.assistanceType}
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Typography variant="caption" color="textSecondary">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </TabPanel>
+
+        {/* Tab 3: Voting */}
+        <TabPanel value={tabValue} index={2}>
+          {votingRequests.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No assistance requests in voting yet
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Check back soon for assistance requests to vote on
+              </Typography>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {votingRequests.map((request) => {
+                const votes = request.votes || [];
+                const assistVotes = votes.filter(
+                  (v) => v.vote === "assist"
+                ).length;
+                const notAssistVotes = votes.filter(
+                  (v) => v.vote === "not-assist"
+                ).length;
+                const totalVotes = assistVotes + notAssistVotes;
+
+                return (
+                  <Card key={request._id} sx={{ border: "2px solid #1976d2" }}>
+                    <CardContent>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mb: 2,
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {request.title}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            By:{" "}
+                            {request.requestedBy?.name || "Community Member"}
+                          </Typography>
+                        </Box>
+                        <Chip label={request.status} color="info" />
+                      </Box>
+
+                      <Typography variant="body2" sx={{ mb: 2 }}>
+                        {request.description}
+                      </Typography>
+
+                      {/* Voting Progress */}
+                      <Box sx={{ mb: 3 }}>
+                        <Typography
+                          variant="caption"
+                          color="textSecondary"
+                          sx={{ display: "block", mb: 1 }}
+                        >
+                          Assistance Voting ({totalVotes} votes)
+                        </Typography>
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <Box
+                            sx={{
+                              flex: assistVotes,
+                              bgcolor: "#4caf50",
+                              height: 24,
+                              borderRadius: 1,
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              flex: notAssistVotes,
+                              bgcolor: "#f44336",
+                              height: 24,
+                              borderRadius: 1,
+                            }}
+                          />
+                        </Box>
+                      </Box>
+
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid item xs={6}>
+                          <Typography variant="caption" color="textSecondary">
+                            Assist Votes
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            sx={{ color: "#4caf50", fontWeight: 600 }}
+                          >
+                            {assistVotes}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="caption" color="textSecondary">
+                            Not Assist Votes
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            sx={{ color: "#f44336", fontWeight: 600 }}
+                          >
+                            {notAssistVotes}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      <Box sx={{ display: "flex", gap: 2 }}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          startIcon={<ThumbUpIcon />}
+                          color="success"
+                          onClick={() => handleVote(request._id, "assist")}
+                        >
+                          Assist
+                        </Button>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          startIcon={<ThumbDownIcon />}
+                          color="error"
+                          onClick={() => handleVote(request._id, "not-assist")}
+                        >
+                          Cannot Assist
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Stack>
+          )}
+        </TabPanel>
+      </Paper>
+
+      {/* Request Assistance Dialog */}
       <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        maxWidth="md"
+        open={requestFormOpen}
+        onClose={() => setRequestFormOpen(false)}
+        maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Submit Assistance Request</DialogTitle>
-        <DialogContent
-          sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}
-        >
-          {submitError && <Alert severity="error">{submitError}</Alert>}
-
-          <TextField
-            label="Community"
-            fullWidth
-            select
-            value={formData.community}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, community: e.target.value }))
-            }
-            placeholder="Select community"
-            required
-          >
-            <MenuItem value="Tech Innovators">Tech Innovators</MenuItem>
-            <MenuItem value="Business Leaders">Business Leaders</MenuItem>
-            <MenuItem value="Social Impact">Social Impact</MenuItem>
-            <MenuItem value="Education">Education</MenuItem>
-            <MenuItem value="Healthcare">Healthcare</MenuItem>
-          </TextField>
-
-          <TextField
-            label="Purpose of Assistance"
-            fullWidth
-            value={formData.purpose}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, purpose: e.target.value }))
-            }
-            placeholder="Describe why you need assistance"
-            multiline
-            rows={3}
-            required
-          />
-
-          <TextField
-            label="Amount Requested"
-            fullWidth
-            type="number"
-            value={formData.amount}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, amount: e.target.value }))
-            }
-            placeholder="Enter amount in Naira"
-            InputProps={{
-              startAdornment: <Typography sx={{ mr: 1 }}>₦</Typography>,
-            }}
-            required
-          />
-
-          <TextField
-            label="Expected Return Date"
-            fullWidth
-            type="date"
-            value={formData.returnDate}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, returnDate: e.target.value }))
-            }
-            InputLabelProps={{ shrink: true }}
-            required
-          />
+        <DialogTitle>Request Assistance</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={2}>
+            <TextField
+              label="Request Title"
+              value={requestForm.title}
+              onChange={(e) =>
+                setRequestForm({ ...requestForm, title: e.target.value })
+              }
+              fullWidth
+              required
+            />
+            <TextField
+              select
+              label="Type of Assistance Needed"
+              value={requestForm.assistanceType}
+              onChange={(e) =>
+                setRequestForm({
+                  ...requestForm,
+                  assistanceType: e.target.value,
+                })
+              }
+              fullWidth
+            >
+              <option value="financial">Financial Assistance</option>
+              <option value="physical">Physical Assistance</option>
+              <option value="expertise">Expertise/Skills</option>
+              <option value="emotional">Emotional Support</option>
+              <option value="other">Other</option>
+            </TextField>
+            <TextField
+              label="Description"
+              value={requestForm.description}
+              onChange={(e) =>
+                setRequestForm({ ...requestForm, description: e.target.value })
+              }
+              fullWidth
+              multiline
+              rows={4}
+              required
+              placeholder="Describe your assistance need in detail..."
+            />
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Submit Request"}
+        <DialogActions>
+          <Button onClick={() => setRequestFormOpen(false)}>Cancel</Button>
+          <Button onClick={handleSubmitRequest} variant="contained">
+            Submit Request
           </Button>
         </DialogActions>
       </Dialog>

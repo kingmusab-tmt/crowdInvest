@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
 
     const {
       community,
+      profileImageUrl,
       name,
       dateOfBirth,
       placeOfWork,
@@ -52,6 +53,9 @@ export async function POST(req: NextRequest) {
     // Update user profile
     user.name = name;
     user.community = community;
+    if (profileImageUrl) {
+      user.avatarUrl = profileImageUrl;
+    }
     user.dateOfBirth = dateOfBirth;
     user.placeOfWork = placeOfWork;
     user.address = address;

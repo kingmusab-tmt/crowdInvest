@@ -8,17 +8,10 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions,
   Button,
   Paper,
   Chip,
   Avatar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Alert,
   CircularProgress,
 } from "@mui/material";
@@ -28,7 +21,6 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import EventIcon from "@mui/icons-material/Event";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import KeyIcon from "@mui/icons-material/Key";
 
 // Stats Card Component
 function StatsCard({ title, value, icon, color }: any) {
@@ -60,7 +52,6 @@ export default function CommunityAdminDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
   const [communityData, setCommunityData] = React.useState<any>(null);
-  const [members, setMembers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -84,7 +75,16 @@ export default function CommunityAdminDashboard() {
         const userData = await userRes.json();
 
         if (userData.length > 0 && userData[0].community) {
-          const communityId = userData[0].community;
+          // Extract community ID - could be string or object with _id
+          const communityId =
+            typeof userData[0].community === "string"
+              ? userData[0].community
+              : userData[0].community?._id;
+
+          if (!communityId) {
+            setError("Community ID not found");
+            return;
+          }
 
           // Fetch community details
           const communityRes = await fetch(`/api/communities/${communityId}`);
@@ -92,22 +92,11 @@ export default function CommunityAdminDashboard() {
             const community = await communityRes.json();
             setCommunityData(community);
           }
-
-          // Fetch community members
-          const membersRes = await fetch(
-            `/api/communities/${communityId}/members`
-          );
-          if (membersRes.ok) {
-            const membersList = await membersRes.json();
-            setMembers(membersList);
-          }
         }
       }
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to fetch community data"
+        err instanceof Error ? err.message : "Failed to fetch community data"
       );
       console.error("Error fetching community data:", err);
     } finally {
@@ -210,9 +199,7 @@ export default function CommunityAdminDashboard() {
               </Typography>
               <Chip
                 label={communityData.status}
-                color={
-                  communityData.status === "Active" ? "success" : "error"
-                }
+                color={communityData.status === "Active" ? "success" : "error"}
               />
             </Grid>
             <Grid item xs={12}>
@@ -255,65 +242,10 @@ export default function CommunityAdminDashboard() {
         </Paper>
       )}
 
-      {/* Members Table */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-          Community Members ({members.length})
-        </Typography>
-        {members.length > 0 ? (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Joined</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {members.map((member) => (
-                  <TableRow key={member._id}>
-                    <TableCell>{member.name}</TableCell>
-                    <TableCell>{member.email}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={member.status}
-                        size="small"
-                        color={
-                          member.status === "Active" ? "success" : "error"
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {new Date(member.dateJoined).toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Typography variant="body2" color="textSecondary">
-            No members yet
-          </Typography>
-        )}
-      </Paper>
-
       {/* Action Buttons */}
-      <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
-        <Button
-          variant="outlined"
-          onClick={() => router.push("/dashboard")}
-        >
+      <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-start" }}>
+        <Button variant="outlined" onClick={() => router.push("/dashboard")}>
           Back to Dashboard
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => router.push("/admin")}
-        >
-          Go to General Admin (if available)
         </Button>
       </Box>
     </Container>

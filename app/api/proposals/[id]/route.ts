@@ -5,19 +5,22 @@ import { Types } from "mongoose";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid proposal ID" },
         { status: 400 }
       );
     }
 
-    const proposal = await Proposal.findById(params.id).select("-__v");
+    const proposal = await Proposal.findById(id)
+      .populate("proposedBy", "name email")
+      .select("-__v");
 
     if (!proposal) {
       return NextResponse.json(
@@ -38,12 +41,13 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid proposal ID" },
         { status: 400 }
@@ -51,10 +55,12 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const proposal = await Proposal.findByIdAndUpdate(params.id, body, {
+    const proposal = await Proposal.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
-    }).select("-__v");
+    })
+      .populate("proposedBy", "name email")
+      .select("-__v");
 
     if (!proposal) {
       return NextResponse.json(
@@ -75,19 +81,20 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid proposal ID" },
         { status: 400 }
       );
     }
 
-    const proposal = await Proposal.findByIdAndDelete(params.id);
+    const proposal = await Proposal.findByIdAndDelete(id);
 
     if (!proposal) {
       return NextResponse.json(

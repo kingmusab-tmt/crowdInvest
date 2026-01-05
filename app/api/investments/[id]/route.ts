@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "../../../../utils/connectDB";
 import Investment from "../../../../models/Investment";
+import MemberInvestment from "../../../../models/MemberInvestment";
 import { Types } from "mongoose";
 
 export async function GET(
@@ -17,7 +18,11 @@ export async function GET(
       );
     }
 
-    const investment = await Investment.findById(params.id).select("-__v");
+    let investment = await MemberInvestment.findById(params.id).select("-__v");
+
+    if (!investment) {
+      investment = await Investment.findById(params.id).select("-__v");
+    }
 
     if (!investment) {
       return NextResponse.json(
@@ -51,10 +56,20 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const investment = await Investment.findByIdAndUpdate(params.id, body, {
+
+    // Try to update MemberInvestment first
+    let investment = await MemberInvestment.findByIdAndUpdate(params.id, body, {
       new: true,
       runValidators: true,
     }).select("-__v");
+
+    // If not found, try Investment model
+    if (!investment) {
+      investment = await Investment.findByIdAndUpdate(params.id, body, {
+        new: true,
+        runValidators: true,
+      }).select("-__v");
+    }
 
     if (!investment) {
       return NextResponse.json(
@@ -87,7 +102,13 @@ export async function DELETE(
       );
     }
 
-    const investment = await Investment.findByIdAndDelete(params.id);
+    // Try to delete from MemberInvestment first
+    let investment = await MemberInvestment.findByIdAndDelete(params.id);
+
+    // If not found, try Investment model
+    if (!investment) {
+      investment = await Investment.findByIdAndDelete(params.id);
+    }
 
     if (!investment) {
       return NextResponse.json(

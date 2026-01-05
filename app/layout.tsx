@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ThemeRegistry from "@/components/ThemeRegistry";
 import AuthProvider from "@/components/AuthProvider";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: "CrowdInvest - Community Investment Platform",
@@ -21,6 +22,7 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
+          <ServiceWorkerRegister />
           <ThemeRegistry>{children}</ThemeRegistry>
         </AuthProvider>
       </body>

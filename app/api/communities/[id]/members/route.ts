@@ -1,20 +1,28 @@
 import connectDB from "@/utils/connectDB";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
+import { Types } from "mongoose";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await connectDB();
-    const communityId = params.id;
+
+    if (!Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "Invalid community ID" },
+        { status: 400 }
+      );
+    }
 
     // Fetch all users in this community
     const members = await User.find({
-      community: communityId,
+      community: new Types.ObjectId(id),
     })
-      .select("name email status dateJoined role")
+      .select("name email status dateJoined role kyc permissions")
       .lean();
 
     return NextResponse.json(members, { status: 200 });
