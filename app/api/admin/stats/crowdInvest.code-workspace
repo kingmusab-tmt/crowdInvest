@@ -1,0 +1,13 @@
+{
+  "folders": [
+	{
+		"name": "crowdInvest",
+		"path": "../../../.."
+	},
+	{
+		"name": "types",
+		"path": "../../../../../../Ajibest/Ajibest/types"
+	}
+],
+  "settings": {}
+}
