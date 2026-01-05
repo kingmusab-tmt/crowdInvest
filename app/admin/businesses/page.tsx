@@ -143,7 +143,9 @@ export default function BusinessesPage() {
       setError(null);
 
       const isGeneralAdmin = session?.user?.role === "General Admin";
-      const query = isGeneralAdmin ? "" : `?community=${session?.user?.community}`;
+      const query = isGeneralAdmin
+        ? ""
+        : `?community=${session?.user?.community}`;
 
       const res = await fetch(`/api/businesses${query}`);
       if (!res.ok) throw new Error("Failed to load businesses");
@@ -233,12 +235,19 @@ export default function BusinessesPage() {
   ];
 
   const filteredRows = businesses.filter((b) => {
-    const matchesSearch = [b.name, b.type, b.ownerName, b.location, b.fullAddress]
+    const matchesSearch = [
+      b.name,
+      b.type,
+      b.ownerName,
+      b.location,
+      b.fullAddress,
+    ]
       .filter(Boolean)
       .some((field) => field.toLowerCase().includes(search.toLowerCase()));
 
     const matchesStatus =
-      statusFilter === "All" || b.status.toLowerCase() === statusFilter.toLowerCase();
+      statusFilter === "All" ||
+      b.status.toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesStatus;
   });
@@ -262,7 +271,11 @@ export default function BusinessesPage() {
         </Alert>
       )}
       {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2 }}>
+        <Alert
+          severity="success"
+          onClose={() => setSuccess(null)}
+          sx={{ mb: 2 }}
+        >
           {success}
         </Alert>
       )}
@@ -318,7 +331,8 @@ export default function BusinessesPage() {
             setMenuAnchor(null);
           }}
         >
-          <VisibilityIcon fontSize="small" style={{ marginRight: 8 }} /> View Details
+          <VisibilityIcon fontSize="small" style={{ marginRight: 8 }} /> View
+          Details
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -338,7 +352,12 @@ export default function BusinessesPage() {
         </MenuItem>
       </Menu>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Edit Business</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <TextField
@@ -421,7 +440,9 @@ export default function BusinessesPage() {
             <ToggleButtonGroup
               exclusive
               value={form.status}
-              onChange={(_, value) => value && setForm({ ...form, status: value })}
+              onChange={(_, value) =>
+                value && setForm({ ...form, status: value })
+              }
               fullWidth
               size="small"
             >
@@ -439,7 +460,12 @@ export default function BusinessesPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={viewOpen} onClose={() => setViewOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Business Details</DialogTitle>
         <DialogContent sx={{ pt: 2, display: "grid", gap: 1 }}>
           <Typography variant="subtitle2">Name</Typography>

@@ -265,7 +265,8 @@ export default function MemberBusinessesPage() {
       .some((field) => field.toLowerCase().includes(search.toLowerCase()));
 
     const matchesStatus =
-      statusFilter === "All" || b.status?.toLowerCase() === statusFilter.toLowerCase();
+      statusFilter === "All" ||
+      b.status?.toLowerCase() === statusFilter.toLowerCase();
 
     const matchesCategory =
       categoryFilter === "All" || b.category === categoryFilter;
@@ -509,7 +510,9 @@ export default function MemberBusinessesPage() {
                 <Select
                   label="Category"
                   value={formData.category}
-                  onChange={(e) => handleInputChange("category", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("category", e.target.value)
+                  }
                 >
                   {categories.map((cat) => (
                     <MenuItem key={cat} value={cat}>
@@ -525,7 +528,9 @@ export default function MemberBusinessesPage() {
                 <Select
                   label="Location (State)"
                   value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("location", e.target.value)
+                  }
                 >
                   {NIGERIA_STATES.map((state) => (
                     <MenuItem key={state} value={state}>
