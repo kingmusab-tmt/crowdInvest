@@ -7,23 +7,31 @@ export async function GET(request: NextRequest) {
     await dbConnect();
     const searchParams = request.nextUrl.searchParams;
     const communityId = searchParams.get("communityId");
+    const userId = searchParams.get("userId");
 
-    if (!communityId) {
+    if (!communityId && !userId) {
       return NextResponse.json(
-        { error: "communityId is required" },
+        { error: "communityId or userId is required" },
         { status: 400 }
       );
     }
 
-    const investments = await MemberInvestment.find({ community: communityId })
+    let query: any = {};
+    if (communityId) {
+      query.community = communityId;
+    } else if (userId) {
+      query.createdBy = userId;
+    }
+
+    const investments = await MemberInvestment.find(query)
       .select("-__v")
       .sort({ createdAt: -1 });
 
     return NextResponse.json(investments, { status: 200 });
   } catch (error) {
-    console.error("Error fetching community investments:", error);
+    console.error("Error fetching investments:", error);
     return NextResponse.json(
-      { error: "Failed to fetch community investments" },
+      { error: "Failed to fetch investments" },
       { status: 500 }
     );
   }

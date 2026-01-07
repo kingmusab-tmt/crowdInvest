@@ -12,8 +12,23 @@ export async function GET(request: Request) {
 
     const query: any = {};
     if (status) query.status = status;
-    if (community) query.community = community;
-    const businesses = await Business.find(query).select("-__v");
+    if (community) {
+      query.community = community;
+      console.log("[Businesses API] Filtering by community:", community);
+    }
+
+    console.log("[Businesses API] Query:", JSON.stringify(query));
+    const businesses = await Business.find(query)
+      .populate("community", "name")
+      .select("-__v");
+
+    console.log("[Businesses API] Found businesses:", businesses.length);
+    if (community && businesses.length > 0) {
+      console.log(
+        "[Businesses API] Sample business community:",
+        businesses[0].community
+      );
+    }
 
     return NextResponse.json(businesses, { status: 200 });
   } catch (error) {
@@ -30,11 +45,24 @@ export async function POST(request: Request) {
     await dbConnect();
     const body = await request.json();
 
+    console.log("[Businesses API POST] Received body:", {
+      ownerId: body.ownerId,
+      ownerName: body.ownerName,
+      name: body.name,
+      hasCommunity: !!body.community,
+    });
+
     // Resolve owner email and community from ownerId if provided
     let ownerEmail = body.ownerEmail;
     let communityId = body.community;
     if (body.ownerId) {
       const user = await User.findById(body.ownerId);
+      console.log("[Businesses API POST] Found user:", {
+        userId: user?._id,
+        email: user?.email,
+        community: user?.community,
+        communityType: typeof user?.community,
+      });
       if (user) {
         if (!ownerEmail) ownerEmail = user.email;
         if (!communityId && (user as any).community) {
@@ -42,6 +70,8 @@ export async function POST(request: Request) {
         }
       }
     }
+
+    console.log("[Businesses API POST] Final communityId:", communityId);
 
     // Map category to type if provided
     const businessData = {
@@ -64,6 +94,12 @@ export async function POST(request: Request) {
 
     const business = new Business(businessData);
     await business.save();
+
+    console.log("[Businesses API] Created business:", {
+      name: business.name,
+      community: business.community,
+      ownerId: body.ownerId,
+    });
 
     return NextResponse.json(business, { status: 201 });
   } catch (error) {

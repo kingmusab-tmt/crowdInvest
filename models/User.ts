@@ -86,6 +86,20 @@ export interface IUser extends Document {
       };
     };
   };
+  paymentSettings?: {
+    preferredPaymentMethod?: "one-time" | "reserved-account" | "recurring";
+    paystackCustomerCode?: string;
+    reservedAccountNumber?: string;
+    reservedAccountBank?: string;
+    reservedAccountName?: string;
+    recurringPayment?: {
+      isActive: boolean;
+      amount: number;
+      subscriptionCode?: string;
+      authorizationCode?: string;
+      nextPaymentDate?: Date;
+    };
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -184,6 +198,23 @@ const UserSchema = new Schema<IUser>(
           proposals: { type: Boolean, default: true },
           events: { type: Boolean, default: true },
         },
+      },
+    },
+    paymentSettings: {
+      preferredPaymentMethod: {
+        type: String,
+        enum: ["one-time", "reserved-account", "recurring"],
+      },
+      paystackCustomerCode: String,
+      reservedAccountNumber: String,
+      reservedAccountBank: String,
+      reservedAccountName: String,
+      recurringPayment: {
+        isActive: { type: Boolean, default: false },
+        amount: Number,
+        subscriptionCode: String,
+        authorizationCode: String,
+        nextPaymentDate: Date,
       },
     },
   },

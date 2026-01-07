@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import {
   Box,
   Container,
@@ -45,7 +46,7 @@ function a11yProps(index: number) {
   };
 }
 
-export default function NotificationsPage() {
+function NotificationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const notificationId = searchParams.get("id");
@@ -452,5 +453,13 @@ export default function NotificationsPage() {
         )}
       </Dialog>
     </Container>
+  );
+}
+
+export default function NotificationsPage() {
+  return (
+    <Suspense fallback={<Container><CircularProgress /></Container>}>
+      <NotificationsContent />
+    </Suspense>
   );
 }

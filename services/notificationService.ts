@@ -13,6 +13,7 @@ export interface CreateNotificationParams {
     | "proposal"
     | "event"
     | "announcement"
+    | "contribution"
     | "general";
   title: string;
   message: string;

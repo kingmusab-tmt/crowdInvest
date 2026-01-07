@@ -15,7 +15,7 @@ function ensurePermission(
   return false;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -25,10 +25,63 @@ export async function GET() {
 
     await dbConnect();
 
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const emailQuery = searchParams.get("email");
+    const communityIdQuery = searchParams.get("communityId");
+    const userIdQuery = searchParams.get("userId");
+
     const currentUser = await User.findById(session.user.id);
     const role = session.user.role;
     const perms = currentUser?.permissions;
 
+    // If querying by email, allow users to fetch their own data
+    if (emailQuery) {
+      // Allow users to fetch their own data or if they have permission
+      if (
+        emailQuery === session.user.email ||
+        ensurePermission(role, perms, "canManageUsers")
+      ) {
+        const users = await User.find({ email: emailQuery })
+          .select(
+            "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings"
+          )
+          .populate("community", "name");
+        return NextResponse.json(users, { status: 200 });
+      } else {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    // If querying by community, require permission
+    if (communityIdQuery) {
+      if (!ensurePermission(role, perms, "canManageUsers")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const users = await User.find({ community: communityIdQuery })
+        .select(
+          "name email role status createdAt community permissions profileCompleted isTopUser balance"
+        )
+        .populate("community", "name");
+      return NextResponse.json(users, { status: 200 });
+    }
+
+    // If querying by userId, allow if it's their own or they have permission
+    if (userIdQuery) {
+      if (
+        userIdQuery === session.user.id ||
+        ensurePermission(role, perms, "canManageUsers")
+      ) {
+        const user = await User.findById(userIdQuery).select(
+          "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings"
+        );
+        return NextResponse.json([user], { status: 200 });
+      } else {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    // Default: require admin/permission to list all users
     if (!ensurePermission(role, perms, "canManageUsers")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

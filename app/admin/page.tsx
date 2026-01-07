@@ -17,10 +17,11 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Alert,
   CircularProgress,
   FormControlLabel,
   Checkbox,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -76,6 +77,18 @@ export default function AdminDashboard() {
   });
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
+  const [snackbar, setSnackbar] = React.useState({
+    open: false,
+    message: "",
+    severity: "info" as "success" | "error" | "warning" | "info",
+  });
+
+  const showSnackbar = (
+    message: string,
+    severity: "success" | "error" | "warning" | "info" = "info"
+  ) => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   React.useEffect(() => {
     // Redirect Community Admins to their community dashboard
@@ -121,7 +134,9 @@ export default function AdminDashboard() {
     setSuccess(null);
 
     if (!newCommunity.name || !newCommunity.description) {
-      setError("Please fill in all fields");
+      const msg = "Please fill in all fields";
+      setError(msg);
+      showSnackbar(msg, "error");
       return;
     }
 
@@ -139,14 +154,17 @@ export default function AdminDashboard() {
         throw new Error("Failed to create community");
       }
 
-      setSuccess("Community created successfully");
+      const msg = "Community created successfully";
+      setSuccess(msg);
+      showSnackbar(msg, "success");
       setNewCommunity({ name: "", description: "" });
       setCreateCommunityOpen(false);
       fetchData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create community"
-      );
+      const msg =
+        err instanceof Error ? err.message : "Failed to create community";
+      setError(msg);
+      showSnackbar(msg, "error");
     }
   };
 
@@ -331,16 +349,7 @@ export default function AdminDashboard() {
           </Button>
         </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {success}
-          </Alert>
-        )}
+        {/* Notifications handled via Snackbar */}
 
         <Grid container spacing={3}>
           {communities.length === 0 ? (
@@ -513,6 +522,22 @@ export default function AdminDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

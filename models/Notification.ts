@@ -11,6 +11,7 @@ export interface INotification extends Document {
     | "proposal"
     | "event"
     | "announcement"
+    | "contribution"
     | "general";
   title: string;
   message: string;
@@ -40,6 +41,7 @@ const NotificationSchema = new Schema<INotification>(
         "proposal",
         "event",
         "announcement",
+        "contribution",
         "general",
       ],
       default: "general",

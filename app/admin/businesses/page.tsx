@@ -24,6 +24,7 @@ import {
   Select,
   ToggleButton,
   ToggleButtonGroup,
+  Chip,
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
@@ -31,6 +32,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import HourglassTopIcon from "@mui/icons-material/HourglassTop";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { useSession } from "next-auth/react";
 
 const CATEGORY_OPTIONS = [
@@ -95,6 +99,7 @@ interface Business {
   type: string;
   ownerName: string;
   ownerEmail: string;
+  ownerId?: string;
   community?: string;
   location: string;
   description: string;
@@ -102,6 +107,7 @@ interface Business {
   contactPhone: string;
   website?: string;
   status: string;
+  rejectionReason?: string;
   createdAt: string;
   fullAddress?: string;
 }
@@ -115,10 +121,12 @@ export default function BusinessesPage() {
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [viewOpen, setViewOpen] = React.useState(false);
+  const [rejectOpen, setRejectOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<Business | null>(null);
   const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [search, setSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("All");
+  const [rejectionReason, setRejectionReason] = React.useState("");
   const [form, setForm] = React.useState({
     name: "",
     type: "",
@@ -147,11 +155,21 @@ export default function BusinessesPage() {
         ? ""
         : `?community=${session?.user?.community}`;
 
+      console.log("[Admin Businesses] Fetching with:", {
+        role: session?.user?.role,
+        community: session?.user?.community,
+        query,
+        url: `/api/businesses${query}`,
+      });
+
       const res = await fetch(`/api/businesses${query}`);
       if (!res.ok) throw new Error("Failed to load businesses");
       const data = await res.json();
+
+      console.log("[Admin Businesses] Received businesses:", data.length);
       setBusinesses(data);
     } catch (err) {
+      console.error("[Admin Businesses] Error:", err);
       setError("Failed to load businesses");
     } finally {
       setLoading(false);
@@ -208,11 +226,88 @@ export default function BusinessesPage() {
     }
   };
 
+  const handleRejectClick = (business: Business) => {
+    setSelected(business);
+    setRejectionReason("");
+    setRejectOpen(true);
+    setMenuAnchor(null);
+  };
+
+  const handleRejectSubmit = async () => {
+    if (!selected || !rejectionReason.trim()) {
+      setError("Please provide a rejection reason");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/businesses/${selected._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Rejected",
+          rejectionReason: rejectionReason.trim(),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to reject business");
+      setSuccess("Business rejected");
+      setRejectOpen(false);
+      setRejectionReason("");
+      fetchBusinesses();
+    } catch (err) {
+      setError("Failed to reject business");
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      const res = await fetch(`/api/businesses/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Approved" }),
+      });
+      if (!res.ok) throw new Error("Failed to approve business");
+      setSuccess("Business approved");
+      fetchBusinesses();
+    } catch (err) {
+      setError("Failed to approve business");
+    }
+  };
+
   const columns: GridColDef[] = [
     { field: "name", headerName: "Business Name", width: 220 },
     { field: "type", headerName: "Category", width: 140 },
     { field: "ownerName", headerName: "Owner", width: 180 },
-    { field: "status", headerName: "Status", width: 120 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 140,
+      renderCell: (params) => {
+        const status = params.row.status;
+        if (status === "Approved") {
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <CheckCircleIcon sx={{ fontSize: 18, color: "success.main" }} />
+              <Typography variant="body2">{status}</Typography>
+            </Box>
+          );
+        } else if (status === "Pending") {
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <HourglassTopIcon sx={{ fontSize: 18, color: "warning.main" }} />
+              <Typography variant="body2">{status}</Typography>
+            </Box>
+          );
+        } else if (status === "Rejected") {
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <CancelIcon sx={{ fontSize: 18, color: "error.main" }} />
+              <Typography variant="body2">{status}</Typography>
+            </Box>
+          );
+        }
+        return <Typography variant="body2">{status}</Typography>;
+      },
+    },
     {
       field: "actions",
       headerName: "Actions",
@@ -342,6 +437,29 @@ export default function BusinessesPage() {
         >
           <EditIcon fontSize="small" style={{ marginRight: 8 }} /> Edit
         </MenuItem>
+        {selected?.status === "Pending" && (
+          <>
+            <MenuItem
+              onClick={() => {
+                if (selected) handleApprove(selected._id);
+                setMenuAnchor(null);
+              }}
+            >
+              <CheckCircleIcon
+                fontSize="small"
+                style={{ marginRight: 8, color: "green" }}
+              />{" "}
+              Approve
+            </MenuItem>
+            <MenuItem onClick={() => handleRejectClick(selected!)}>
+              <CancelIcon
+                fontSize="small"
+                style={{ marginRight: 8, color: "red" }}
+              />{" "}
+              Reject
+            </MenuItem>
+          </>
+        )}
         <MenuItem
           onClick={() => {
             if (selected) handleDelete(selected._id);
@@ -505,9 +623,53 @@ export default function BusinessesPage() {
 
           <Typography variant="subtitle2">Status</Typography>
           <Typography variant="body2">{selected?.status}</Typography>
+
+          {selected?.rejectionReason && (
+            <>
+              <Typography variant="subtitle2">Rejection Reason</Typography>
+              <Typography variant="body2" sx={{ color: "error.main" }}>
+                {selected?.rejectionReason}
+              </Typography>
+            </>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setViewOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={rejectOpen}
+        onClose={() => setRejectOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Reject Business</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+            Provide a reason for rejecting this business. The owner will be able
+            to see this reason and resubmit after making changes.
+          </Typography>
+          <TextField
+            fullWidth
+            label="Rejection Reason"
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            multiline
+            rows={4}
+            placeholder="e.g., Missing required documentation, invalid contact information, etc."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRejectOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleRejectSubmit}
+            variant="contained"
+            color="error"
+            disabled={!rejectionReason.trim()}
+          >
+            Reject
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

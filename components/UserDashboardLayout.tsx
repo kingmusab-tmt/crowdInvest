@@ -109,35 +109,36 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 
 const menuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+  { text: "Events", icon: <EventIcon />, path: "/dashboard/events" },
   {
     text: "Investments",
     icon: <AccountBalanceIcon />,
     path: "/dashboard/investments",
   },
   {
-    text: "My Businesses",
-    icon: <BusinessCenterIcon />,
-    path: "/dashboard/member-businesses",
-  },
-  {
     text: "Proposals",
     icon: <HowToVoteIcon />,
     path: "/dashboard/proposals",
   },
-  // Combined Events + Submit Event into a single section
-  { text: "Events", icon: <EventIcon />, path: "/dashboard/events" },
+  { text: "Assistance", icon: <HelpIcon />, path: "/dashboard/assistance" },
+  {
+    text: "My Businesses",
+    icon: <BusinessCenterIcon />,
+    path: "/dashboard/member-businesses",
+  },
+
+  {
+    text: "Funds",
+    icon: <AccountBalanceWalletIcon />,
+    path: "/dashboard/funds",
+  },
   {
     text: "Transactions",
     icon: <MonetizationOnIcon />,
     path: "/dashboard/transactions",
   },
   // Combined Deposit and Withdrawal into a single Funds page with tabs
-  {
-    text: "Funds",
-    icon: <AccountBalanceWalletIcon />,
-    path: "/dashboard/funds",
-  },
-  { text: "Assistance", icon: <HelpIcon />, path: "/dashboard/assistance" },
+
   {
     text: "Notifications",
     icon: <NotificationsIcon />,

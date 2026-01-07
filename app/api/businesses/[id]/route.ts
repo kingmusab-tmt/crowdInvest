@@ -65,10 +65,37 @@ export async function PUT(
       return undefined;
     })();
 
-    const updatePayload = {
+    // Build update payload
+    const updatePayload: any = {
       ...body,
       ...(normalizedStatus ? { status: normalizedStatus } : {}),
     };
+
+    // Handle rejection
+    if (normalizedStatus === "Rejected") {
+      if (!body.rejectionReason || !body.rejectionReason.trim()) {
+        return NextResponse.json(
+          { error: "Rejection reason is required" },
+          { status: 400 }
+        );
+      }
+      updatePayload.rejectionReason = body.rejectionReason.trim();
+      updatePayload.rejectedAt = new Date();
+      // Note: rejectedBy would be set from session if we have auth context
+      console.log("[Business Update] Rejecting business:", {
+        businessId: id,
+        reason: updatePayload.rejectionReason,
+      });
+    }
+
+    // Clear rejection fields if status is being changed from Rejected
+    if (normalizedStatus && normalizedStatus !== "Rejected") {
+      if (body.clearRejection) {
+        updatePayload.rejectionReason = undefined;
+        updatePayload.rejectedAt = undefined;
+        updatePayload.rejectedBy = undefined;
+      }
+    }
 
     const business = await Business.findByIdAndUpdate(id, updatePayload, {
       new: true,
@@ -81,6 +108,12 @@ export async function PUT(
         { status: 404 }
       );
     }
+
+    console.log("[Business Update] Updated business:", {
+      businessId: business._id,
+      name: business.name,
+      status: business.status,
+    });
 
     return NextResponse.json(business, { status: 200 });
   } catch (error) {

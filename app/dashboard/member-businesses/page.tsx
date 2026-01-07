@@ -30,6 +30,9 @@ import {
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SearchIcon from "@mui/icons-material/Search";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import HourglassTopIcon from "@mui/icons-material/HourglassTop";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { useSession } from "next-auth/react";
 import { uploadFileToServer } from "@/utils/uploadHandler";
 
@@ -94,6 +97,7 @@ interface Business {
   name: string;
   description: string;
   category: string;
+  type?: string;
   location: string;
   fullAddress?: string;
   contactEmail: string;
@@ -103,6 +107,7 @@ interface Business {
   ownerId: string;
   ownerName: string;
   status: string;
+  rejectionReason?: string;
   createdAt: string;
 }
 
@@ -111,6 +116,9 @@ export default function MemberBusinessesPage() {
   const [businesses, setBusinesses] = React.useState<Business[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [openDialog, setOpenDialog] = React.useState(false);
+  const [editingBusinessId, setEditingBusinessId] = React.useState<
+    string | null
+  >(null);
   const [formData, setFormData] = React.useState({
     name: "",
     description: "",
@@ -148,7 +156,22 @@ export default function MemberBusinessesPage() {
       const res = await fetch("/api/businesses");
       if (res.ok) {
         const data = await res.json();
-        setBusinesses(data);
+        // Filter businesses based on visibility rules:
+        // - Show all of user's own businesses (pending, rejected, approved)
+        // - Show only approved businesses from other members
+        const filteredBusinesses = data.filter((b: Business) => {
+          const isOwner = b.ownerId === session?.user?.id;
+
+          // If user is the owner, show all their businesses
+          if (isOwner) {
+            return true;
+          }
+
+          // If not owner, only show approved businesses
+          return b.status === "Approved";
+        });
+
+        setBusinesses(filteredBusinesses);
       }
     } catch (err) {
       console.error("Failed to load businesses", err);
@@ -204,20 +227,38 @@ export default function MemberBusinessesPage() {
         }
       }
 
-      // Submit business data
-      const response = await fetch("/api/businesses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          imageUrl,
-          ownerId: session?.user?.id,
-          ownerName: session?.user?.name,
-        }),
-      });
+      // If editing a rejected business, update it; otherwise create new
+      if (editingBusinessId) {
+        const response = await fetch(`/api/businesses/${editingBusinessId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            ...(imageUrl && { imageUrl }),
+            status: "Pending",
+            clearRejection: true,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to submit business");
+        if (!response.ok) {
+          throw new Error("Failed to update business");
+        }
+      } else {
+        // Submit new business data
+        const response = await fetch("/api/businesses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            imageUrl,
+            ownerId: session?.user?.id,
+            ownerName: session?.user?.name,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to submit business");
+        }
       }
 
       // Reset form and close dialog
@@ -233,6 +274,7 @@ export default function MemberBusinessesPage() {
       });
       setImageFile(null);
       setImagePreview(null);
+      setEditingBusinessId(null);
       setOpenDialog(false);
 
       // Refresh businesses list
@@ -250,6 +292,24 @@ export default function MemberBusinessesPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleEditRejectedBusiness = (business: Business) => {
+    if (business.status !== "Rejected") return;
+
+    setEditingBusinessId(business._id);
+    setFormData({
+      name: business.name,
+      description: business.description,
+      category: business.type || business.category,
+      location: business.location,
+      fullAddress: business.fullAddress || "",
+      contactEmail: business.contactEmail,
+      contactPhone: business.contactPhone,
+      website: business.website || "",
+    });
+    setImagePreview(business.imageUrl || null);
+    setOpenDialog(true);
+  };
+
   const categories = React.useMemo(() => CATEGORY_OPTIONS, []);
 
   const filtered = businesses.filter((b) => {
@@ -262,7 +322,7 @@ export default function MemberBusinessesPage() {
       b.description,
     ]
       .filter(Boolean)
-      .some((field) => field.toLowerCase().includes(search.toLowerCase()));
+      .some((field) => field?.toLowerCase().includes(search.toLowerCase()));
 
     const matchesStatus =
       statusFilter === "All" ||
@@ -397,6 +457,14 @@ export default function MemberBusinessesPage() {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
+                  border:
+                    business.status === "Rejected" ? "2px solid" : "1px solid",
+                  borderColor:
+                    business.status === "Rejected" ? "error.main" : "divider",
+                  bgcolor:
+                    business.status === "Rejected"
+                      ? "error.lighter"
+                      : "background.paper",
                 }}
               >
                 {business.imageUrl && (
@@ -409,11 +477,72 @@ export default function MemberBusinessesPage() {
                   />
                 )}
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {business.name}
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "start",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
+                      {business.name}
+                    </Typography>
+                    {business.status === "Approved" && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          color: "success.main",
+                        }}
+                      >
+                        <CheckCircleIcon sx={{ fontSize: 20 }} />
+                      </Box>
+                    )}
+                    {business.status === "Pending" && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          color: "warning.main",
+                        }}
+                      >
+                        <HourglassTopIcon sx={{ fontSize: 20 }} />
+                      </Box>
+                    )}
+                    {business.status === "Rejected" && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          color: "error.main",
+                        }}
+                      >
+                        <CancelIcon sx={{ fontSize: 20 }} />
+                      </Box>
+                    )}
+                  </Box>
+
+                  {business.status === "Rejected" &&
+                    business.rejectionReason && (
+                      <Alert severity="error" sx={{ mb: 2 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ display: "block", fontWeight: 600, mb: 0.5 }}
+                        >
+                          Rejection Reason:
+                        </Typography>
+                        <Typography variant="caption">
+                          {business.rejectionReason}
+                        </Typography>
+                      </Alert>
+                    )}
+
                   <Chip
-                    label={business.category}
+                    label={business.category || business.type}
                     size="small"
                     color="primary"
                     sx={{ mb: 1 }}
@@ -464,20 +593,40 @@ export default function MemberBusinessesPage() {
                     )}
                   </Box>
                 </CardContent>
+                {business.status === "Rejected" && (
+                  <CardActions>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="warning"
+                      onClick={() => handleEditRejectedBusiness(business)}
+                      fullWidth
+                    >
+                      Edit & Resubmit
+                    </Button>
+                  </CardActions>
+                )}
               </Card>
             </Grid>
           ))}
         </Grid>
       )}
 
-      {/* Add Business Dialog */}
+      {/* Add/Edit Business Dialog */}
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={() => {
+          setOpenDialog(false);
+          setEditingBusinessId(null);
+        }}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Add Your Business</DialogTitle>
+        <DialogTitle>
+          {editingBusinessId
+            ? "Edit & Resubmit Your Business"
+            : "Add Your Business"}
+        </DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}
         >
@@ -615,13 +764,24 @@ export default function MemberBusinessesPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setOpenDialog(false);
+              setEditingBusinessId(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSubmit}
             variant="contained"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Submitting..." : "Add Business"}
+            {isSubmitting
+              ? "Submitting..."
+              : editingBusinessId
+              ? "Update & Resubmit"
+              : "Add Business"}
           </Button>
         </DialogActions>
       </Dialog>
