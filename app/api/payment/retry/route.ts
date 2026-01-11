@@ -155,7 +155,9 @@ export async function POST(request: NextRequest) {
           userId: user._id,
           type: "general",
           title: "Payment Retry Successful",
-          message: `Your retry payment of ${formatNaira(amountInNaira)} has been processed successfully.`,
+          message: `Your retry payment of ${formatNaira(
+            amountInNaira
+          )} has been processed successfully.`,
           actionUrl: "/dashboard/transactions",
         });
 

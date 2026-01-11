@@ -27,17 +27,20 @@ export async function POST(req: NextRequest) {
 
     // Create a notification for administrators to review the deletion request
     const admins = await User.find({
-      role: { $in: ["General Admin", "Community Admin"] },
-      community: user.community,
+      $or: [
+        { role: "General Admin" },
+        { role: "Community Admin", community: user.community },
+      ],
     });
 
     for (const admin of admins) {
       await Notification.create({
-        user: admin._id,
-        type: "system",
+        userId: admin._id,
+        type: "announcement",
         title: "Account Deletion Request",
         message: `User ${user.name} (${user.email}) has requested account deletion. Please review and process this request.`,
-        data: {
+        actionUrl: `/admin/users?user=${user._id.toString()}`,
+        relatedData: {
           userId: user._id,
           userEmail: user.email,
           requestDate: new Date(),

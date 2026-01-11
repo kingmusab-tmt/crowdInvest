@@ -107,12 +107,16 @@ async function handleChargeSuccess(data: any) {
       userId: user._id,
       type: "general",
       title: "Deposit Successful",
-      message: `Your deposit of ${formatNaira(amountInNaira)} has been credited to your account.`,
+      message: `Your deposit of ${formatNaira(
+        amountInNaira
+      )} has been credited to your account.`,
       actionUrl: "/dashboard/transactions",
     });
 
     console.log(
-      `Deposit processed: ${formatNaira(amountInNaira)} for ${user.email} (Ref: ${reference})`
+      `Deposit processed: ${formatNaira(amountInNaira)} for ${
+        user.email
+      } (Ref: ${reference})`
     );
   } catch (error) {
     console.error("Error handling charge success:", error);
@@ -191,7 +195,9 @@ async function handleSubscriptionCreate(data: any) {
       userId: user._id,
       type: "general",
       title: "Recurring Payment Active",
-      message: `Your recurring monthly contribution of ${formatNaira(user.paymentSettings?.recurringPayment?.amount)} has been set up successfully.`,
+      message: `Your recurring monthly contribution of ${formatNaira(
+        user.paymentSettings?.recurringPayment?.amount
+      )} has been set up successfully.`,
       actionUrl: "/dashboard/funds",
     });
 
@@ -273,7 +279,9 @@ async function handleChargeFailed(data: any) {
       userId: user._id,
       type: "general",
       title: "Payment Failed",
-      message: `Your payment of ${formatNaira(amountInNaira)} failed: ${failureReason}. We'll retry in 24 hours. You can also retry manually from your dashboard.`,
+      message: `Your payment of ${formatNaira(
+        amountInNaira
+      )} failed: ${failureReason}. We'll retry in 24 hours. You can also retry manually from your dashboard.`,
       relatedData: {
         failureId: paymentFailure._id,
         failureReason,

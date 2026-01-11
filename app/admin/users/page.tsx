@@ -25,7 +25,7 @@ import {
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type PermissionKey =
   | "canManageUsers"
@@ -78,6 +78,7 @@ const PERMISSION_OPTIONS: { key: PermissionKey; label: string }[] = [
 export default function UsersPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const currentRole = session?.user?.role;
   const currentCommunity = session?.user?.community as string | undefined;
   const currentPerms = (session?.user as any)?.permissions || {};
@@ -95,6 +96,10 @@ export default function UsersPage() {
     community: "",
     permissions: {} as Permissions,
   });
+  const [highlightUserId, setHighlightUserId] = React.useState<string | null>(
+    null
+  );
+  const [noMatchUserId, setNoMatchUserId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     // Only allow General Admins to access this page
@@ -121,6 +126,32 @@ export default function UsersPage() {
       setLoading(false);
     }
   }
+
+  // When arriving via /admin/users?user=<id>, highlight and auto-scroll to that user
+  React.useEffect(() => {
+    const targetId = searchParams?.get("user");
+    if (!targetId || users.length === 0) return;
+    const found = users.some((u) => u._id === targetId);
+    setHighlightUserId(found ? targetId : null);
+    setNoMatchUserId(found ? null : targetId);
+  }, [searchParams, users]);
+
+  React.useEffect(() => {
+    if (!highlightUserId) return;
+    const t = setTimeout(() => {
+      const rowEl = document.querySelector(
+        `[role="row"][data-id="${highlightUserId}"]`
+      ) as HTMLElement | null;
+      rowEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [highlightUserId, users]);
+
+  const clearHighlight = () => {
+    setHighlightUserId(null);
+    setNoMatchUserId(null);
+    router.replace("/admin/users");
+  };
 
   async function fetchCommunities() {
     try {
@@ -332,6 +363,36 @@ export default function UsersPage() {
         </Alert>
       )}
 
+      {highlightUserId && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={clearHighlight}>
+              Clear
+            </Button>
+          }
+        >
+          Jumped to user:{" "}
+          {users.find((u) => u._id === highlightUserId)?.name ||
+            highlightUserId}
+        </Alert>
+      )}
+
+      {noMatchUserId && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={clearHighlight}>
+              Clear
+            </Button>
+          }
+        >
+          No match for user ID: {noMatchUserId}
+        </Alert>
+      )}
+
       <Paper sx={{ height: 650, width: "100%" }}>
         <DataGrid
           rows={users}
@@ -339,6 +400,15 @@ export default function UsersPage() {
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           getRowId={(row: UserRow) => row._id}
+          getRowClassName={(params) =>
+            (params.id as string) === highlightUserId ? "highlighted" : ""
+          }
+          sx={{
+            "& .MuiDataGrid-row.highlighted": {
+              backgroundColor: "rgba(255, 243, 224, 0.6)",
+              boxShadow: "inset 0 0 0 1px rgba(255, 171, 0, 0.8)",
+            },
+          }}
         />
       </Paper>
 

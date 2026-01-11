@@ -20,16 +20,22 @@ export async function POST(request: NextRequest) {
     const { reference } = await request.json();
 
     if (!reference) {
-      return NextResponse.json({ error: "Reference is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Reference is required" },
+        { status: 400 }
+      );
     }
 
     // Verify payment with Paystack
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-      },
-    });
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        },
+      }
+    );
 
     const data = await response.json();
 
@@ -89,7 +95,9 @@ export async function POST(request: NextRequest) {
       userId: user._id,
       type: "general",
       title: "Deposit Successful",
-      message: `Your deposit of ${formatNaira(amountInNaira)} has been credited to your account.`,
+      message: `Your deposit of ${formatNaira(
+        amountInNaira
+      )} has been credited to your account.`,
       actionUrl: "/dashboard/transactions",
     });
 

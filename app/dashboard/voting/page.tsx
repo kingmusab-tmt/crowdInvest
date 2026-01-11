@@ -35,10 +35,16 @@ interface Proposal {
   title: string;
   description: string;
   longDescription: string;
-  status: "Active" | "Passed" | "Failed";
-  acceptedVotes: number;
-  rejectedVotes: number;
-  totalMembers: number;
+  status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "voting"
+    | "Pending"
+    | "Approved"
+    | "Rejected"
+    | "Voting";
+  votes?: Array<{ userId: string; vote: "yes" | "no"; votedAt: string }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,9 +56,7 @@ export default function VotingProposalsPage() {
   const [selectedProposal, setSelectedProposal] =
     React.useState<Proposal | null>(null);
   const [voteDialogOpen, setVoteDialogOpen] = React.useState(false);
-  const [voteChoice, setVoteChoice] = React.useState<"accept" | "reject" | "">(
-    ""
-  );
+  const [voteChoice, setVoteChoice] = React.useState<"yes" | "no" | "">("");
   const [voteError, setVoteError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [userVotes, setUserVotes] = React.useState<Set<string>>(new Set());
@@ -99,16 +103,17 @@ export default function VotingProposalsPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/proposals/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          proposalId: selectedProposal._id,
-          vote: voteChoice,
-          userId: session?.user?.id,
-          userEmail: session?.user?.email,
-        }),
-      });
+      const response = await fetch(
+        `/api/proposals/${selectedProposal._id}/vote`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vote: voteChoice,
+            userId: session?.user?.id,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to submit vote");
@@ -127,17 +132,20 @@ export default function VotingProposalsPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "primary";
-      case "Passed":
-        return "success";
-      case "Failed":
-        return "error";
-      default:
-        return "default";
-    }
+  const normalizeStatus = (status: Proposal["status"]) => {
+    const s = (status || "pending").toString();
+    if (/^voting$/i.test(s)) return "Active";
+    if (/^approved$/i.test(s)) return "Passed";
+    if (/^rejected$/i.test(s)) return "Failed";
+    return "Pending";
+  };
+
+  const getStatusColor = (status: Proposal["status"]) => {
+    const label = normalizeStatus(status);
+    if (label === "Active") return "primary";
+    if (label === "Passed") return "success";
+    if (label === "Failed") return "error";
+    return "default";
   };
 
   const getVotePercentage = (votes: number, total: number) => {
@@ -153,12 +161,17 @@ export default function VotingProposalsPage() {
     );
   }
 
-  const totalVotes = proposals.reduce(
-    (sum, p) => sum + p.acceptedVotes + p.rejectedVotes,
-    0
+  const totalVotes = proposals.reduce((sum, p) => {
+    const yes = (p.votes || []).filter((v) => v.vote === "yes").length;
+    const no = (p.votes || []).filter((v) => v.vote === "no").length;
+    return sum + yes + no;
+  }, 0);
+  const activeProposals = proposals.filter(
+    (p) => normalizeStatus(p.status) === "Active"
   );
-  const activeProposals = proposals.filter((p) => p.status === "Active");
-  const passedProposals = proposals.filter((p) => p.status === "Passed");
+  const passedProposals = proposals.filter(
+    (p) => normalizeStatus(p.status) === "Passed"
+  );
 
   return (
     <Container
@@ -232,17 +245,25 @@ export default function VotingProposalsPage() {
       ) : (
         <Grid container spacing={3}>
           {proposals.map((proposal) => {
-            const totalVotesOnProposal =
-              proposal.acceptedVotes + proposal.rejectedVotes;
+            const yesVotes = (proposal.votes || []).filter(
+              (v) => v.vote === "yes"
+            ).length;
+            const noVotes = (proposal.votes || []).filter(
+              (v) => v.vote === "no"
+            ).length;
+            const totalVotesOnProposal = yesVotes + noVotes;
             const acceptPercentage = getVotePercentage(
-              proposal.acceptedVotes,
+              yesVotes,
               totalVotesOnProposal || 1
             );
             const rejectPercentage = getVotePercentage(
-              proposal.rejectedVotes,
+              noVotes,
               totalVotesOnProposal || 1
             );
-            const hasVoted = userVotes.has(proposal._id);
+            const hasVotedServer = (proposal.votes || []).some(
+              (v) => v.userId === session?.user?.id
+            );
+            const hasVoted = hasVotedServer || userVotes.has(proposal._id);
 
             return (
               <Grid item xs={12} md={6} key={proposal._id}>
@@ -268,7 +289,7 @@ export default function VotingProposalsPage() {
                         {proposal.title}
                       </Typography>
                       <Chip
-                        label={proposal.status}
+                        label={normalizeStatus(proposal.status)}
                         color={getStatusColor(proposal.status) as any}
                         size="small"
                       />
@@ -330,7 +351,7 @@ export default function VotingProposalsPage() {
                               variant="caption"
                               sx={{ fontWeight: 600 }}
                             >
-                              {proposal.acceptedVotes} ({acceptPercentage}%)
+                              {yesVotes} ({acceptPercentage}%)
                             </Typography>
                           </Box>
                           <LinearProgress
@@ -375,7 +396,7 @@ export default function VotingProposalsPage() {
                               variant="caption"
                               sx={{ fontWeight: 600 }}
                             >
-                              {proposal.rejectedVotes} ({rejectPercentage}%)
+                              {noVotes} ({rejectPercentage}%)
                             </Typography>
                           </Box>
                           <LinearProgress
@@ -400,14 +421,17 @@ export default function VotingProposalsPage() {
                       variant="contained"
                       fullWidth
                       onClick={() => handleVoteClick(proposal)}
-                      disabled={proposal.status !== "Active" || hasVoted}
+                      disabled={
+                        normalizeStatus(proposal.status) !== "Active" ||
+                        hasVoted
+                      }
                       startIcon={<HowToVoteIcon />}
                     >
                       {hasVoted
                         ? "You Voted"
-                        : proposal.status === "Active"
+                        : normalizeStatus(proposal.status) === "Active"
                         ? "Vote Now"
-                        : proposal.status}
+                        : normalizeStatus(proposal.status)}
                     </Button>
                   </CardActions>
                 </Card>
@@ -450,12 +474,10 @@ export default function VotingProposalsPage() {
 
               <RadioGroup
                 value={voteChoice}
-                onChange={(e) =>
-                  setVoteChoice(e.target.value as "accept" | "reject")
-                }
+                onChange={(e) => setVoteChoice(e.target.value as "yes" | "no")}
               >
                 <FormControlLabel
-                  value="accept"
+                  value="yes"
                   control={<Radio />}
                   label={
                     <Box>
@@ -469,7 +491,7 @@ export default function VotingProposalsPage() {
                   }
                 />
                 <FormControlLabel
-                  value="reject"
+                  value="no"
                   control={<Radio />}
                   label={
                     <Box>
@@ -489,8 +511,18 @@ export default function VotingProposalsPage() {
                   Current Vote Results:
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Accept: {selectedProposal.acceptedVotes} | Reject:{" "}
-                  {selectedProposal.rejectedVotes}
+                  Accept:{" "}
+                  {
+                    (selectedProposal.votes || []).filter(
+                      (v) => v.vote === "yes"
+                    ).length
+                  }{" "}
+                  | Reject:{" "}
+                  {
+                    (selectedProposal.votes || []).filter(
+                      (v) => v.vote === "no"
+                    ).length
+                  }
                 </Typography>
               </Box>
             </>

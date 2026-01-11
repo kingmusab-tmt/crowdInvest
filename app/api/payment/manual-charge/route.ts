@@ -72,7 +72,9 @@ export async function POST(request: NextRequest) {
         userId: user._id,
         type: "general",
         title: "Manual Recurring Charge Failed",
-        message: `Your manual recurring charge of ${formatNaira(amount)} failed: ${failureReason}. Please try again or use another payment method.`,
+        message: `Your manual recurring charge of ${formatNaira(
+          amount
+        )} failed: ${failureReason}. Please try again or use another payment method.`,
         actionUrl: "/dashboard/funds",
       });
 
@@ -107,7 +109,9 @@ export async function POST(request: NextRequest) {
       userId: user._id,
       type: "general",
       title: "Manual Recurring Charge Successful",
-      message: `Your manual recurring charge of ${formatNaira(amountInNaira)} has been processed successfully.`,
+      message: `Your manual recurring charge of ${formatNaira(
+        amountInNaira
+      )} has been processed successfully.`,
       actionUrl: "/dashboard/transactions",
     });
 
