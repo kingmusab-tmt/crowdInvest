@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import crypto from "crypto";
 import dbConnect from "@/utils/connectDB";
 import User from "@/models/User";
+import Community from "@/models/Community";
 import Transaction from "@/models/Transaction";
 import PaymentFailure from "@/models/PaymentFailure";
 import { createNotification } from "@/services/notificationService";
@@ -89,10 +90,12 @@ async function handleChargeSuccess(data: any) {
     await Transaction.create({
       userName: user.name,
       userEmail: user.email,
-      type: "Deposit",
+      community: user.community,
+      type: "Monthly_Contribution",
       status: "Completed",
       amount: amountInNaira,
       date: new Date(),
+      description: "Account Deposit",
     });
 
     // Update user balance
@@ -101,6 +104,19 @@ async function handleChargeSuccess(data: any) {
       { $inc: { balance: amountInNaira } },
       { new: true, runValidators: false }
     );
+
+    // Update community totals (contribution + spending tracking)
+    if (user.community) {
+      await Community.findByIdAndUpdate(
+        user.community,
+        {
+          $inc: {
+            totalContributions: amountInNaira,
+          },
+        },
+        { new: true, runValidators: false }
+      );
+    }
 
     // Send notification
     await createNotification({

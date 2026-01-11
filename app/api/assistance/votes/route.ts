@@ -14,18 +14,23 @@ export async function GET(request: NextRequest) {
       query.community = new Types.ObjectId(community);
     }
 
-    // Get assistance requests with votes
+    // Get assistance requests for community (include approved/voting even if 0 votes)
     const assistanceRequests = await Assistance.find(query)
       .populate("requestedBy", "name email")
       .select("-__v")
       .sort({ createdAt: -1 });
 
-    // Transform to voting data
+    // Transform to voting data and include items with zero votes
     const votingData = assistanceRequests
-      .filter((a: any) => a.votes && a.votes.length > 0)
+      .filter((a: any) => {
+        const status = String(a.status || "").toLowerCase();
+        return status === "approved" || status === "voting";
+      })
       .map((a: any) => {
-        const assistVotes = a.votes?.filter((v: any) => v.vote === "assist").length || 0;
-        const notAssistVotes = a.votes?.filter((v: any) => v.vote === "not-assist").length || 0;
+        const assistVotes =
+          a.votes?.filter((v: any) => v.vote === "assist").length || 0;
+        const notAssistVotes =
+          a.votes?.filter((v: any) => v.vote === "not-assist").length || 0;
         const totalVoters = a.votes?.length || 0;
 
         return {

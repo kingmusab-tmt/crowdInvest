@@ -218,8 +218,15 @@ export default function UserDashboard() {
     try {
       setIsRefreshing(true);
 
-      // Fetch investments
-      const investmentsRes = await fetch("/api/investments");
+      // Get user's community ID
+      const userCommunityId = session?.user?.community;
+
+      // Fetch investments filtered by user's community
+      const investmentsRes = await fetch(
+        userCommunityId
+          ? `/api/investments?community=${userCommunityId}`
+          : "/api/investments"
+      );
       const investmentsData = await investmentsRes.json();
       setInvestments(
         investmentsData
@@ -235,7 +242,18 @@ export default function UserDashboard() {
       // Fetch events
       const eventsRes = await fetch("/api/events");
       const eventsData = await eventsRes.json();
-      setEvents(eventsData.slice(0, 3));
+
+      // Filter to show only upcoming events, sorted by date
+      const now = new Date();
+      const upcomingEventsList = eventsData
+        .filter((e: any) => new Date(e.eventDate) > now)
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+        )
+        .slice(0, 3);
+
+      setEvents(upcomingEventsList);
 
       // Get user data and calculate contribution stats
       if (session?.user) {
@@ -249,7 +267,7 @@ export default function UserDashboard() {
           const memberDeposits = transactionsData.filter(
             (t: any) =>
               t.userEmail === session.user.email &&
-              t.type === "Deposit" &&
+              t.type === "Monthly_Contribution" &&
               t.status === "Completed"
           );
           const memberTotalContribution = memberDeposits.reduce(
@@ -260,7 +278,8 @@ export default function UserDashboard() {
 
           // Calculate total community contributions (all members' deposits)
           const allDeposits = transactionsData.filter(
-            (t: any) => t.type === "Deposit" && t.status === "Completed"
+            (t: any) =>
+              t.type === "Monthly_Contribution" && t.status === "Completed"
           );
           const communityTotal = allDeposits.reduce(
             (sum: number, t: any) => sum + t.amount,
@@ -275,9 +294,14 @@ export default function UserDashboard() {
               : 0;
           setContributionPercentage(percentage);
 
-          // Calculate total spending (Assistance + Event costs)
+          // Calculate total spending (all admin withdrawal types)
           const spendingTransactions = transactionsData.filter(
-            (t: any) => t.type === "Assistance" && t.status === "Completed"
+            (t: any) =>
+              t.isAdminTransaction === true &&
+              ["Investment", "Profit Share", "Assistance", "Event"].includes(
+                t.type
+              ) &&
+              t.status === "Completed"
           );
           const totalSpent = spendingTransactions.reduce(
             (sum: number, t: any) => sum + t.amount,
@@ -337,7 +361,8 @@ export default function UserDashboard() {
           const lastMonthYear =
             currentMonth === 0 ? currentYear - 1 : currentYear;
           const lastMonthDeposits = transactionsData.filter((t: any) => {
-            if (t.type !== "Deposit" || t.status !== "Completed") return false;
+            if (t.type !== "Monthly_Contribution" || t.status !== "Completed")
+              return false;
             const tDate = new Date(t.date);
             return (
               tDate.getMonth() === lastMonth &&
@@ -351,16 +376,16 @@ export default function UserDashboard() {
 
           // Get upcoming events info
           const futureEvents = eventsData.filter(
-            (e: any) => new Date(e.date) > new Date()
+            (e: any) => new Date(e.eventDate) > new Date()
           );
           const sortedEvents = futureEvents.sort(
             (a: any, b: any) =>
-              new Date(a.date).getTime() - new Date(b.date).getTime()
+              new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
           );
           setUpcomingEvents({
             count: futureEvents.length,
-            closestDate: sortedEvents[0]?.date
-              ? new Date(sortedEvents[0].date).toLocaleDateString()
+            closestDate: sortedEvents[0]?.eventDate
+              ? new Date(sortedEvents[0].eventDate).toLocaleDateString()
               : "None scheduled",
           });
 
@@ -399,7 +424,7 @@ export default function UserDashboard() {
               const memberDeposits = transactionsData.filter(
                 (t: any) =>
                   t.userEmail === member.email &&
-                  t.type === "Deposit" &&
+                  t.type === "Monthly_Contribution" &&
                   t.status === "Completed" &&
                   new Date(t.date) >= threeMonthsAgo
               );
@@ -407,16 +432,9 @@ export default function UserDashboard() {
               if (memberDeposits.length > 0) {
                 activeCount++;
               } else {
-                // Check if they have any contributions at all
-                const hasAnyContribution = transactionsData.some(
-                  (t: any) =>
-                    t.userEmail === member.email &&
-                    t.type === "Deposit" &&
-                    t.status === "Completed"
-                );
-                if (hasAnyContribution) {
-                  inactiveCount++;
-                }
+                // Count as inactive if no contributions in last 3 months
+                // (includes those who never contributed)
+                inactiveCount++;
               }
             }
 
@@ -424,11 +442,12 @@ export default function UserDashboard() {
             setInactiveMembers(inactiveCount);
           }
 
-          // Calculate member's total withdrawals
+          // Calculate member's total withdrawals (only Profit Share counts as withdrawal)
           const memberWithdrawals = transactionsData.filter(
             (t: any) =>
               t.userEmail === session.user.email &&
-              t.type === "Withdrawal" &&
+              t.isAdminTransaction === true &&
+              t.type === "Profit Share" &&
               t.status === "Completed"
           );
           const totalWithdrawal = memberWithdrawals.reduce(
@@ -526,15 +545,21 @@ export default function UserDashboard() {
       width: 130,
       renderCell: (params) => (
         <Chip
-          label={params.value}
+          label={
+            params.value === "Monthly_Contribution"
+              ? "Monthly Contribution"
+              : params.value
+          }
           size="small"
           color={
-            params.value === "Deposit"
+            params.value === "Monthly_Contribution"
               ? "success"
-              : params.value === "Withdrawal"
-              ? "warning"
               : params.value === "Investment"
               ? "primary"
+              : params.value === "Profit Share"
+              ? "secondary"
+              : params.value === "Assistance" || params.value === "Event"
+              ? "warning"
               : "default"
           }
         />
@@ -1058,7 +1083,7 @@ export default function UserDashboard() {
                       {event.title}
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      {new Date(event.date).toLocaleDateString()} •{" "}
+                      {new Date(event.eventDate).toLocaleDateString()} •{" "}
                       {event.location}
                     </Typography>
                   </Box>

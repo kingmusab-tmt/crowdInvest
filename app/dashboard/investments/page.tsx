@@ -19,6 +19,8 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useSession } from "next-auth/react";
 import MemberInvestmentCard from "@/components/MemberInvestmentCard";
 import InvestmentSuggestionForm from "@/components/InvestmentSuggestionForm";
@@ -75,6 +77,12 @@ interface InvestmentSuggestion {
   timeframe: string;
   riskLevel: "Low" | "Medium" | "High";
   status: "Pending" | "Approved" | "Rejected" | "Voting";
+  rejectionReason?: string;
+  votes?: Array<{
+    userId: string | { _id: string; name?: string; email?: string };
+    vote: "yes" | "no";
+    votedAt: string;
+  }>;
   suggestedBy: { name?: string; email?: string } | any;
   createdAt: string;
 }
@@ -92,6 +100,8 @@ export default function InvestmentsPage() {
     React.useState<InvestmentSuggestion[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [suggestionFormOpen, setSuggestionFormOpen] = React.useState(false);
+  const [editingSuggestion, setEditingSuggestion] =
+    React.useState<InvestmentSuggestion | null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -131,6 +141,94 @@ export default function InvestmentsPage() {
     setRefreshing(true);
     await loadInvestments();
     setRefreshing(false);
+  };
+
+  const handleEditSuggestion = (suggestion: InvestmentSuggestion) => {
+    setEditingSuggestion(suggestion);
+    setSuggestionFormOpen(true);
+  };
+
+  const handleDeleteSuggestion = async (suggestionId: string) => {
+    if (!confirm("Are you sure you want to delete this suggestion?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/investments/suggestions/${suggestionId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete suggestion");
+      }
+
+      // Refresh the suggestions list
+      await loadInvestments();
+    } catch (error) {
+      console.error("Error deleting suggestion:", error);
+      setError("Failed to delete suggestion. Please try again.");
+    }
+  };
+
+  const handleFormClose = () => {
+    setSuggestionFormOpen(false);
+    setEditingSuggestion(null);
+  };
+
+  const handleVote = async (suggestionId: string, vote: "yes" | "no") => {
+    try {
+      const res = await fetch(
+        `/api/investments/suggestions/${suggestionId}/vote`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vote }),
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to record vote");
+      }
+
+      // Refresh the suggestions list to show updated vote counts
+      await loadInvestments();
+    } catch (error) {
+      console.error("Error voting:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to record vote. Please try again."
+      );
+    }
+  };
+
+  const getUserVote = (
+    suggestion: InvestmentSuggestion
+  ): "yes" | "no" | null => {
+    if (!session?.user?.id || !suggestion.votes) return null;
+
+    const userVote = suggestion.votes.find((v) => {
+      const userId = typeof v.userId === "string" ? v.userId : v.userId._id;
+      return userId === session.user.id;
+    });
+
+    return userVote ? userVote.vote : null;
+  };
+
+  const getVoteCount = (suggestion: InvestmentSuggestion) => {
+    if (!suggestion.votes || suggestion.votes.length === 0) {
+      return { yes: 0, no: 0, total: 0 };
+    }
+
+    const yesVotes = suggestion.votes.filter((v) => v.vote === "yes").length;
+    const noVotes = suggestion.votes.filter((v) => v.vote === "no").length;
+
+    return {
+      yes: yesVotes,
+      no: noVotes,
+      total: suggestion.votes.length,
+    };
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -520,9 +618,62 @@ export default function InvestmentsPage() {
                     {suggestion.status === "Rejected" && (
                       <Alert severity="error" sx={{ fontSize: "0.875rem" }}>
                         ✗ This suggestion was not approved
+                        {suggestion.rejectionReason && (
+                          <Box
+                            sx={{
+                              mt: 1,
+                              pt: 1,
+                              borderTop: "1px solid rgba(211, 47, 47, 0.2)",
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontWeight: 600,
+                                display: "block",
+                                mb: 0.5,
+                              }}
+                            >
+                              Reason for rejection:
+                            </Typography>
+                            <Typography variant="caption">
+                              {suggestion.rejectionReason}
+                            </Typography>
+                          </Box>
+                        )}
                       </Alert>
                     )}
                   </Box>
+
+                  {/* Action Buttons for Rejected Suggestions */}
+                  {suggestion.status === "Rejected" && (
+                    <Box
+                      sx={{
+                        mt: 2,
+                        display: "flex",
+                        gap: 1,
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<EditIcon />}
+                        onClick={() => handleEditSuggestion(suggestion)}
+                      >
+                        Edit & Resubmit
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDeleteSuggestion(suggestion.id)}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  )}
                 </Paper>
               ))}
             </Stack>
@@ -670,18 +821,74 @@ export default function InvestmentsPage() {
                     >
                       Vote on this investment proposal:
                     </Typography>
-                    <Stack direction="row" spacing={2}>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        sx={{ flex: 1 }}
-                      >
-                        👍 Vote Yes
-                      </Button>
-                      <Button variant="outlined" color="error" sx={{ flex: 1 }}>
-                        👎 Vote No
-                      </Button>
-                    </Stack>
+
+                    {/* Vote counts */}
+                    {(() => {
+                      const voteCounts = getVoteCount(suggestion);
+                      const userVote = getUserVote(suggestion);
+
+                      return (
+                        <>
+                          {voteCounts.total > 0 && (
+                            <Box sx={{ mb: 2 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  mb: 1,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Yes: {voteCounts.yes} | No: {voteCounts.no} |
+                                  Total: {voteCounts.total}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+
+                          <Stack direction="row" spacing={2}>
+                            <Button
+                              variant={
+                                userVote === "yes" ? "contained" : "outlined"
+                              }
+                              color="success"
+                              sx={{ flex: 1 }}
+                              onClick={() => handleVote(suggestion.id, "yes")}
+                            >
+                              👍 Vote Yes
+                            </Button>
+                            <Button
+                              variant={
+                                userVote === "no" ? "contained" : "outlined"
+                              }
+                              color="error"
+                              sx={{ flex: 1 }}
+                              onClick={() => handleVote(suggestion.id, "no")}
+                            >
+                              👎 Vote No
+                            </Button>
+                          </Stack>
+
+                          {userVote && (
+                            <Typography
+                              variant="caption"
+                              color="primary"
+                              sx={{
+                                display: "block",
+                                mt: 1,
+                                textAlign: "center",
+                              }}
+                            >
+                              You voted:{" "}
+                              {userVote === "yes" ? "Yes 👍" : "No 👎"}
+                            </Typography>
+                          )}
+                        </>
+                      );
+                    })()}
                   </Box>
                 </Paper>
               ))}
@@ -693,10 +900,11 @@ export default function InvestmentsPage() {
       {/* Investment Suggestion Form Modal */}
       <InvestmentSuggestionForm
         open={suggestionFormOpen}
-        onClose={() => setSuggestionFormOpen(false)}
+        onClose={handleFormClose}
         communityId={session?.user?.community || ""}
         userId={session?.user?.id || ""}
         onSuccess={handleRefresh}
+        editingSuggestion={editingSuggestion}
       />
     </Container>
   );

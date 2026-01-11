@@ -36,42 +36,57 @@ export async function POST(request: Request) {
         );
 
         if (!notificationExists) {
-          // Get all community members
-          const community = await Community.findById(event.community);
+          // Get all community members from the event's community
+          const community = await Community.findById(
+            event.community._id || event.community
+          );
           if (!community) continue;
 
-          // Get all users in the community (basic approach - can be enhanced)
+          // Get all users in this specific community
           const communityMembers = await User.find({
+            community: community._id,
             _id: { $ne: event.createdBy }, // Exclude creator
           }).select("_id");
 
-          // Create notifications for all community members
-          const notifications = communityMembers.map((member) => ({
-            userId: member._id,
-            type: "event_reminder",
-            title: `Reminder: "${event.title}" is in ${daysRemaining} day${
-              daysRemaining > 1 ? "s" : ""
-            }`,
-            message: `${
-              event.title
-            } will take place on ${event.eventDate.toLocaleDateString()} at ${
-              event.location
-            }`,
-            eventId: event._id,
-            read: false,
-          }));
+          if (communityMembers.length > 0) {
+            // Create reminder notifications for all community members
+            const notifications = communityMembers.map((member) => ({
+              userId: member._id,
+              type: "event",
+              title: `Reminder: "${event.title}" is in ${daysRemaining} day${
+                daysRemaining > 1 ? "s" : ""
+              }`,
+              message: `${
+                event.title
+              } will take place on ${event.eventDate.toLocaleDateString()} at ${
+                event.location
+              }`,
+              relatedData: {
+                eventId: event._id,
+                eventTitle: event.title,
+                eventDate: event.eventDate,
+                eventLocation: event.location,
+                daysRemaining,
+              },
+              actionUrl: `/dashboard/events`,
+              read: false,
+            }));
 
-          await Notification.insertMany(notifications);
+            await Notification.insertMany(notifications);
 
-          // Track that notification was sent
-          event.notificationsSent = event.notificationsSent || [];
-          event.notificationsSent.push({
-            daysRemaining,
-            sentAt: now,
-          });
-          await event.save();
+            // Track that notification was sent
+            event.notificationsSent = event.notificationsSent || [];
+            event.notificationsSent.push({
+              daysRemaining,
+              sentAt: now,
+            });
+            await event.save();
 
-          notificationsSent += notifications.length;
+            notificationsSent += notifications.length;
+            console.log(
+              `[Event Notifications] Sent ${notifications.length} reminders for event "${event.title}" (${daysRemaining} days remaining)`
+            );
+          }
         }
       }
     }

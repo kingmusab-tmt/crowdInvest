@@ -1,15 +1,16 @@
 import { NextResponse, NextRequest } from "next/server";
 import dbConnect from "../../../../../utils/connectDB";
 import Assistance from "../../../../../models/Assistance";
+import User from "../../../../../models/User";
 import { Types } from "mongoose";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
 
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -42,14 +43,31 @@ export async function POST(
       assistance.votes = [];
     }
 
+    // Resolve voterId to ObjectId (supports email fallback)
+    let voterId: Types.ObjectId | null = null;
+    if (typeof userId === "string" && Types.ObjectId.isValid(userId)) {
+      voterId = new Types.ObjectId(userId);
+    } else if (typeof userId === "string" && userId.includes("@")) {
+      const user = await User.findOne({ email: userId });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+      voterId = user._id as Types.ObjectId;
+    } else {
+      return NextResponse.json(
+        { error: "Invalid userId for voting" },
+        { status: 400 }
+      );
+    }
+
     // Remove existing vote from this user if any
     assistance.votes = assistance.votes.filter(
-      (v: any) => v.userId?.toString() !== userId
+      (v: any) => v.userId?.toString() !== voterId!.toString()
     );
 
     // Add new vote
     assistance.votes.push({
-      userId: userId as any,
+      userId: voterId as any,
       vote: vote as "assist" | "not-assist",
       votedAt: new Date(),
     });

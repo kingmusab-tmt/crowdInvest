@@ -687,7 +687,15 @@ export default function OnboardingPage() {
               policy to continue.
             </Typography>
 
-            <Paper sx={{ p: 3, mb: 3, bgcolor: "grey.50" }}>
+            <Paper
+              sx={{
+                p: 3,
+                mb: 3,
+                bgcolor: "background.paper",
+                border: 1,
+                borderColor: "divider",
+              }}
+            >
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
                 Terms and Conditions Summary
               </Typography>
@@ -717,7 +725,15 @@ export default function OnboardingPage() {
               </Button>
             </Paper>
 
-            <Paper sx={{ p: 3, mb: 3, bgcolor: "grey.50" }}>
+            <Paper
+              sx={{
+                p: 3,
+                mb: 3,
+                bgcolor: "background.paper",
+                border: 1,
+                borderColor: "divider",
+              }}
+            >
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
                 Privacy Policy Summary
               </Typography>

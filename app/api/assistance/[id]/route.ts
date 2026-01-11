@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "../../../../utils/connectDB";
 import Assistance from "../../../../models/Assistance";
+import User from "../../../../models/User";
 import { Types } from "mongoose";
 
 export async function GET(
@@ -55,6 +56,20 @@ export async function PUT(
     }
 
     const body = await request.json();
+
+    // If requestedBy is provided as an email, convert to user ObjectId
+    if (
+      body.requestedBy &&
+      typeof body.requestedBy === "string" &&
+      body.requestedBy.includes("@")
+    ) {
+      const user = await User.findOne({ email: body.requestedBy });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+      body.requestedBy = user._id;
+    }
+
     const assistance = await Assistance.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,

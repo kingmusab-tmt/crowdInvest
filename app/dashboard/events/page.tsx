@@ -92,15 +92,11 @@ export default function EventsPage() {
     try {
       const res = await fetch("/api/events");
       const data = await res.json();
-      // Filter events for this community
-      const communityEvents = data.filter(
-        (e: IEvent) => e.community?._id === currentUser?.community?._id
-      );
-      setEvents(communityEvents);
+      setEvents(data);
     } catch (err) {
       console.error("Failed to load events", err);
     }
-  }, [currentUser?.community?._id]);
+  }, []);
 
   const checkAndSendNotifications = React.useCallback(async () => {
     try {
@@ -115,11 +111,16 @@ export default function EventsPage() {
   }, [fetchCurrentUser]);
 
   React.useEffect(() => {
-    if (currentUser?.community?._id) {
+    if (currentUser?.community || currentUser?.role === "General Admin") {
       fetchEvents();
       checkAndSendNotifications();
     }
-  }, [currentUser?.community?._id, fetchEvents, checkAndSendNotifications]);
+  }, [
+    currentUser?.community,
+    currentUser?.role,
+    fetchEvents,
+    checkAndSendNotifications,
+  ]);
 
   React.useEffect(() => {
     // Update countdown timer every minute

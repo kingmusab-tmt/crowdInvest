@@ -250,8 +250,8 @@ export default function NotificationBell() {
             </Typography>
           </Box>
         ) : (
-          <>
-            {notifications.map((notification) => (
+          [
+            ...notifications.map((notification) => (
               <MenuItem
                 key={notification._id}
                 onClick={(e) => handleNotificationClick(notification, e)}
@@ -320,15 +320,14 @@ export default function NotificationBell() {
                   </Stack>
                 </Box>
               </MenuItem>
-            ))}
-
-            <Divider />
-            <Box sx={{ p: 1, textAlign: "center" }}>
+            )),
+            <Divider key="divider" />,
+            <Box key="view-all" sx={{ p: 1, textAlign: "center" }}>
               <Button fullWidth onClick={handleViewAll}>
                 View All Notifications
               </Button>
-            </Box>
-          </>
+            </Box>,
+          ]
         )}
       </Menu>
     </>

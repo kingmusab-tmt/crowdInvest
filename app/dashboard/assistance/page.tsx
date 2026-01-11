@@ -81,6 +81,8 @@ export default function AssistancePage() {
   >([]);
   const [loading, setLoading] = React.useState(true);
   const [requestFormOpen, setRequestFormOpen] = React.useState(false);
+  const [editingRequest, setEditingRequest] =
+    React.useState<AssistanceRequest | null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
@@ -149,31 +151,56 @@ export default function AssistancePage() {
       return;
     }
 
+    const isEditing = !!editingRequest;
+
     try {
-      const res = await fetch("/api/assistance", {
-        method: "POST",
+      const url = isEditing
+        ? `/api/assistance/${editingRequest!._id}`
+        : "/api/assistance";
+      const method = isEditing ? "PUT" : "POST";
+      const payload: any = {
+        ...requestForm,
+        community: session?.user?.community,
+        requestedBy: session?.user?.email,
+      };
+      if (isEditing) {
+        payload.status = "Pending";
+        payload.rejectionReason = "";
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...requestForm,
-          community: session?.user?.community,
-          requestedBy: session?.user?.email,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        setSuccess("Assistance request created successfully");
+        setSuccess(
+          isEditing
+            ? "Assistance request updated and resubmitted"
+            : "Assistance request created successfully"
+        );
         setRequestForm({
           title: "",
           description: "",
           assistanceType: "financial",
         });
         setRequestFormOpen(false);
+        setEditingRequest(null);
         loadRequests();
       } else {
-        setError("Failed to create assistance request");
+        setError(
+          isEditing
+            ? "Failed to update assistance request"
+            : "Failed to create assistance request"
+        );
       }
     } catch (err) {
-      setError("Error creating assistance request");
+      setError(
+        isEditing
+          ? "Error updating assistance request"
+          : "Error creating assistance request"
+      );
     }
   };
 
@@ -185,7 +212,7 @@ export default function AssistancePage() {
       const res = await fetch(`/api/assistance/${requestId}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vote, userId: session?.user?.email }),
+        body: JSON.stringify({ vote, userId: session?.user?.id }),
       });
 
       if (res.ok) {
@@ -404,15 +431,60 @@ export default function AssistancePage() {
                     <Typography variant="body2" sx={{ mb: 2 }}>
                       {request.description}
                     </Typography>
-                    {request.status === "Rejected" &&
-                      request.rejectionReason && (
-                        <Alert severity="error" sx={{ mt: 2 }}>
-                          <Typography variant="caption">
-                            <strong>Rejection Reason:</strong>{" "}
-                            {request.rejectionReason}
-                          </Typography>
-                        </Alert>
-                      )}
+                    {request.status === "Rejected" && (
+                      <>
+                        {request.rejectionReason && (
+                          <Alert severity="error" sx={{ mt: 2 }}>
+                            <Typography variant="caption">
+                              <strong>Rejection Reason:</strong>{" "}
+                              {request.rejectionReason}
+                            </Typography>
+                          </Alert>
+                        )}
+                        <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+                          <Button
+                            variant="outlined"
+                            onClick={() => {
+                              setEditingRequest(request);
+                              setRequestForm({
+                                title: request.title,
+                                description: request.description,
+                                assistanceType: request.assistanceType,
+                              });
+                              setRequestFormOpen(true);
+                            }}
+                          >
+                            Edit & Resubmit
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={async () => {
+                              if (!confirm("Delete this assistance request?"))
+                                return;
+                              try {
+                                const res = await fetch(
+                                  `/api/assistance/${request._id}`,
+                                  { method: "DELETE" }
+                                );
+                                if (res.ok) {
+                                  setSuccess("Assistance request deleted");
+                                  loadRequests();
+                                } else {
+                                  setError(
+                                    "Failed to delete assistance request"
+                                  );
+                                }
+                              } catch (e) {
+                                setError("Error deleting assistance request");
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
+                      </>
+                    )}
                     <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
                       <Chip
                         label={request.assistanceType}
@@ -571,7 +643,9 @@ export default function AssistancePage() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Request Assistance</DialogTitle>
+        <DialogTitle>
+          {editingRequest ? "Edit Assistance Request" : "Request Assistance"}
+        </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
             <TextField

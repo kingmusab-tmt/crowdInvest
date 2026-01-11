@@ -6,22 +6,24 @@ import { Types } from "mongoose";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    const { id } = await params;
+
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid investment ID" },
         { status: 400 }
       );
     }
 
-    let investment = await MemberInvestment.findById(params.id).select("-__v");
+    let investment = await MemberInvestment.findById(id).select("-__v");
 
     if (!investment) {
-      investment = await Investment.findById(params.id).select("-__v");
+      investment = await Investment.findById(id).select("-__v");
     }
 
     if (!investment) {
@@ -43,12 +45,14 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    const { id } = await params;
+
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid investment ID" },
         { status: 400 }
@@ -58,14 +62,14 @@ export async function PUT(
     const body = await request.json();
 
     // Try to update MemberInvestment first
-    let investment = await MemberInvestment.findByIdAndUpdate(params.id, body, {
+    let investment = await MemberInvestment.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
     }).select("-__v");
 
     // If not found, try Investment model
     if (!investment) {
-      investment = await Investment.findByIdAndUpdate(params.id, body, {
+      investment = await Investment.findByIdAndUpdate(id, body, {
         new: true,
         runValidators: true,
       }).select("-__v");
@@ -90,12 +94,14 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    const { id } = await params;
+
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid investment ID" },
         { status: 400 }
@@ -103,11 +109,11 @@ export async function DELETE(
     }
 
     // Try to delete from MemberInvestment first
-    let investment = await MemberInvestment.findByIdAndDelete(params.id);
+    let investment = await MemberInvestment.findByIdAndDelete(id);
 
     // If not found, try Investment model
     if (!investment) {
-      investment = await Investment.findByIdAndDelete(params.id);
+      investment = await Investment.findByIdAndDelete(id);
     }
 
     if (!investment) {

@@ -5,6 +5,8 @@ export interface ICommunity extends Document {
   description: string;
   imageUrl?: string;
   memberCount: number;
+  totalContributions: number;
+  totalSpending: number;
   generalAdmin: mongoose.Types.ObjectId;
   communityAdmin?: mongoose.Types.ObjectId;
   status: "Active" | "Suspended";
@@ -26,6 +28,8 @@ const CommunitySchema = new Schema<ICommunity>(
     description: { type: String, required: true },
     imageUrl: String,
     memberCount: { type: Number, default: 0 },
+    totalContributions: { type: Number, default: 0 },
+    totalSpending: { type: Number, default: 0 },
     generalAdmin: { type: Schema.Types.ObjectId, ref: "User", required: true },
     communityAdmin: { type: Schema.Types.ObjectId, ref: "User" },
     status: {

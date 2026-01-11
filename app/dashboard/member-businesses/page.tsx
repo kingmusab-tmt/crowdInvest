@@ -105,6 +105,7 @@ interface Business {
   website?: string;
   imageUrl?: string;
   ownerId: string;
+  ownerEmail?: string;
   ownerName: string;
   status: string;
   rejectionReason?: string;
@@ -147,7 +148,10 @@ export default function MemberBusinessesPage() {
         // - Show all of user's own businesses (pending, rejected, approved)
         // - Show only approved businesses from other members
         const filteredBusinesses = data.filter((b: Business) => {
-          const isOwner = b.ownerId === session?.user?.id;
+          const isOwner =
+            b.ownerId === session?.user?.id ||
+            b.ownerId?.toString() === session?.user?.id ||
+            b.ownerEmail === session?.user?.email;
 
           // If user is the owner, show all their businesses
           if (isOwner) {
@@ -308,6 +312,24 @@ export default function MemberBusinessesPage() {
     });
     setImagePreview(business.imageUrl || null);
     setOpenDialog(true);
+  };
+
+  const handleDeleteBusiness = async (businessId: string) => {
+    if (!confirm("Delete this business? This action cannot be undone.")) return;
+
+    try {
+      const res = await fetch(`/api/businesses/${businessId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        fetchBusinesses();
+      } else {
+        setSubmitError("Failed to delete business");
+      }
+    } catch (err) {
+      setSubmitError("Error deleting business");
+    }
   };
 
   const categories = React.useMemo(() => CATEGORY_OPTIONS, []);
@@ -596,19 +618,31 @@ export default function MemberBusinessesPage() {
                     )}
                   </Box>
                 </CardContent>
-                {business.status === "Rejected" && (
-                  <CardActions>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="warning"
-                      onClick={() => handleEditRejectedBusiness(business)}
-                      fullWidth
-                    >
-                      Edit & Resubmit
-                    </Button>
-                  </CardActions>
-                )}
+                {business.status === "Rejected" &&
+                  (business.ownerId === session?.user?.id ||
+                    business.ownerId?.toString() === session?.user?.id ||
+                    business.ownerEmail === session?.user?.email) && (
+                    <CardActions sx={{ gap: 1, px: 2, pb: 2 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="warning"
+                        onClick={() => handleEditRejectedBusiness(business)}
+                        fullWidth
+                      >
+                        Edit & Resubmit
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleDeleteBusiness(business._id)}
+                        fullWidth
+                      >
+                        Delete
+                      </Button>
+                    </CardActions>
+                  )}
               </Card>
             </Grid>
           ))}

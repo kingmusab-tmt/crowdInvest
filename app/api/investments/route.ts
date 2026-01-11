@@ -21,22 +21,19 @@ export async function GET(request: NextRequest) {
 
     console.log("Investment query:", JSON.stringify(query));
 
-    // First try to fetch from MemberInvestment (member portfolios)
-    let investments = await MemberInvestment.find(query)
-      .select("-__v")
-      .sort({ createdAt: -1 });
+    // Fetch from both Investment (admin-created) and MemberInvestment (member portfolios)
+    const [adminInvestments, memberInvestments] = await Promise.all([
+      Investment.find(query).select("-__v").sort({ createdAt: -1 }),
+      MemberInvestment.find(query).select("-__v").sort({ createdAt: -1 }),
+    ]);
 
-    console.log("Found MemberInvestments:", investments.length);
+    console.log("Found admin Investments:", adminInvestments.length);
+    console.log("Found MemberInvestments:", memberInvestments.length);
 
-    // If no member investments, try Investment model (admin-managed)
-    if (investments.length === 0) {
-      investments = await Investment.find(query)
-        .select("-__v")
-        .sort({ createdAt: -1 });
-      console.log("Found Investments:", investments.length);
-    }
+    // Combine both types of investments
+    const allInvestments = [...adminInvestments, ...memberInvestments];
 
-    return NextResponse.json(investments, { status: 200 });
+    return NextResponse.json(allInvestments, { status: 200 });
   } catch (error) {
     console.error("Error fetching investments:", error);
     return NextResponse.json(

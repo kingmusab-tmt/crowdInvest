@@ -19,6 +19,7 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import DomainIcon from "@mui/icons-material/Domain";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
+import { formatNaira } from "@/lib/utils";
 
 interface MemberInvestmentCardProps {
   title: string;
@@ -91,13 +92,6 @@ export default function MemberInvestmentCard({
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
-  };
-
   const formatPercentage = (value: number) => {
     return `${isProfit ? "+" : ""}${value.toFixed(2)}%`;
   };
@@ -147,7 +141,7 @@ export default function MemberInvestmentCard({
                 Base Price
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {formatCurrency(basePrice)}
+                {formatNaira(basePrice)}
               </Typography>
             </Box>
           </Grid>
@@ -160,7 +154,7 @@ export default function MemberInvestmentCard({
                 variant="body2"
                 sx={{ fontWeight: 600, color: profitColor }}
               >
-                {formatCurrency(currentPrice)}
+                {formatNaira(currentPrice)}
               </Typography>
             </Box>
           </Grid>
@@ -182,7 +176,7 @@ export default function MemberInvestmentCard({
                 Total Invested
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {formatCurrency(totalInvested)}
+                {formatNaira(totalInvested)}
               </Typography>
             </Box>
           </Grid>
@@ -194,7 +188,7 @@ export default function MemberInvestmentCard({
                 Current Value
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {formatCurrency(currentValue)}
+                {formatNaira(currentValue)}
               </Typography>
             </Box>
           </Grid>
@@ -206,7 +200,7 @@ export default function MemberInvestmentCard({
                 Dividend Received
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {formatCurrency(dividendReceived)}
+                {formatNaira(dividendReceived)}
               </Typography>
             </Box>
           </Grid>
@@ -235,7 +229,7 @@ export default function MemberInvestmentCard({
                 variant="body1"
                 sx={{ fontWeight: 700, color: profitColor }}
               >
-                {formatCurrency(profitOrLoss)}
+                {formatNaira(profitOrLoss)}
               </Typography>
             </Box>
           </Stack>
@@ -303,14 +297,14 @@ export default function MemberInvestmentCard({
                 variant="caption"
                 sx={{ fontWeight: 600, color: profitColor }}
               >
-                {formatCurrency(profitOrLoss + dividendReceived)}
+                {formatNaira(profitOrLoss + dividendReceived)}
               </Typography>
             </Box>
             <Tooltip title="Estimated value based on current price">
               <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                 <Typography variant="caption">Est. Liquidation:</Typography>
                 <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {formatCurrency(currentValue + dividendReceived)}
+                  {formatNaira(currentValue + dividendReceived)}
                 </Typography>
               </Box>
             </Tooltip>

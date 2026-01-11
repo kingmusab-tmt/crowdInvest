@@ -27,6 +27,8 @@ interface Transaction {
   _id: string;
   userName: string;
   userEmail: string;
+  isAdminTransaction: boolean;
+  performedByName?: string;
   type:
     | "Monthly_Contribution"
     | "Investment"
@@ -312,7 +314,7 @@ export default function TransactionsPage() {
             <TableHead>
               <TableRow sx={{ backgroundColor: "primary.light" }}>
                 <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>User Email</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Transaction By</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600 }}>
                   Amount
@@ -324,7 +326,16 @@ export default function TransactionsPage() {
               {paginatedTransactions.map((transaction) => (
                 <TableRow key={transaction._id} hover>
                   <TableCell>{formatDate(transaction.date)}</TableCell>
-                  <TableCell>{transaction.userEmail}</TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {transaction.performedByName || transaction.userName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {transaction.isAdminTransaction ? "Admin" : "Member"}
+                      </Typography>
+                    </Box>
+                  </TableCell>
                   <TableCell>
                     <Chip
                       label={transaction.type}

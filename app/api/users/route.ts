@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/auth";
 import dbConnect from "../../../utils/connectDB";
 import User from "../../../models/User";
+import Transaction from "../../../models/Transaction";
 import "@/models/Community"; // Ensure Community schema is registered for populate
 
 function ensurePermission(
@@ -13,6 +14,33 @@ function ensurePermission(
   if (role === "General Admin") return true;
   if (role === "Community Admin" && permissions?.[required]) return true;
   return false;
+}
+
+async function getTotalContribution(email: string) {
+  const agg = await Transaction.aggregate([
+    { $match: { userEmail: email, type: "Monthly_Contribution" } },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$amount" },
+      },
+    },
+  ]);
+  return agg[0]?.total || 0;
+}
+
+async function attachContribution(users: any[]) {
+  const enriched = await Promise.all(
+    users.map(async (u: any) => {
+      const totalContribution = await getTotalContribution(u.email);
+      return {
+        ...(u.toObject?.() ? u.toObject() : u),
+        balance: totalContribution,
+        totalContribution,
+      };
+    })
+  );
+  return enriched;
 }
 
 export async function GET(request: Request) {
@@ -47,17 +75,29 @@ export async function GET(request: Request) {
             "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings"
           )
           .populate("community", "name");
-        return NextResponse.json(users, { status: 200 });
+
+        const enriched = await attachContribution(users);
+        return NextResponse.json(enriched, { status: 200 });
       } else {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
 
-    // If querying by community, require permission
+    // If querying by community, allow General Admin; allow Community Admin for their own community;
+    // allow regular members to view their own community roster.
     if (communityIdQuery) {
-      if (!ensurePermission(role, perms, "canManageUsers")) {
+      const isGeneralAdmin = role === "General Admin";
+      const isCommunityAdminForOwn =
+        role === "Community Admin" &&
+        currentUser?.community?.toString() === communityIdQuery;
+      const isMemberOfCommunity =
+        role === "User" &&
+        currentUser?.community?.toString() === communityIdQuery;
+
+      if (!isGeneralAdmin && !isCommunityAdminForOwn && !isMemberOfCommunity) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
+
       const users = await User.find({ community: communityIdQuery })
         .select(
           "name email role status createdAt community permissions profileCompleted isTopUser balance"
@@ -75,14 +115,21 @@ export async function GET(request: Request) {
         const user = await User.findById(userIdQuery).select(
           "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings"
         );
-        return NextResponse.json([user], { status: 200 });
+        if (!user) {
+          return NextResponse.json(
+            { error: "User not found" },
+            { status: 404 }
+          );
+        }
+        const enriched = await attachContribution([user]);
+        return NextResponse.json(enriched, { status: 200 });
       } else {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
 
-    // Default: require admin/permission to list all users
-    if (!ensurePermission(role, perms, "canManageUsers")) {
+    // Default: allow General Admin; Community Admin sees only their community
+    if (role !== "General Admin" && role !== "Community Admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -96,7 +143,8 @@ export async function GET(request: Request) {
         "name email role status createdAt community permissions profileCompleted isTopUser balance"
       )
       .populate("community", "name");
-    return NextResponse.json(users, { status: 200 });
+    const enriched = await attachContribution(users);
+    return NextResponse.json(enriched, { status: 200 });
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(

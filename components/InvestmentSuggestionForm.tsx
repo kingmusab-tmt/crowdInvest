@@ -27,6 +27,17 @@ interface InvestmentSuggestionFormProps {
   communityId: string;
   userId: string;
   onSuccess: () => void;
+  editingSuggestion?: {
+    id: string;
+    investmentType: string;
+    title: string;
+    description: string;
+    reason: string;
+    amountRequired: number;
+    timeframe: string;
+    expectedReturn?: string;
+    riskLevel: string;
+  } | null;
 }
 
 export default function InvestmentSuggestionForm({
@@ -35,6 +46,7 @@ export default function InvestmentSuggestionForm({
   communityId,
   userId,
   onSuccess,
+  editingSuggestion,
 }: InvestmentSuggestionFormProps) {
   const [formData, setFormData] = useState({
     investmentType: "",
@@ -50,6 +62,22 @@ export default function InvestmentSuggestionForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Populate form when editing
+  React.useEffect(() => {
+    if (editingSuggestion) {
+      setFormData({
+        investmentType: editingSuggestion.investmentType,
+        title: editingSuggestion.title,
+        description: editingSuggestion.description,
+        reason: editingSuggestion.reason,
+        amountRequired: editingSuggestion.amountRequired.toString(),
+        timeframe: editingSuggestion.timeframe,
+        expectedReturn: editingSuggestion.expectedReturn || "",
+        riskLevel: editingSuggestion.riskLevel,
+      });
+    }
+  }, [editingSuggestion]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -104,19 +132,46 @@ export default function InvestmentSuggestionForm({
     setLoading(true);
 
     try {
-      await suggestInvestment({
-        community: communityId as any,
-        suggestedBy: userId as any,
-        investmentType: formData.investmentType as any,
-        title: formData.title,
-        description: formData.description,
-        reason: formData.reason,
-        amountRequired: parseFloat(formData.amountRequired),
-        timeframe: formData.timeframe,
-        expectedReturn: formData.expectedReturn || undefined,
-        riskLevel: formData.riskLevel as any,
-        status: "Pending",
-      });
+      if (editingSuggestion) {
+        // Update existing suggestion
+        const res = await fetch(
+          `/api/investments/suggestions/${editingSuggestion.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              investmentType: formData.investmentType,
+              title: formData.title,
+              description: formData.description,
+              reason: formData.reason,
+              amountRequired: parseFloat(formData.amountRequired),
+              timeframe: formData.timeframe,
+              expectedReturn: formData.expectedReturn || undefined,
+              riskLevel: formData.riskLevel,
+              status: "Pending", // Reset to Pending when resubmitting
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to update suggestion");
+        }
+      } else {
+        // Create new suggestion
+        await suggestInvestment({
+          community: communityId as any,
+          suggestedBy: userId as any,
+          investmentType: formData.investmentType as any,
+          title: formData.title,
+          description: formData.description,
+          reason: formData.reason,
+          amountRequired: parseFloat(formData.amountRequired),
+          timeframe: formData.timeframe,
+          expectedReturn: formData.expectedReturn || undefined,
+          riskLevel: formData.riskLevel as any,
+          status: "Pending",
+        });
+      }
 
       setSuccess(true);
       setTimeout(() => {
@@ -126,7 +181,9 @@ export default function InvestmentSuggestionForm({
       }, 1500);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to submit suggestion"
+        err instanceof Error
+          ? err.message
+          : `Failed to ${editingSuggestion ? "update" : "submit"} suggestion`
       );
     } finally {
       setLoading(false);
@@ -156,11 +213,15 @@ export default function InvestmentSuggestionForm({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Suggest an Investment
+        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+          {editingSuggestion
+            ? "Edit & Resubmit Investment"
+            : "Suggest an Investment"}
         </Typography>
-        <Typography variant="caption" color="textSecondary">
-          Help your community discover new investment opportunities
+        <Typography variant="caption" component="div" color="textSecondary">
+          {editingSuggestion
+            ? "Update your suggestion and resubmit for review"
+            : "Help your community discover new investment opportunities"}
         </Typography>
       </DialogTitle>
 
@@ -174,8 +235,9 @@ export default function InvestmentSuggestionForm({
 
           {success && (
             <Alert severity="success">
-              Investment suggestion submitted successfully! It will be reviewed
-              by community admin.
+              {editingSuggestion
+                ? "Investment suggestion updated and resubmitted successfully! It will be reviewed by community admin."
+                : "Investment suggestion submitted successfully! It will be reviewed by community admin."}
             </Alert>
           )}
 
@@ -306,7 +368,13 @@ export default function InvestmentSuggestionForm({
           variant="contained"
           disabled={loading || success}
         >
-          {loading ? <CircularProgress size={24} /> : "Submit Suggestion"}
+          {loading ? (
+            <CircularProgress size={24} />
+          ) : editingSuggestion ? (
+            "Update & Resubmit"
+          ) : (
+            "Submit Suggestion"
+          )}
         </Button>
       </DialogActions>
     </Dialog>

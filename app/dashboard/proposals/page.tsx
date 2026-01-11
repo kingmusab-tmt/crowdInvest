@@ -78,6 +78,9 @@ export default function ProposalsPage() {
   const [votingProposals, setVotingProposals] = React.useState<Proposal[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [proposalFormOpen, setProposalFormOpen] = React.useState(false);
+  const [editingProposal, setEditingProposal] = React.useState<Proposal | null>(
+    null
+  );
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
@@ -149,20 +152,36 @@ export default function ProposalsPage() {
     }
 
     try {
-      const res = await fetch("/api/proposals", {
-        method: "POST",
+      const isEditing = !!editingProposal;
+      const url = isEditing
+        ? `/api/proposals/${editingProposal!._id}`
+        : "/api/proposals";
+      const method = isEditing ? "PUT" : "POST";
+      const payload: any = {
+        ...proposalForm,
+        community: session?.user?.community,
+        proposedBy: session?.user?.email,
+      };
+      if (isEditing) {
+        payload.status = "pending";
+        payload.rejectionReason = "";
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...proposalForm,
-          community: session?.user?.community,
-          proposedBy: session?.user?.email,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        setSuccess("Proposal created successfully");
+        setSuccess(
+          isEditing
+            ? "Proposal updated and resubmitted"
+            : "Proposal created successfully"
+        );
         setProposalForm({ title: "", description: "", proposalType: "policy" });
         setProposalFormOpen(false);
+        setEditingProposal(null);
         loadProposals();
       } else {
         const data = await res.json();
@@ -178,7 +197,7 @@ export default function ProposalsPage() {
       const res = await fetch(`/api/proposals/${proposalId}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vote, userId: session?.user?.email }),
+        body: JSON.stringify({ vote, userId: session?.user?.id }),
       });
 
       if (res.ok) {
@@ -396,15 +415,57 @@ export default function ProposalsPage() {
                     <Typography variant="body2" sx={{ mb: 2 }}>
                       {proposal.description}
                     </Typography>
-                    {proposal.status === "rejected" &&
-                      proposal.rejectionReason && (
-                        <Alert severity="error" sx={{ mt: 2 }}>
-                          <Typography variant="caption">
-                            <strong>Rejection Reason:</strong>{" "}
-                            {proposal.rejectionReason}
-                          </Typography>
-                        </Alert>
-                      )}
+                    {proposal.status === "rejected" && (
+                      <>
+                        {proposal.rejectionReason && (
+                          <Alert severity="error" sx={{ mt: 2 }}>
+                            <Typography variant="caption">
+                              <strong>Rejection Reason:</strong>{" "}
+                              {proposal.rejectionReason}
+                            </Typography>
+                          </Alert>
+                        )}
+                        <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+                          <Button
+                            variant="outlined"
+                            onClick={() => {
+                              setEditingProposal(proposal);
+                              setProposalForm({
+                                title: proposal.title,
+                                description: proposal.description,
+                                proposalType: proposal.proposalType,
+                              });
+                              setProposalFormOpen(true);
+                            }}
+                          >
+                            Edit & Resubmit
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={async () => {
+                              if (!confirm("Delete this proposal?")) return;
+                              try {
+                                const res = await fetch(
+                                  `/api/proposals/${proposal._id}`,
+                                  { method: "DELETE" }
+                                );
+                                if (res.ok) {
+                                  setSuccess("Proposal deleted");
+                                  loadProposals();
+                                } else {
+                                  setError("Failed to delete proposal");
+                                }
+                              } catch (e) {
+                                setError("Error deleting proposal");
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
+                      </>
+                    )}
                     <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
                       <Chip
                         label={proposal.proposalType}
@@ -565,7 +626,9 @@ export default function ProposalsPage() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Make a Proposal</DialogTitle>
+        <DialogTitle>
+          {editingProposal ? "Edit Proposal" : "Make a Proposal"}
+        </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
             <TextField
@@ -615,7 +678,7 @@ export default function ProposalsPage() {
         <DialogActions>
           <Button onClick={() => setProposalFormOpen(false)}>Cancel</Button>
           <Button onClick={handleSubmitProposal} variant="contained">
-            Submit Proposal
+            {editingProposal ? "Save & Resubmit" : "Submit Proposal"}
           </Button>
         </DialogActions>
       </Dialog>

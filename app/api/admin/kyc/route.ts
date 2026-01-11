@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const users = await User.find(query)
       .populate("community", "name")
       .select(
-        "name email avatarUrl dateOfBirth placeOfWork address phoneNumber socialMedia maritalStatus nextOfKin dateJoined community profileCompleted kyc status"
+        "name email avatarUrl image dateOfBirth placeOfWork address phoneNumber socialMedia maritalStatus nextOfKin dateJoined community profileCompleted kyc status"
       )
       .sort({ dateJoined: -1 });
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       _id: user._id,
       name: user.name,
       email: user.email,
-      avatarUrl: user.avatarUrl || (user as any).image,
+      avatarUrl: user.avatarUrl || user.image || "",
       community: user.community?.name || "N/A",
       communityId: user.community?._id,
       dateJoined: user.dateJoined,

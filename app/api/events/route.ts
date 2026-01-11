@@ -129,6 +129,46 @@ export async function POST(request: Request) {
       populatedEvent._id
     );
 
+    // Send notifications to all community members about the new event
+    try {
+      const communityMembers = await User.find({
+        community: community._id,
+        _id: { $ne: user._id }, // Exclude the creator
+      }).select("_id");
+
+      if (communityMembers.length > 0) {
+        const notifications = communityMembers.map((member) => ({
+          userId: member._id,
+          type: "event",
+          title: `New Event: ${body.title}`,
+          message: `A new event "${
+            body.title
+          }" has been created in your community. It will take place on ${new Date(
+            body.eventDate
+          ).toLocaleDateString()} at ${body.location}.`,
+          relatedData: {
+            eventId: newEvent._id,
+            eventTitle: body.title,
+            eventDate: body.eventDate,
+            eventLocation: body.location,
+          },
+          actionUrl: `/dashboard/events`,
+          read: false,
+        }));
+
+        await Notification.insertMany(notifications);
+        console.log(
+          `[Events API POST] Sent ${notifications.length} notifications for event creation`
+        );
+      }
+    } catch (notificationError) {
+      console.error(
+        "[Events API POST] Error sending notifications:",
+        notificationError
+      );
+      // Don't fail the event creation if notifications fail
+    }
+
     return NextResponse.json(populatedEvent, { status: 201 });
   } catch (error) {
     console.error("[Events API POST] Error:", error);

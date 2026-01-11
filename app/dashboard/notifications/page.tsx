@@ -22,9 +22,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Grid,
 } from "@mui/material";
 import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EventIcon from "@mui/icons-material/Event";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import { useRouter, useSearchParams } from "next/navigation";
 
 interface Notification {
@@ -193,6 +197,197 @@ function NotificationsContent() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const formatEventDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatEventTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const renderNotificationDetails = (notification: Notification) => {
+    // Event notification with special formatting
+    if (notification.type === "event" && notification.relatedData?.eventTitle) {
+      const { eventTitle, eventDate, eventLocation, daysRemaining } =
+        notification.relatedData;
+
+      return (
+        <Stack spacing={2}>
+          <Typography variant="body1" sx={{ mb: 1 }}>
+            {notification.message}
+          </Typography>
+
+          {/* Event Details Card */}
+          <Paper
+            sx={{
+              p: 3,
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.primary.light}15 0%, ${theme.palette.primary.light}05 100%)`,
+              border: (theme) => `2px solid ${theme.palette.primary.light}`,
+              borderRadius: 2,
+            }}
+          >
+            <Grid container spacing={3}>
+              {/* Title */}
+              <Grid item xs={12}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <EventIcon sx={{ color: "primary.main", fontSize: 28 }} />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Event Name
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 700,
+                        color: "primary.main",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {eventTitle}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              {/* Date & Time */}
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
+                >
+                  <AccessTimeIcon sx={{ color: "info.main", mt: 0.5 }} />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Date & Time
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {formatEventDate(eventDate)}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mt: 0.5 }}
+                    >
+                      {formatEventTime(eventDate)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              {/* Days Remaining */}
+              {daysRemaining !== undefined && (
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 32,
+                        height: 32,
+                        bgcolor: (theme) =>
+                          daysRemaining <= 1
+                            ? theme.palette.error.light
+                            : daysRemaining <= 3
+                            ? theme.palette.warning.light
+                            : theme.palette.success.light,
+                        borderRadius: 1,
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        mt: 0.5,
+                      }}
+                    >
+                      {daysRemaining}
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Days Remaining
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {daysRemaining === 0
+                          ? "Today!"
+                          : daysRemaining === 1
+                          ? "1 day away"
+                          : `${daysRemaining} days away`}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+              )}
+
+              {/* Location */}
+              <Grid item xs={12}>
+                <Box
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
+                >
+                  <LocationOnIcon sx={{ color: "error.main", mt: 0.5 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Location
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {eventLocation}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Stack>
+      );
+    }
+
+    // Generic notification with relatedData
+    if (
+      notification.relatedData &&
+      Object.keys(notification.relatedData).length > 0
+    ) {
+      return (
+        <Stack spacing={2}>
+          <Typography variant="body1">{notification.message}</Typography>
+
+          <Paper sx={{ p: 2, bgcolor: "background.default" }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+              Additional Information
+            </Typography>
+            {Object.entries(notification.relatedData).map(([key, value]) => (
+              <Typography
+                key={key}
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 0.5 }}
+              >
+                <strong>{key}:</strong> {String(value)}
+              </Typography>
+            ))}
+          </Paper>
+        </Stack>
+      );
+    }
+
+    // Simple message only
+    return <Typography variant="body1">{notification.message}</Typography>;
   };
 
   const filteredNotifications =
@@ -412,37 +607,12 @@ function NotificationsContent() {
             </DialogTitle>
 
             <DialogContent>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {selectedNotification.message}
-              </Typography>
-
-              {selectedNotification.relatedData &&
-                Object.keys(selectedNotification.relatedData).length > 0 && (
-                  <Paper sx={{ p: 2, bgcolor: "background.default" }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 1 }}
-                    >
-                      Additional Information
-                    </Typography>
-                    {Object.entries(selectedNotification.relatedData).map(
-                      ([key, value]) => (
-                        <Typography
-                          key={key}
-                          variant="body2"
-                          color="text.secondary"
-                        >
-                          <strong>{key}:</strong> {String(value)}
-                        </Typography>
-                      )
-                    )}
-                  </Paper>
-                )}
+              {renderNotificationDetails(selectedNotification)}
 
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ mt: 2, display: "block" }}
+                sx={{ mt: 3, display: "block" }}
               >
                 Received: {formatDate(selectedNotification.createdAt)}
               </Typography>

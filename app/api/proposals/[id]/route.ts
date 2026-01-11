@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "../../../../utils/connectDB";
 import Proposal from "../../../../models/Proposal";
+import User from "../../../../models/User";
 import { Types } from "mongoose";
 
 export async function GET(
@@ -55,6 +56,20 @@ export async function PUT(
     }
 
     const body = await request.json();
+
+    // If proposedBy is provided as an email, convert to user ObjectId
+    if (
+      body.proposedBy &&
+      typeof body.proposedBy === "string" &&
+      body.proposedBy.includes("@")
+    ) {
+      const user = await User.findOne({ email: body.proposedBy });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+      body.proposedBy = user._id;
+    }
+
     const proposal = await Proposal.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,

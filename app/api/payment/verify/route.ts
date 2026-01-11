@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/auth";
 import dbConnect from "@/utils/connectDB";
 import User from "@/models/User";
+import Community from "@/models/Community";
 import Transaction from "@/models/Transaction";
 import { createNotification } from "@/services/notificationService";
 import { formatNaira } from "@/lib/utils";
@@ -77,10 +78,12 @@ export async function POST(request: NextRequest) {
     const transaction = await Transaction.create({
       userName: user.name,
       userEmail: user.email,
-      type: "Deposit",
+      community: user.community,
+      type: "Monthly_Contribution",
       status: "Completed",
       amount: amountInNaira,
       date: new Date(),
+      description: "Account Deposit",
     });
 
     // Update user balance
@@ -89,6 +92,19 @@ export async function POST(request: NextRequest) {
       { $inc: { balance: amountInNaira } },
       { new: true, runValidators: false }
     );
+
+    // Update community totals (contribution + spending tracking)
+    if (user.community) {
+      await Community.findByIdAndUpdate(
+        user.community,
+        {
+          $inc: {
+            totalContributions: amountInNaira,
+          },
+        },
+        { new: true, runValidators: false }
+      );
+    }
 
     // Send notification
     await createNotification({

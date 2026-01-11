@@ -14,15 +14,18 @@ export async function GET(request: NextRequest) {
       query.community = new Types.ObjectId(community);
     }
 
-    // Get proposals with votes
+    // Get proposals for community (include approved/voting even if 0 votes)
     const proposals = await Proposal.find(query)
       .populate("proposedBy", "name email")
       .select("-__v")
       .sort({ createdAt: -1 });
 
-    // Transform to voting data
+    // Transform to voting data and include items with zero votes
     const votingData = proposals
-      .filter((p: any) => p.votes && p.votes.length > 0)
+      .filter((p: any) => {
+        const status = String(p.status || "").toLowerCase();
+        return status === "approved" || status === "voting";
+      })
       .map((p: any) => {
         const yesVotes =
           p.votes?.filter((v: any) => v.vote === "yes").length || 0;

@@ -91,10 +91,12 @@ export async function POST(request: NextRequest) {
     await Transaction.create({
       userName: user.name,
       userEmail: user.email,
-      type: "Deposit",
+      community: user.community,
+      type: "Monthly_Contribution",
       status: "Completed",
       amount: amountInNaira,
       date: new Date(),
+      description: "Account Deposit",
     });
 
     // Update user balance

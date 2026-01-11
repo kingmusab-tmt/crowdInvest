@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ITransaction extends Document {
   userName: string;
   userEmail: string;
+  community?: mongoose.Types.ObjectId;
   type:
     | "Monthly_Contribution"
     | "Investment"
@@ -51,6 +52,11 @@ const TransactionSchema = new Schema<ITransaction>(
       default: function (this: any) {
         return this.userName;
       },
+    },
+    community: {
+      type: Schema.Types.ObjectId,
+      ref: "Community",
+      index: true,
     },
     description: {
       type: String,

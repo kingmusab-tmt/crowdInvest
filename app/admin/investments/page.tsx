@@ -110,6 +110,9 @@ export default function InvestmentsPage() {
   );
   const [investments, setInvestments] = React.useState<Investment[]>([]);
   const [votes, setVotes] = React.useState<VoteData[]>([]);
+  const [communities, setCommunities] = React.useState<
+    Array<{ _id: string; name: string }>
+  >([]);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
 
@@ -134,13 +137,30 @@ export default function InvestmentsPage() {
     quantity: 0,
     totalInvested: 0,
     dividendReceived: 0,
+    selectedCommunity: "",
   });
 
   React.useEffect(() => {
     if (session?.user?.role) {
       loadData();
+      // Fetch communities for general admin dropdown
+      if (session.user.role === "General Admin") {
+        fetchCommunities();
+      }
     }
   }, [session?.user?.role, session?.user?.community]);
+
+  const fetchCommunities = async () => {
+    try {
+      const res = await fetch("/api/communities");
+      if (res.ok) {
+        const data = await res.json();
+        setCommunities(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch communities", err);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -247,6 +267,7 @@ export default function InvestmentsPage() {
       quantity: investment.quantity,
       totalInvested: investment.totalInvested,
       dividendReceived: investment.dividendReceived,
+      selectedCommunity: "",
     });
     setEditInvestmentDialog(true);
   };
@@ -273,16 +294,30 @@ export default function InvestmentsPage() {
 
   const handleCreateInvestment = async () => {
     try {
+      // Determine which community to use
+      const isGeneralAdmin = session?.user?.role === "General Admin";
+      const communityId = isGeneralAdmin
+        ? investmentForm.selectedCommunity
+        : session?.user?.community;
+
+      // Validate community selection for general admin
+      if (isGeneralAdmin && !communityId) {
+        setError("Please select a community for this investment");
+        return;
+      }
+
+      const { selectedCommunity, ...investmentData } = investmentForm;
+
       const res = await fetch("/api/investments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...investmentForm,
-          community: session?.user?.community,
+          ...investmentData,
+          community: communityId,
         }),
       });
       if (res.ok) {
-        setSuccess("Investment created");
+        setSuccess("Investment created successfully");
         setCreateInvestmentDialog(false);
         setInvestmentForm({
           title: "",
@@ -292,10 +327,12 @@ export default function InvestmentsPage() {
           quantity: 0,
           totalInvested: 0,
           dividendReceived: 0,
+          selectedCommunity: "",
         });
         loadData();
       } else {
-        setError("Failed to create investment");
+        const errorData = await res.json();
+        setError(errorData.error || "Failed to create investment");
       }
     } catch (err) {
       setError("Error creating investment");
@@ -524,6 +561,7 @@ export default function InvestmentsPage() {
                   quantity: 0,
                   totalInvested: 0,
                   dividendReceived: 0,
+                  selectedCommunity: "",
                 });
                 setCreateInvestmentDialog(true);
               }}
@@ -874,6 +912,31 @@ export default function InvestmentsPage() {
         <DialogTitle>Add New Investment</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
+            {isGeneralAdmin && (
+              <TextField
+                select
+                label="Community"
+                value={investmentForm.selectedCommunity}
+                onChange={(e) =>
+                  setInvestmentForm({
+                    ...investmentForm,
+                    selectedCommunity: e.target.value,
+                  })
+                }
+                fullWidth
+                required
+                SelectProps={{
+                  native: true,
+                }}
+              >
+                <option value="">Select a community</option>
+                {communities.map((community) => (
+                  <option key={community._id} value={community._id}>
+                    {community.name}
+                  </option>
+                ))}
+              </TextField>
+            )}
             <TextField
               label="Title"
               value={investmentForm.title}
