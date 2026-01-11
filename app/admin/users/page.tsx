@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import {
   Avatar,
   Box,
@@ -75,7 +76,7 @@ const PERMISSION_OPTIONS: { key: PermissionKey; label: string }[] = [
   { key: "canSuspendUsers", label: "Suspend Users" },
 ];
 
-export default function UsersPage() {
+function UsersPageContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -538,5 +539,19 @@ export default function UsersPage() {
         </DialogActions>
       </Dialog>
     </Container>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
+          <CircularProgress />
+        </Container>
+      }
+    >
+      <UsersPageContent />
+    </Suspense>
   );
 }
