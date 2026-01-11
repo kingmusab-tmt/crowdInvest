@@ -138,20 +138,7 @@ export default function MemberBusinessesPage() {
   const [categoryFilter, setCategoryFilter] = React.useState("All");
   const [locationFilter, setLocationFilter] = React.useState("All");
 
-  React.useEffect(() => {
-    fetchBusinesses();
-  }, []);
-
-  React.useEffect(() => {
-    if (session?.user?.email) {
-      setFormData((prev) => ({
-        ...prev,
-        contactEmail: session.user.email || "",
-      }));
-    }
-  }, [session]);
-
-  async function fetchBusinesses() {
+  const fetchBusinesses = React.useCallback(async () => {
     try {
       const res = await fetch("/api/businesses");
       if (res.ok) {
@@ -178,7 +165,20 @@ export default function MemberBusinessesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [session?.user?.id]);
+
+  React.useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
+
+  React.useEffect(() => {
+    if (session?.user?.email) {
+      setFormData((prev) => ({
+        ...prev,
+        contactEmail: session.user.email || "",
+      }));
+    }
+  }, [session]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -346,7 +346,10 @@ export default function MemberBusinessesPage() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
+    >
       <Box
         sx={{
           display: "flex",

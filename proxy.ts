@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   const isPublicPath = path === "/login" || path === "/signup" || path === "/";
@@ -13,7 +13,8 @@ export async function middleware(request: NextRequest) {
   if (isPublicPath && token) {
     // Check if profile is completed from token (we'll add this to the token)
     const profileCompleted = token.profileCompleted as boolean;
-    const isAdmin = token.role === "General Admin" || token.role === "Community Admin";
+    const isAdmin =
+      token.role === "General Admin" || token.role === "Community Admin";
 
     // Admins bypass onboarding
     if (isAdmin) {
@@ -40,7 +41,8 @@ export async function middleware(request: NextRequest) {
   // Check if user has completed profile (only for logged in users accessing protected routes)
   if (token && !isPublicPath && !isOnboardingPath && !path.startsWith("/api")) {
     const profileCompleted = token.profileCompleted as boolean;
-    const isAdmin = token.role === "General Admin" || token.role === "Community Admin";
+    const isAdmin =
+      token.role === "General Admin" || token.role === "Community Admin";
 
     // Admins bypass profile completion check
     if (!isAdmin && !profileCompleted) {

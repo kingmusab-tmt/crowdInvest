@@ -6,6 +6,7 @@ import User from "@/models/User";
 import PaymentFailure from "@/models/PaymentFailure";
 import Transaction from "@/models/Transaction";
 import { createNotification } from "@/services/notificationService";
+import { formatNaira } from "@/lib/utils";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
           userId: user._id,
           type: "general",
           title: "Payment Retry Successful",
-          message: `Your retry payment of ₦${amountInNaira.toLocaleString()} has been processed successfully.`,
+          message: `Your retry payment of ${formatNaira(amountInNaira)} has been processed successfully.`,
           actionUrl: "/dashboard/transactions",
         });
 

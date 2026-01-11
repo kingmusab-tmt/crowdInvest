@@ -76,14 +76,7 @@ export default function EventsPage() {
     [key: string]: number;
   }>({});
 
-  React.useEffect(() => {
-    fetchCurrentUser();
-    fetchEvents();
-    // Check for notifications when page loads
-    checkAndSendNotifications();
-  }, []);
-
-  async function fetchCurrentUser() {
+  const fetchCurrentUser = React.useCallback(async () => {
     try {
       const res = await fetch("/api/users/me");
       if (res.ok) {
@@ -93,7 +86,40 @@ export default function EventsPage() {
     } catch (err) {
       console.error("Failed to load current user", err);
     }
-  }
+  }, []);
+
+  const fetchEvents = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/events");
+      const data = await res.json();
+      // Filter events for this community
+      const communityEvents = data.filter(
+        (e: IEvent) => e.community?._id === currentUser?.community?._id
+      );
+      setEvents(communityEvents);
+    } catch (err) {
+      console.error("Failed to load events", err);
+    }
+  }, [currentUser?.community?._id]);
+
+  const checkAndSendNotifications = React.useCallback(async () => {
+    try {
+      await fetch("/api/events/notifications/check", { method: "POST" });
+    } catch (error) {
+      console.error("Failed to check notifications:", error);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
+
+  React.useEffect(() => {
+    if (currentUser?.community?._id) {
+      fetchEvents();
+      checkAndSendNotifications();
+    }
+  }, [currentUser?.community?._id, fetchEvents, checkAndSendNotifications]);
 
   React.useEffect(() => {
     // Update countdown timer every minute
@@ -108,18 +134,6 @@ export default function EventsPage() {
     calculateDaysRemaining();
   }, [events]);
 
-  async function fetchEvents() {
-    try {
-      const res = await fetch("/api/events");
-      if (!res.ok) throw new Error("Failed to fetch events");
-      const data = await res.json();
-      setEvents(data);
-    } catch (err) {
-      console.error("Failed to load events", err);
-      setError("Failed to load events");
-    }
-  }
-
   function calculateDaysRemaining() {
     const remaining: { [key: string]: number } = {};
     const now = new Date();
@@ -133,14 +147,6 @@ export default function EventsPage() {
     });
 
     setDaysRemaining(remaining);
-  }
-
-  async function checkAndSendNotifications() {
-    try {
-      await fetch("/api/events/notifications", { method: "POST" });
-    } catch (err) {
-      console.error("Failed to check notifications", err);
-    }
   }
 
   function getDaysLabel(days: number): string {
@@ -338,13 +344,18 @@ export default function EventsPage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}
+    >
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "flex-start", sm: "center" },
           mb: 4,
+          gap: { xs: 2, sm: 0 },
         }}
       >
         <Box>

@@ -5,6 +5,7 @@ import dbConnect from "@/utils/connectDB";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import { createNotification } from "@/services/notificationService";
+import { formatNaira } from "@/lib/utils";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
       userId: user._id,
       type: "general",
       title: "Deposit Successful",
-      message: `Your deposit of ₦${amountInNaira.toLocaleString()} has been credited to your account.`,
+      message: `Your deposit of ${formatNaira(amountInNaira)} has been credited to your account.`,
       actionUrl: "/dashboard/transactions",
     });
 

@@ -30,6 +30,7 @@ import TextField from "@mui/material/TextField";
 import Alert from "@mui/material/Alert";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { formatNaira } from "@/lib/utils";
 
 // Stats Card Component
 function StatsCard({ title, value, icon, color, action }: any) {
@@ -102,7 +103,7 @@ function InvestmentCard({ investment }: any) {
         </Box>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
           <Typography variant="body2" color="textSecondary">
-            ₦{(investment.totalInvested || 0).toLocaleString()} invested
+            {formatNaira(investment.totalInvested || 0)} invested
           </Typography>
           <Chip
             label={status}
@@ -120,7 +121,7 @@ function InvestmentCard({ investment }: any) {
           variant="caption"
           color={profitOrLoss >= 0 ? "success.main" : "error.main"}
         >
-          Profit/Loss: ₦{profitOrLoss.toLocaleString()} (
+          Profit/Loss: {formatNaira(profitOrLoss)} (
           {profitOrLossPercentage.toFixed(2)}%)
         </Typography>
       </CardContent>
@@ -183,29 +184,8 @@ export default function UserDashboard() {
   const [inactiveMembers, setInactiveMembers] = React.useState(0);
   const [myTotalWithdrawal, setMyTotalWithdrawal] = React.useState(0);
 
-  React.useEffect(() => {
-    fetchDashboardData();
-    checkMonthlyContributions();
-    verifyPaymentIfReturned();
-
-    // Auto-refresh every 30 seconds to catch webhook updates
-    const autoRefreshInterval = setInterval(() => {
-      fetchDashboardData();
-    }, 30000);
-
-    // Refetch when user focuses the window (tab/window comes to foreground)
-    const handleWindowFocus = () => {
-      fetchDashboardData();
-    };
-    window.addEventListener("focus", handleWindowFocus);
-
-    return () => {
-      clearInterval(autoRefreshInterval);
-      window.removeEventListener("focus", handleWindowFocus);
-    };
-  }, []);
-
-  const verifyPaymentIfReturned = async () => {
+  // Define all async functions BEFORE useEffect
+  const verifyPaymentIfReturned = React.useCallback(async () => {
     // Check if user returned from payment redirect
     const params = new URLSearchParams(window.location.search);
     const reference = params.get("reference") || params.get("trxref");
@@ -220,9 +200,9 @@ export default function UserDashboard() {
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  };
+  }, []);
 
-  const checkMonthlyContributions = async () => {
+  const checkMonthlyContributions = React.useCallback(async () => {
     try {
       // Trigger monthly contribution notification check
       await fetch("/api/contributions/check-monthly", {
@@ -232,9 +212,9 @@ export default function UserDashboard() {
       console.error("Failed to check monthly contributions:", error);
       // Silent fail - don't disrupt user experience
     }
-  };
+  }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = React.useCallback(async () => {
     try {
       setIsRefreshing(true);
 
@@ -387,7 +367,9 @@ export default function UserDashboard() {
           // Get member businesses count
           if (currentUser.community) {
             const businessRes = await fetch(
-              `/api/businesses?communityId=${currentUser.community}`
+              `/api/businesses?communityId=${
+                currentUser.community._id || currentUser.community
+              }`
             );
             const businessData = await businessRes.json();
             setMemberBusinessCount(
@@ -396,7 +378,9 @@ export default function UserDashboard() {
 
             // Get total community members
             const communityMembersRes = await fetch(
-              `/api/users?communityId=${currentUser.community}`
+              `/api/users?communityId=${
+                currentUser.community._id || currentUser.community
+              }`
             );
             const communityMembersData = await communityMembersRes.json();
             const members = Array.isArray(communityMembersData)
@@ -459,9 +443,31 @@ export default function UserDashboard() {
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [session]);
 
-  const handleSubmitEvent = async () => {
+  React.useEffect(() => {
+    fetchDashboardData();
+    checkMonthlyContributions();
+    verifyPaymentIfReturned();
+
+    // Auto-refresh every 30 seconds to catch webhook updates
+    const autoRefreshInterval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+
+    // Refetch when user focuses the window (tab/window comes to foreground)
+    const handleWindowFocus = () => {
+      fetchDashboardData();
+    };
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      clearInterval(autoRefreshInterval);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [fetchDashboardData, checkMonthlyContributions, verifyPaymentIfReturned]);
+
+  const handleSubmitEvent = React.useCallback(async () => {
     setSubmitError(null);
 
     if (
@@ -502,11 +508,16 @@ export default function UserDashboard() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [eventFormData, session?.user?.email, fetchDashboardData]);
 
   const handleEventInputChange = (field: string, value: string) => {
     setEventFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Guard against rendering before session is loaded
+  if (!session?.user) {
+    return <Box sx={{ p: 3 }}>Loading...</Box>;
+  }
 
   const transactionColumns: GridColDef[] = [
     {
@@ -533,7 +544,7 @@ export default function UserDashboard() {
       field: "amount",
       headerName: "Amount",
       width: 130,
-      valueFormatter: (value: any) => `₦${(value as number).toLocaleString()}`,
+      valueFormatter: (value: any) => formatNaira(value as number),
     },
     {
       field: "status",
@@ -673,7 +684,7 @@ export default function UserDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="My Total Contribution"
-            value={`₦${memberContribution.toLocaleString()}`}
+            value={formatNaira(memberContribution)}
             icon={<AccountBalanceWalletIcon />}
             color="primary.main"
             action={{
@@ -695,7 +706,7 @@ export default function UserDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Community Total"
-            value={`₦${totalCommunityContributions.toLocaleString()}`}
+            value={formatNaira(totalCommunityContributions)}
             icon={<AccountBalanceWalletIcon />}
             color="secondary.main"
           />
@@ -720,7 +731,7 @@ export default function UserDashboard() {
                 </Avatar>
               </Box>
               <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                ₦{lastContribution.amount.toLocaleString()}
+                {formatNaira(lastContribution.amount)}
               </Typography>
               <Typography variant="caption" color="textSecondary">
                 {lastContribution.date}
@@ -850,7 +861,7 @@ export default function UserDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="My Total Withdrawal"
-            value={`₦${myTotalWithdrawal.toLocaleString()}`}
+            value={formatNaira(myTotalWithdrawal)}
             icon={<AccountBalanceWalletIcon />}
             color="warning.main"
           />
@@ -869,7 +880,7 @@ export default function UserDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Total Community Spending"
-            value={`₦${totalSpending.toLocaleString()}`}
+            value={formatNaira(totalSpending)}
             icon={<EventIcon />}
             color="error.main"
           />
@@ -878,7 +889,7 @@ export default function UserDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Total Investment Income"
-            value={`₦${totalIncome.toLocaleString()}`}
+            value={formatNaira(totalIncome)}
             icon={<TrendingUpIcon />}
             color="success.main"
           />
@@ -887,7 +898,7 @@ export default function UserDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="My Profit Share"
-            value={`₦${memberProfitShare.toLocaleString()}`}
+            value={formatNaira(memberProfitShare)}
             icon={<TrendingUpIcon />}
             color="warning.main"
             action={{
@@ -900,7 +911,7 @@ export default function UserDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Wallet Balance"
-            value={`₦${userBalance.toLocaleString()}`}
+            value={formatNaira(userBalance)}
             icon={<AccountBalanceWalletIcon />}
             color="primary.main"
             action={{
@@ -948,7 +959,7 @@ export default function UserDashboard() {
                           : "error.main",
                     }}
                   >
-                    ₦{(totalIncome - totalSpending).toLocaleString()}
+                    {formatNaira(totalIncome - totalSpending)}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
                     Investment income minus expenses

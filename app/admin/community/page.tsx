@@ -124,10 +124,20 @@ export default function CommunityAdminDashboard() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1.5, sm: 2 } }}
+    >
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" sx={{ mb: 1, fontWeight: 700 }}>
+        <Typography
+          variant="h3"
+          sx={{
+            mb: 1,
+            fontWeight: 700,
+            fontSize: { xs: "1.75rem", sm: "2rem", md: "2.5rem" },
+          }}
+        >
           Community Admin Dashboard
         </Typography>
         <Typography variant="body1" color="textSecondary">

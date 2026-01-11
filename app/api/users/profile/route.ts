@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     await dbConnect();
 
     const user = await User.findById(session.user.id).select(
-      "name email avatarUrl dateOfBirth phoneNumber placeOfWork maritalStatus address socialMedia nextOfKin kyc settings"
+      "name email avatarUrl dateOfBirth phoneNumber whatsappNumber placeOfWork maritalStatus address socialMedia nextOfKin personalAccountDetails kyc settings termsAccepted privacyAccepted"
     );
 
     if (!user) {
@@ -50,10 +50,14 @@ export async function PUT(request: NextRequest) {
     const name = formData.get("name") as string;
     const dateOfBirth = formData.get("dateOfBirth") as string;
     const phoneNumber = formData.get("phoneNumber") as string;
+    const whatsappNumber = formData.get("whatsappNumber") as string;
     const placeOfWork = formData.get("placeOfWork") as string;
     const maritalStatus = formData.get("maritalStatus") as string;
     const address = formData.get("address") as string;
     const socialMedia = formData.get("socialMedia") as string;
+    const personalAccountDetails = formData.get(
+      "personalAccountDetails"
+    ) as string;
     const nextOfKin = formData.get("nextOfKin") as string;
     const avatarFile = formData.get("avatar") as File | null;
 
@@ -67,10 +71,13 @@ export async function PUT(request: NextRequest) {
     if (name) user.name = name;
     if (dateOfBirth) user.dateOfBirth = dateOfBirth;
     if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (whatsappNumber) user.whatsappNumber = whatsappNumber;
     if (placeOfWork) user.placeOfWork = placeOfWork;
     if (maritalStatus) user.maritalStatus = maritalStatus;
     if (address) user.address = JSON.parse(address);
     if (socialMedia) user.socialMedia = JSON.parse(socialMedia);
+    if (personalAccountDetails)
+      user.personalAccountDetails = JSON.parse(personalAccountDetails);
     if (nextOfKin) user.nextOfKin = JSON.parse(nextOfKin);
 
     // Handle avatar file upload

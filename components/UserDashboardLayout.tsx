@@ -31,11 +31,16 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import PeopleIcon from "@mui/icons-material/People";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import NotificationBell from "./NotificationBell";
+import { formatNaira } from "@/lib/utils";
 
 const drawerWidth = 260;
+const drawerCollapsedWidth = 65;
 
 interface AppBarProps extends MuiAppBarProps {
   open?: boolean;
@@ -45,18 +50,24 @@ const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
 })<AppBarProps>(({ theme, open }) => ({
   zIndex: theme.zIndex.drawer + 1,
+  backgroundColor: theme.palette.background.paper,
+  color: theme.palette.text.primary,
   transition: theme.transitions.create(["width", "margin"], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  ...(open && {
-    marginLeft: drawerWidth,
-    width: `calc(100% - ${drawerWidth}px)`,
+  [theme.breakpoints.down("md")]: {
+    marginLeft: 0,
+    width: "100%",
+  },
+  [theme.breakpoints.up("md")]: {
+    marginLeft: open ? drawerWidth : drawerCollapsedWidth,
+    width: `calc(100% - ${open ? drawerWidth : drawerCollapsedWidth}px)`,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
-  }),
+  },
 }));
 
 const openedMixin = (theme: any) => ({
@@ -66,18 +77,19 @@ const openedMixin = (theme: any) => ({
     duration: theme.transitions.duration.enteringScreen,
   }),
   overflowX: "hidden" as const,
+  backgroundColor: theme.palette.background.paper,
+  borderRight: `1px solid ${theme.palette.divider}`,
 });
 
-const closedMixin = (theme: any) => ({
+const collapsedMixin = (theme: any) => ({
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
   overflowX: "hidden" as const,
-  width: `calc(${theme.spacing(7)} + 1px)`,
-  [theme.breakpoints.up("sm")]: {
-    width: `calc(${theme.spacing(8)} + 1px)`,
-  },
+  width: drawerCollapsedWidth,
+  backgroundColor: theme.palette.background.paper,
+  borderRight: `1px solid ${theme.palette.divider}`,
 });
 
 const Drawer = styled(MuiDrawer, {
@@ -94,8 +106,8 @@ const Drawer = styled(MuiDrawer, {
     "& .MuiDrawer-paper": openedMixin(theme),
   }),
   ...(!open && {
-    ...closedMixin(theme),
-    "& .MuiDrawer-paper": closedMixin(theme),
+    ...collapsedMixin(theme),
+    "& .MuiDrawer-paper": collapsedMixin(theme),
   }),
 }));
 
@@ -144,6 +156,11 @@ const menuItems = [
     icon: <NotificationsIcon />,
     path: "/dashboard/notifications",
   },
+  {
+    text: "Members",
+    icon: <PeopleIcon />,
+    path: "/dashboard/members",
+  },
   { text: "Settings", icon: <SettingsIcon />, path: "/dashboard/settings" },
 ];
 
@@ -152,14 +169,31 @@ export default function UserDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = React.useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"), { noSsr: true });
+  const [drawerOpen, setDrawerOpen] = React.useState(true);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
 
+  // Desktop: open = expanded menu, closed = icon-only menu
+  // Mobile: open = drawer visible, closed = drawer hidden
+  const isDrawerOpen = isMobile ? mobileDrawerOpen : drawerOpen;
+
   const handleDrawerToggle = () => {
-    setOpen(!open);
+    if (isMobile) {
+      setMobileDrawerOpen((prev) => !prev);
+    } else {
+      setDrawerOpen((prev) => !prev);
+    }
+  };
+
+  const handleMobileMenuClose = () => {
+    if (isMobile) {
+      setMobileDrawerOpen(false);
+    }
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -176,26 +210,35 @@ export default function UserDashboardLayout({
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" open={open}>
-        <Toolbar>
+      <AppBar position="fixed" open={isDrawerOpen}>
+        <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
           <IconButton
             color="inherit"
-            aria-label="open drawer"
+            aria-label="toggle drawer"
             onClick={handleDrawerToggle}
             edge="start"
-            sx={{ marginRight: 5 }}
+            sx={{ marginRight: { xs: 1, sm: 5 } }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ flexGrow: 1, fontSize: { xs: "1rem", sm: "1.25rem" } }}
+          >
             CrowdInvest
           </Typography>
 
           <Typography
             variant="body2"
-            sx={{ mr: 2, display: { xs: "none", sm: "block" } }}
+            sx={{
+              mr: 2,
+              display: { xs: "none", md: "block" },
+              fontSize: { sm: "0.75rem", md: "0.875rem" },
+            }}
           >
-            Balance: ₦{(session?.user as any)?.balance?.toLocaleString() || "0"}
+            Balance: {formatNaira((session?.user as any)?.balance || 0)}
           </Typography>
 
           <NotificationBell />
@@ -205,6 +248,7 @@ export default function UserDashboardLayout({
               <Avatar
                 alt={session?.user?.name || "User"}
                 src={session?.user?.image || ""}
+                sx={{ width: { xs: 32, sm: 40 }, height: { xs: 32, sm: 40 } }}
               />
             </IconButton>
           </Tooltip>
@@ -231,45 +275,96 @@ export default function UserDashboardLayout({
         </Toolbar>
       </AppBar>
 
-      <Drawer variant="permanent" open={open}>
-        <DrawerHeader>
-          <IconButton onClick={handleDrawerToggle}>
-            <ChevronLeftIcon />
-          </IconButton>
-        </DrawerHeader>
-        <Divider />
-        <List>
-          {menuItems.map((item) => (
-            <ListItem key={item.text} disablePadding sx={{ display: "block" }}>
-              <ListItemButton
-                selected={pathname === item.path}
-                onClick={() => router.push(item.path)}
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? "initial" : "center",
-                  px: 2.5,
-                }}
+      {isMobile ? (
+        <MuiDrawer
+          anchor="left"
+          variant="temporary"
+          open={mobileDrawerOpen}
+          onClose={handleMobileMenuClose}
+          ModalProps={{ keepMounted: true }}
+        >
+          <DrawerHeader />
+          <Divider />
+          <List>
+            {menuItems.map((item) => (
+              <ListItem
+                key={item.text}
+                disablePadding
+                sx={{ display: "block" }}
               >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : "auto",
-                    justifyContent: "center",
+                <ListItemButton
+                  selected={pathname === item.path}
+                  onClick={() => {
+                    router.push(item.path);
+                    handleMobileMenuClose();
                   }}
+                  sx={{ minHeight: 48, justifyContent: "initial", px: 2.5 }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  sx={{ opacity: open ? 1 : 0 }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
+                  <ListItemIcon
+                    sx={{ minWidth: 0, mr: 3, justifyContent: "center" }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </MuiDrawer>
+      ) : (
+        <Drawer anchor="left" variant="permanent" open={drawerOpen}>
+          <DrawerHeader>
+            {drawerOpen && (
+              <IconButton onClick={handleDrawerToggle}>
+                <ChevronLeftIcon />
+              </IconButton>
+            )}
+          </DrawerHeader>
+          <Divider />
+          <List>
+            {menuItems.map((item) => (
+              <ListItem
+                key={item.text}
+                disablePadding
+                sx={{ display: "block" }}
+              >
+                <Tooltip title={!drawerOpen ? item.text : ""} placement="right">
+                  <ListItemButton
+                    selected={pathname === item.path}
+                    onClick={() => {
+                      router.push(item.path);
+                    }}
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: drawerOpen ? "initial" : "center",
+                      px: 2.5,
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: drawerOpen ? 3 : "auto",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      sx={{ opacity: drawerOpen ? 1 : 0 }}
+                    />
+                  </ListItemButton>
+                </Tooltip>
+              </ListItem>
+            ))}
+          </List>
+        </Drawer>
+      )}
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box
+        component="main"
+        sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, width: "100%" }}
+      >
         <DrawerHeader />
         {children}
       </Box>

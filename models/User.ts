@@ -23,6 +23,7 @@ export interface IUser extends Document {
     postalCode?: string;
   };
   phoneNumber?: string;
+  whatsappNumber?: string;
   socialMedia?: {
     facebook?: string;
     twitter?: string;
@@ -41,6 +42,16 @@ export interface IUser extends Document {
     phoneNumber?: string;
     email?: string;
     address?: string;
+    accountDetails?: {
+      bankName?: string;
+      accountNumber?: string;
+      accountName?: string;
+    };
+  };
+  personalAccountDetails?: {
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
   };
   termsAccepted?: boolean;
   privacyAccepted?: boolean;
@@ -72,7 +83,7 @@ export interface IUser extends Document {
   settings?: {
     enableBiometrics: boolean;
     theme: "light" | "dark" | "system";
-    profileVisible: boolean;
+    profileVisibility: "public" | "private" | "community";
     notifications: {
       inApp: boolean; // In-app notifications
       email: boolean; // Email notifications
@@ -135,6 +146,7 @@ const UserSchema = new Schema<IUser>(
       postalCode: String,
     },
     phoneNumber: String,
+    whatsappNumber: String,
     socialMedia: {
       facebook: String,
       twitter: String,
@@ -151,6 +163,16 @@ const UserSchema = new Schema<IUser>(
       phoneNumber: String,
       email: String,
       address: String,
+      accountDetails: {
+        bankName: String,
+        accountNumber: String,
+        accountName: String,
+      },
+    },
+    personalAccountDetails: {
+      bankName: String,
+      accountNumber: String,
+      accountName: String,
     },
     termsAccepted: { type: Boolean, default: false },
     privacyAccepted: { type: Boolean, default: false },
@@ -186,7 +208,11 @@ const UserSchema = new Schema<IUser>(
         enum: ["light", "dark", "system"],
         default: "system",
       },
-      profileVisible: { type: Boolean, default: true },
+      profileVisibility: {
+        type: String,
+        enum: ["public", "private", "community"],
+        default: "community",
+      },
       notifications: {
         inApp: { type: Boolean, default: true },
         email: { type: Boolean, default: true },

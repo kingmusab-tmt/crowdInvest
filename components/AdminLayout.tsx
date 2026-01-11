@@ -36,9 +36,12 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import NotificationBell from "./NotificationBell";
 
 const drawerWidth = 260;
+const drawerCollapsedWidth = 65;
 
 interface AppBarProps extends MuiAppBarProps {
   open?: boolean;
@@ -52,14 +55,18 @@ const AppBar = styled(MuiAppBar, {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  ...(open && {
-    marginLeft: drawerWidth,
-    width: `calc(100% - ${drawerWidth}px)`,
+  [theme.breakpoints.down("md")]: {
+    marginLeft: 0,
+    width: "100%",
+  },
+  [theme.breakpoints.up("md")]: {
+    marginLeft: open ? drawerWidth : drawerCollapsedWidth,
+    width: `calc(100% - ${open ? drawerWidth : drawerCollapsedWidth}px)`,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
-  }),
+  },
 }));
 
 const openedMixin = (theme: any) => ({
@@ -71,16 +78,13 @@ const openedMixin = (theme: any) => ({
   overflowX: "hidden" as const,
 });
 
-const closedMixin = (theme: any) => ({
+const collapsedMixin = (theme: any) => ({
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
   overflowX: "hidden" as const,
-  width: `calc(${theme.spacing(7)} + 1px)`,
-  [theme.breakpoints.up("sm")]: {
-    width: `calc(${theme.spacing(8)} + 1px)`,
-  },
+  width: drawerCollapsedWidth,
 });
 
 const Drawer = styled(MuiDrawer, {
@@ -97,8 +101,8 @@ const Drawer = styled(MuiDrawer, {
     "& .MuiDrawer-paper": openedMixin(theme),
   }),
   ...(!open && {
-    ...closedMixin(theme),
-    "& .MuiDrawer-paper": closedMixin(theme),
+    ...collapsedMixin(theme),
+    "& .MuiDrawer-paper": collapsedMixin(theme),
   }),
 }));
 
@@ -172,13 +176,20 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = React.useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"), { noSsr: true });
+  const [drawerOpen, setDrawerOpen] = React.useState(true);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [communityName, setCommunityName] = React.useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
   const currentRole = session?.user?.role;
+
+  // Desktop: open = expanded menu, closed = icon-only menu
+  // Mobile: open = drawer visible, closed = drawer hidden
+  const isDrawerOpen = isMobile ? mobileDrawerOpen : drawerOpen;
 
   React.useEffect(() => {
     if (session?.user?.role === "Community Admin" && session?.user?.community) {
@@ -190,7 +201,17 @@ export default function AdminLayout({
   }, [session]);
 
   const handleDrawerToggle = () => {
-    setOpen(!open);
+    if (isMobile) {
+      setMobileDrawerOpen((prev) => !prev);
+    } else {
+      setDrawerOpen((prev) => !prev);
+    }
+  };
+
+  const handleMobileMenuClose = () => {
+    if (isMobile) {
+      setMobileDrawerOpen(false);
+    }
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -207,18 +228,23 @@ export default function AdminLayout({
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" open={open}>
-        <Toolbar>
+      <AppBar position="fixed" open={isDrawerOpen}>
+        <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
           <IconButton
             color="inherit"
-            aria-label="open drawer"
+            aria-label="toggle drawer"
             onClick={handleDrawerToggle}
             edge="start"
-            sx={{ marginRight: 5 }}
+            sx={{ marginRight: { xs: 1, sm: 5 } }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ flexGrow: 1, fontSize: { xs: "1rem", sm: "1.25rem" } }}
+          >
             {session?.user?.role === "Community Admin" && communityName
               ? `${communityName} Admin`
               : "CrowdInvest Admin"}
@@ -257,62 +283,125 @@ export default function AdminLayout({
         </Toolbar>
       </AppBar>
 
-      <Drawer variant="permanent" open={open}>
-        <DrawerHeader>
-          <IconButton onClick={handleDrawerToggle}>
-            <ChevronLeftIcon />
-          </IconButton>
-        </DrawerHeader>
-        <Divider />
-        <List>
-          {(currentRole === "Community Admin"
-            ? communityAdminMenuItems
-            : generalAdminMenuItems
-          ).map((item) => (
-            <ListItem key={item.text} disablePadding sx={{ display: "block" }}>
-              <ListItemButton
-                selected={
-                  pathname ===
-                  (item.path ||
-                    (currentRole === "Community Admin"
-                      ? "/admin/community"
-                      : "/admin"))
-                }
-                onClick={() => {
-                  if (item.text === "Dashboard") {
-                    router.push(
-                      currentRole === "Community Admin"
-                        ? "/admin/community"
-                        : "/admin"
-                    );
-                  } else if (item.path) {
-                    router.push(item.path);
-                  }
-                }}
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? "initial" : "center",
-                  px: 2.5,
-                }}
+      {isMobile ? (
+        <MuiDrawer
+          anchor="left"
+          variant="temporary"
+          open={mobileDrawerOpen}
+          onClose={handleMobileMenuClose}
+          ModalProps={{ keepMounted: true }}
+        >
+          <DrawerHeader />
+          <Divider />
+          <List>
+            {(currentRole === "Community Admin"
+              ? communityAdminMenuItems
+              : generalAdminMenuItems
+            ).map((item) => (
+              <ListItem
+                key={item.text}
+                disablePadding
+                sx={{ display: "block" }}
               >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : "auto",
-                    justifyContent: "center",
+                <ListItemButton
+                  selected={
+                    pathname ===
+                    (item.path ||
+                      (currentRole === "Community Admin"
+                        ? "/admin/community"
+                        : "/admin"))
+                  }
+                  onClick={() => {
+                    if (item.text === "Dashboard") {
+                      router.push(
+                        currentRole === "Community Admin"
+                          ? "/admin/community"
+                          : "/admin"
+                      );
+                    } else if (item.path) {
+                      router.push(item.path);
+                    }
+                    handleMobileMenuClose();
                   }}
+                  sx={{ minHeight: 48, justifyContent: "initial", px: 2.5 }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  sx={{ opacity: open ? 1 : 0 }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
+                  <ListItemIcon
+                    sx={{ minWidth: 0, mr: 3, justifyContent: "center" }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </MuiDrawer>
+      ) : (
+        <Drawer anchor="left" variant="permanent" open={drawerOpen}>
+          <DrawerHeader>
+            {drawerOpen && (
+              <IconButton onClick={handleDrawerToggle}>
+                <ChevronLeftIcon />
+              </IconButton>
+            )}
+          </DrawerHeader>
+          <Divider />
+          <List>
+            {(currentRole === "Community Admin"
+              ? communityAdminMenuItems
+              : generalAdminMenuItems
+            ).map((item) => (
+              <ListItem
+                key={item.text}
+                disablePadding
+                sx={{ display: "block" }}
+              >
+                <Tooltip title={!drawerOpen ? item.text : ""} placement="right">
+                  <ListItemButton
+                    selected={
+                      pathname ===
+                      (item.path ||
+                        (currentRole === "Community Admin"
+                          ? "/admin/community"
+                          : "/admin"))
+                    }
+                    onClick={() => {
+                      if (item.text === "Dashboard") {
+                        router.push(
+                          currentRole === "Community Admin"
+                            ? "/admin/community"
+                            : "/admin"
+                        );
+                      } else if (item.path) {
+                        router.push(item.path);
+                      }
+                    }}
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: drawerOpen ? "initial" : "center",
+                      px: 2.5,
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: drawerOpen ? 3 : "auto",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      sx={{ opacity: drawerOpen ? 1 : 0 }}
+                    />
+                  </ListItemButton>
+                </Tooltip>
+              </ListItem>
+            ))}
+          </List>
+        </Drawer>
+      )}
 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <DrawerHeader />

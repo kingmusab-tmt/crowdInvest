@@ -31,6 +31,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { formatNaira } from "@/lib/utils";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -436,7 +437,7 @@ export default function InvestmentsPage() {
                             Amount Required
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            ${suggestion.amountRequired.toLocaleString()}
+                            {formatNaira(suggestion.amountRequired)}
                           </Typography>
                         </Grid>
                         <Grid item xs={6} sm={3}>
@@ -586,7 +587,7 @@ export default function InvestmentsPage() {
                             Base Price
                           </Typography>
                           <Typography variant="body2">
-                            ${investment.basePrice.toLocaleString()}
+                            {formatNaira(investment.basePrice)}
                           </Typography>
                         </Box>
                         <Box>
@@ -594,7 +595,7 @@ export default function InvestmentsPage() {
                             Current Price
                           </Typography>
                           <Typography variant="body2">
-                            ${investment.currentPrice.toLocaleString()}
+                            {formatNaira(investment.currentPrice)}
                           </Typography>
                         </Box>
                         <Box>
@@ -610,7 +611,7 @@ export default function InvestmentsPage() {
                             Total Invested
                           </Typography>
                           <Typography variant="body2">
-                            ${investment.totalInvested.toLocaleString()}
+                            {formatNaira(investment.totalInvested)}
                           </Typography>
                         </Box>
                         <Box>
@@ -621,7 +622,7 @@ export default function InvestmentsPage() {
                             variant="body2"
                             sx={{ color: "#4caf50", fontWeight: 600 }}
                           >
-                            ${investment.dividendReceived.toLocaleString()}
+                            {formatNaira(investment.dividendReceived)}
                           </Typography>
                         </Box>
                         <Box>

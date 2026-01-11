@@ -10,6 +10,11 @@ export interface CreateNotificationParams {
     | "kyc_rejected"
     | "investment"
     | "withdrawal"
+    | "monthly_contribution"
+    | "profit_deposit"
+    | "refund_deposit"
+    | "assistance"
+    | "profit_share"
     | "proposal"
     | "event"
     | "announcement"
@@ -99,6 +104,11 @@ function shouldSendEmailForType(type: string, emailPreferences: any): boolean {
     kyc_rejected: "kyc",
     investment: "investments",
     withdrawal: "withdrawals",
+    refund_deposit: "withdrawals",
+    monthly_contribution: "investments",
+    profit_deposit: "investments",
+    profit_share: "investments",
+    assistance: "announcements",
     proposal: "proposals",
     event: "events",
     announcement: "announcements",
@@ -176,6 +186,11 @@ async function sendNotificationEmail(params: {
           .badge-kyc-verified, .badge-kyc-rejected { background: #e3f2fd; color: #1976d2; }
           .badge-investment { background: #e8f5e9; color: #388e3c; }
           .badge-withdrawal { background: #fff3e0; color: #f57c00; }
+          .badge-monthly-contribution { background: #e8f5e9; color: #2e7d32; }
+          .badge-profit-deposit { background: #e3f2fd; color: #1565c0; }
+          .badge-refund-deposit { background: #fff3e0; color: #ef6c00; }
+          .badge-assistance { background: #f3e5f5; color: #6a1b9a; }
+          .badge-profit-share { background: #e8eaf6; color: #3949ab; }
           .badge-proposal { background: #f3e5f5; color: #7b1fa2; }
           .badge-event { background: #fce4ec; color: #c2185b; }
           .badge-announcement { background: #e0f2f1; color: #00796b; }
@@ -278,6 +293,11 @@ function getNotificationTypeLabel(type: string): string {
     kyc_rejected: "KYC Rejected",
     investment: "Investment",
     withdrawal: "Withdrawal",
+    monthly_contribution: "Monthly Contribution",
+    profit_deposit: "Profit Deposit",
+    refund_deposit: "Refund Deposit",
+    assistance: "Assistance",
+    profit_share: "Profit Share",
     proposal: "Proposal",
     event: "Event",
     announcement: "Announcement",

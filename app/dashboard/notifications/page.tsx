@@ -59,21 +59,7 @@ function NotificationsContent() {
   const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
   const [success, setSuccess] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  React.useEffect(() => {
-    // Auto-open notification if ID is in query params
-    if (notificationId && notifications.length > 0) {
-      const notification = notifications.find((n) => n._id === notificationId);
-      if (notification) {
-        handleViewDetail(notification);
-      }
-    }
-  }, [notificationId, notifications]);
-
-  async function fetchNotifications() {
+  const fetchNotifications = React.useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/users/notifications");
@@ -86,7 +72,15 @@ function NotificationsContent() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  React.useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  React.useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
@@ -139,6 +133,11 @@ function NotificationsContent() {
       kyc_rejected: "❌",
       investment: "💰",
       withdrawal: "💸",
+      monthly_contribution: "💵",
+      profit_deposit: "📈",
+      refund_deposit: "↩️",
+      assistance: "🤝",
+      profit_share: "💹",
       proposal: "📋",
       event: "📅",
       announcement: "📢",
@@ -153,6 +152,11 @@ function NotificationsContent() {
       kyc_rejected: "#f44336",
       investment: "#2196f3",
       withdrawal: "#ff9800",
+      monthly_contribution: "#2e7d32",
+      profit_deposit: "#1565c0",
+      refund_deposit: "#ef6c00",
+      assistance: "#7b1fa2",
+      profit_share: "#3949ab",
       proposal: "#9c27b0",
       event: "#e91e63",
       announcement: "#00bcd4",
@@ -167,6 +171,11 @@ function NotificationsContent() {
       kyc_rejected: "KYC Rejected",
       investment: "Investment",
       withdrawal: "Withdrawal",
+      monthly_contribution: "Monthly Contribution",
+      profit_deposit: "Profit Deposit",
+      refund_deposit: "Refund Deposit",
+      assistance: "Assistance",
+      profit_share: "Profit Share",
       proposal: "Proposal",
       event: "Event",
       announcement: "Announcement",
@@ -204,7 +213,10 @@ function NotificationsContent() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}
+    >
       {/* Header */}
       <Box
         sx={{
@@ -458,7 +470,13 @@ function NotificationsContent() {
 
 export default function NotificationsPage() {
   return (
-    <Suspense fallback={<Container><CircularProgress /></Container>}>
+    <Suspense
+      fallback={
+        <Container>
+          <CircularProgress />
+        </Container>
+      }
+    >
       <NotificationsContent />
     </Suspense>
   );

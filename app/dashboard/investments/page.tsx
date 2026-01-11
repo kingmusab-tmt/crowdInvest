@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { formatNaira } from "@/lib/utils";
 import {
   Box,
   Button,
@@ -94,13 +95,7 @@ export default function InvestmentsPage() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (session?.user?.community) {
-      loadInvestments();
-    }
-  }, [session?.user?.community]);
-
-  async function loadInvestments() {
+  const loadInvestments = React.useCallback(async () => {
     try {
       setError(null);
       const [investments, suggestions] = await Promise.all([
@@ -124,7 +119,13 @@ export default function InvestmentsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [session?.user?.community]);
+
+  React.useEffect(() => {
+    if (session?.user?.community) {
+      loadInvestments();
+    }
+  }, [session?.user?.community, loadInvestments]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -181,14 +182,19 @@ export default function InvestmentsPage() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
+    >
       {/* Header */}
       <Box
         sx={{
           mb: 4,
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
           alignItems: "start",
+          gap: { xs: 2, sm: 0 },
         }}
       >
         <Box>
@@ -235,10 +241,7 @@ export default function InvestmentsPage() {
                 variant="h6"
                 sx={{ fontWeight: 700, color: "#1976d2" }}
               >
-                $
-                {stats.totalInvested.toLocaleString("en-US", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatNaira(stats.totalInvested, { maximumFractionDigits: 2 })}
               </Typography>
             </Paper>
           </Grid>
@@ -251,8 +254,7 @@ export default function InvestmentsPage() {
                 variant="h6"
                 sx={{ fontWeight: 700, color: "#2e7d32" }}
               >
-                $
-                {stats.totalCurrentValue.toLocaleString("en-US", {
+                {formatNaira(stats.totalCurrentValue, {
                   maximumFractionDigits: 2,
                 })}
               </Typography>
@@ -270,8 +272,7 @@ export default function InvestmentsPage() {
                   color: stats.totalProfitLoss >= 0 ? "#4caf50" : "#f44336",
                 }}
               >
-                {stats.totalProfitLoss >= 0 ? "+" : ""}$
-                {stats.totalProfitLoss.toLocaleString("en-US", {
+                {formatNaira(stats.totalProfitLoss, {
                   maximumFractionDigits: 2,
                 })}
               </Typography>
@@ -441,8 +442,7 @@ export default function InvestmentsPage() {
                           Amount Required
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          $
-                          {suggestion.amountRequired.toLocaleString("en-US", {
+                          {formatNaira(suggestion.amountRequired, {
                             maximumFractionDigits: 2,
                           })}
                         </Typography>
@@ -611,8 +611,7 @@ export default function InvestmentsPage() {
                           Amount Required
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          $
-                          {suggestion.amountRequired.toLocaleString("en-US", {
+                          {formatNaira(suggestion.amountRequired, {
                             maximumFractionDigits: 2,
                           })}
                         </Typography>

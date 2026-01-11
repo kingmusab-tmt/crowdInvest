@@ -21,12 +21,20 @@ import {
 } from "@mui/material";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import Button from "@mui/material/Button";
+import { formatNaira } from "@/lib/utils";
 
 interface Transaction {
   _id: string;
   userName: string;
   userEmail: string;
-  type: "Deposit" | "Withdrawal" | "Investment" | "Profit Share" | "Assistance";
+  type:
+    | "Monthly_Contribution"
+    | "Investment"
+    | "Profit Share"
+    | "Assistance"
+    | "Event"
+    | "profit_deposit"
+    | "refund_deposit";
   status: "Completed" | "Pending" | "Failed";
   amount: number;
   date: string;
@@ -45,15 +53,7 @@ export default function TransactionsPage() {
   const [filterStatus, setFilterStatus] = React.useState<string>("");
   const [searchEmail, setSearchEmail] = React.useState<string>("");
 
-  React.useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  React.useEffect(() => {
-    applyFilters();
-  }, [transactions, filterType, filterStatus, searchEmail]);
-
-  async function fetchTransactions() {
+  const fetchTransactions = React.useCallback(async () => {
     try {
       const res = await fetch("/api/transactions");
       if (res.ok) {
@@ -65,9 +65,13 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  const applyFilters = () => {
+  React.useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  React.useEffect(() => {
     let filtered = [...transactions];
 
     if (filterType) {
@@ -86,7 +90,7 @@ export default function TransactionsPage() {
 
     setFilteredTransactions(filtered);
     setPage(0);
-  };
+  }, [transactions, filterType, filterStatus, searchEmail]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -101,16 +105,20 @@ export default function TransactionsPage() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "Deposit":
+      case "Monthly_Contribution":
         return "success";
-      case "Withdrawal":
-        return "warning";
       case "Investment":
         return "primary";
       case "Profit Share":
         return "info";
       case "Assistance":
         return "secondary";
+      case "Event":
+        return "default";
+      case "profit_deposit":
+        return "success";
+      case "refund_deposit":
+        return "warning";
       default:
         return "default";
     }
@@ -145,7 +153,7 @@ export default function TransactionsPage() {
       formatDate(t.date),
       t.userEmail,
       t.type,
-      `₦${t.amount.toLocaleString()}`,
+      formatNaira(t.amount),
       t.status,
     ]);
 
@@ -180,7 +188,10 @@ export default function TransactionsPage() {
   );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
+    >
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
           Transaction History
@@ -215,7 +226,7 @@ export default function TransactionsPage() {
               variant="h5"
               sx={{ fontWeight: 600, color: "primary.main" }}
             >
-              ₦{totalAmount.toLocaleString()}
+              {formatNaira(totalAmount)}
             </Typography>
           </Box>
         </Box>
@@ -249,11 +260,15 @@ export default function TransactionsPage() {
               onChange={(e) => setFilterType(e.target.value)}
             >
               <MenuItem value="">All Types</MenuItem>
-              <MenuItem value="Deposit">Deposit</MenuItem>
-              <MenuItem value="Withdrawal">Withdrawal</MenuItem>
+              <MenuItem value="Monthly_Contribution">
+                Monthly Contribution
+              </MenuItem>
               <MenuItem value="Investment">Investment</MenuItem>
               <MenuItem value="Profit Share">Profit Share</MenuItem>
               <MenuItem value="Assistance">Assistance</MenuItem>
+              <MenuItem value="Event">Event</MenuItem>
+              <MenuItem value="profit_deposit">Profit Deposit</MenuItem>
+              <MenuItem value="refund_deposit">Refund Deposit</MenuItem>
             </TextField>
             <TextField
               select
@@ -318,7 +333,7 @@ export default function TransactionsPage() {
                     />
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    ₦{transaction.amount.toLocaleString()}
+                    {formatNaira(transaction.amount)}
                   </TableCell>
                   <TableCell>
                     <Chip

@@ -3,10 +3,20 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ITransaction extends Document {
   userName: string;
   userEmail: string;
-  type: "Deposit" | "Withdrawal" | "Investment" | "Profit Share" | "Assistance";
+  type:
+    | "Monthly_Contribution"
+    | "Investment"
+    | "Profit Share"
+    | "Assistance"
+    | "Event"
+    | "profit_deposit"
+    | "refund_deposit";
   status: "Completed" | "Pending" | "Failed";
   amount: number;
   date: Date;
+  isAdminTransaction: boolean;
+  performedByName?: string;
+  description?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,11 +28,13 @@ const TransactionSchema = new Schema<ITransaction>(
     type: {
       type: String,
       enum: [
-        "Deposit",
-        "Withdrawal",
+        "Monthly_Contribution",
         "Investment",
         "Profit Share",
         "Assistance",
+        "Event",
+        "profit_deposit",
+        "refund_deposit",
       ],
       required: true,
     },
@@ -33,6 +45,19 @@ const TransactionSchema = new Schema<ITransaction>(
     },
     amount: { type: Number, required: true },
     date: { type: Date, default: () => new Date() },
+    isAdminTransaction: { type: Boolean, default: false },
+    performedByName: {
+      type: String,
+      default: function (this: any) {
+        return this.userName;
+      },
+    },
+    description: {
+      type: String,
+      default: function (this: any) {
+        return this.type;
+      },
+    },
   },
   { timestamps: true }
 );

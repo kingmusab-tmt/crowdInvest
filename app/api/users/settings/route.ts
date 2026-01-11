@@ -14,7 +14,7 @@ export async function PUT(request: NextRequest) {
 
     await dbConnect();
 
-    const { notifications } = await request.json();
+    const { notifications, theme, profileVisibility } = await request.json();
 
     const user = await User.findById(session.user.id);
 
@@ -30,7 +30,8 @@ export async function PUT(request: NextRequest) {
           inApp: notifications.inApp ?? true,
           email: notifications.email ?? true,
           emailPreferences: {
-            announcements: notifications.emailPreferences?.announcements ?? true,
+            announcements:
+              notifications.emailPreferences?.announcements ?? true,
             investments: notifications.emailPreferences?.investments ?? true,
             withdrawals: notifications.emailPreferences?.withdrawals ?? true,
             kyc: notifications.emailPreferences?.kyc ?? true,
@@ -38,6 +39,22 @@ export async function PUT(request: NextRequest) {
             events: notifications.emailPreferences?.events ?? true,
           },
         },
+      };
+    }
+
+    // Update theme preference
+    if (theme) {
+      user.settings = {
+        ...user.settings,
+        theme: theme,
+      };
+    }
+
+    // Update profile visibility
+    if (profileVisibility) {
+      user.settings = {
+        ...user.settings,
+        profileVisibility: profileVisibility,
       };
     }
 

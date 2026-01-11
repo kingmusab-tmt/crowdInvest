@@ -13,6 +13,11 @@ declare module "next-auth" {
       profileCompleted: boolean | null;
       community?: string | null;
       permissions?: any;
+      balance?: number;
+      settings?: {
+        theme?: "light" | "dark" | "system";
+        profileVisibility?: "public" | "private" | "community";
+      };
     } & DefaultSession["user"];
   }
   interface Session {
@@ -31,6 +36,11 @@ declare module "next-auth" {
     isActive: boolean | null;
     profileCompleted: boolean | null;
     community?: string | null;
+    balance?: number;
+    settings?: {
+      theme?: "light" | "dark" | "system";
+      profileVisibility?: "public" | "private" | "community";
+    };
   }
 }
 declare module "next-auth/jwt" {
@@ -42,5 +52,10 @@ declare module "next-auth/jwt" {
     profileCompleted: boolean | null;
     community?: string | null;
     permissions?: any;
+    balance?: number;
+    settings?: {
+      theme?: "light" | "dark" | "system";
+      profileVisibility?: "public" | "private" | "community";
+    };
   }
 }

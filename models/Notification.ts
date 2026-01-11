@@ -8,6 +8,11 @@ export interface INotification extends Document {
     | "kyc_verified"
     | "investment"
     | "withdrawal"
+    | "monthly_contribution"
+    | "profit_deposit"
+    | "refund_deposit"
+    | "assistance"
+    | "profit_share"
     | "proposal"
     | "event"
     | "announcement"
@@ -38,6 +43,11 @@ const NotificationSchema = new Schema<INotification>(
         "kyc_verified",
         "investment",
         "withdrawal",
+        "monthly_contribution",
+        "profit_deposit",
+        "refund_deposit",
+        "assistance",
+        "profit_share",
         "proposal",
         "event",
         "announcement",

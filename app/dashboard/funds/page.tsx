@@ -32,6 +32,7 @@ import { useSession } from "next-auth/react";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import PaymentIcon from "@mui/icons-material/Payment";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
+import { formatNaira } from "@/lib/utils";
 
 function a11yProps(index: number) {
   return {
@@ -91,7 +92,9 @@ function FundsContent() {
 
           if (response.ok) {
             setSuccess(
-              `Payment of ₦${data.amount.toLocaleString()} verified successfully! Your balance has been updated.`
+              `Payment of ${formatNaira(
+                data.amount
+              )} verified successfully! Your balance has been updated.`
             );
           } else {
             setError(data.error || "Failed to verify payment");
@@ -353,7 +356,7 @@ function FundsContent() {
       }
 
       setSuccess(
-        `Manual charge of ₦${data.amount.toLocaleString()} processed successfully!`
+        `Manual charge of ${formatNaira(data.amount)} processed successfully!`
       );
       fetchRecurringDetails();
     } catch (err: any) {
@@ -415,7 +418,7 @@ function FundsContent() {
       }
 
       setSuccess(
-        `Payment retry of ₦${data.amount.toLocaleString()} processed successfully!`
+        `Payment retry of ${formatNaira(data.amount)} processed successfully!`
       );
       fetchPaymentFailures();
     } catch (err: any) {
@@ -426,7 +429,10 @@ function FundsContent() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
+    <Container
+      maxWidth="md"
+      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
+    >
       {verifyingPayment && (
         <Box
           sx={{
@@ -758,7 +764,7 @@ function FundsContent() {
                           Active Monthly Amount
                         </Typography>
                         <Typography variant="h5" fontWeight={600}>
-                          ₦{recurringDetails.amount?.toLocaleString()}
+                          {formatNaira(recurringDetails.amount)}
                         </Typography>
                       </Box>
                       <Box>
@@ -827,7 +833,7 @@ function FundsContent() {
                         >
                           <Box>
                             <Typography variant="subtitle2" fontWeight={600}>
-                              ₦{failure.amount?.toLocaleString()}
+                              {formatNaira(failure.amount)}
                             </Typography>
                             <Typography
                               variant="caption"

@@ -161,7 +161,10 @@ export default function VotingProposalsPage() {
   const passedProposals = proposals.filter((p) => p.status === "Passed");
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
+    >
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
           Voting & Proposals

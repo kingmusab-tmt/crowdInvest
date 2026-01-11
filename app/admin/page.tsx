@@ -170,16 +170,29 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
+      <Container
+        maxWidth="lg"
+        sx={{ py: { xs: 4, sm: 6 }, textAlign: "center" }}
+      >
         <CircularProgress />
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1.5, sm: 2 } }}
+    >
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 600,
+            mb: 1,
+            fontSize: { xs: "1.75rem", sm: "2rem" },
+          }}
+        >
           General Admin Dashboard
         </Typography>
         <Typography variant="body2" color="text.secondary">

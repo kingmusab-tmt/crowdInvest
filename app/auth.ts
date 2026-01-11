@@ -122,6 +122,8 @@ export const authOptions = {
         token.profileCompleted = user.profileCompleted;
         token.community = user.community;
         token.permissions = (user as any).permissions;
+        token.balance = (user as any).balance;
+        token.settings = (user as any).settings;
       } else {
         // Always sync latest user data from database to ensure token is up-to-date
         // This ensures changes to role, profileCompleted, etc. are reflected in the token
@@ -139,6 +141,8 @@ export const authOptions = {
             token.profileCompleted = dbUser.profileCompleted;
             token.community = dbUser.community;
             token.permissions = dbUser.permissions;
+            token.balance = dbUser.balance;
+            token.settings = dbUser.settings;
           }
         } catch (error) {
           console.error("❌ [AUTH JWT] Error syncing user data:", error);
@@ -164,6 +168,8 @@ export const authOptions = {
           session.user.profileCompleted = dbUser.profileCompleted;
           session.user.community = dbUser.community?.toString();
           session.user.permissions = dbUser.permissions;
+          session.user.balance = dbUser.balance;
+          session.user.settings = dbUser.settings;
         } else {
           session.user.email = token.email;
           session.user.name = token.name;
@@ -174,6 +180,8 @@ export const authOptions = {
           session.user.profileCompleted = token.profileCompleted;
           session.user.community = token.community as string | null | undefined;
           session.user.permissions = token.permissions as any;
+          session.user.balance = token.balance as number;
+          session.user.settings = token.settings as any;
         }
         return session;
       } catch (error) {
