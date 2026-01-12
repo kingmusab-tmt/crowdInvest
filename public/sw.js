@@ -3,8 +3,8 @@ const PRECACHE_URLS = [
   "/",
   "/manifest.json",
   "/favicon.ico",
-  "/icon-192.png",
-  "/icon-512.png",
+  "/android-chrome-192x192.png",
+  "/android-chrome-512x512.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -67,8 +67,8 @@ self.addEventListener("push", (event) => {
   const data = event.data.json();
   const options = {
     body: data.body,
-    icon: data.icon || "/favicon-32x32.png",
-    badge: "/favicon-32x32.png",
+    icon: data.icon || "/android-chrome-192x192.png",
+    badge: "/android-chrome-192x192.png",
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -79,7 +79,17 @@ self.addEventListener("push", (event) => {
 });
 
 self.addEventListener("notificationclick", (event) => {
+  if (event.action === "close") {
+    event.notification.close();
+    return;
+  }
+
   event.notification.close();
-  const targetUrl = event.notification?.data?.url || "/";
+  const targetUrl = event.notification?.data?.url || "/dashboard/notifications";
   event.waitUntil(clients.openWindow(targetUrl));
+});
+
+self.addEventListener("notificationclose", (event) => {
+  // Optional: Track notification dismissals
+  console.log("Notification dismissed:", event.notification.tag);
 });

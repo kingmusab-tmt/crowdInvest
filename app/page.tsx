@@ -57,7 +57,8 @@ export default function Home() {
                       fontSize: { xs: "1.875rem", sm: "2.25rem", md: "3rem" },
                     }}
                   >
-                    Invest Together, Grow Together
+                    Contribute together, Assist each other, Invest together,
+                    Grow together.
                   </Typography>
                   <Typography
                     variant="h6"
