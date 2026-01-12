@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         {
-          error: "Recipient name and email are required for this withdrawal type",
+          error:
+            "Recipient name and email are required for this withdrawal type",
         },
         { status: 400 }
       );
@@ -165,7 +166,9 @@ export async function POST(request: NextRequest) {
           title: `Community ${type} Withdrawal`,
           message: `A ${type.toLowerCase()} withdrawal of ${formatNaira(
             amount
-          )} has been processed${recipientName ? ` for ${recipientName}` : ""}. ${description}`,
+          )} has been processed${
+            recipientName ? ` for ${recipientName}` : ""
+          }. ${description}`,
           actionUrl: "/dashboard/transactions",
         });
       }
@@ -336,7 +339,8 @@ export async function DELETE(request: NextRequest) {
     // Revert changes based on transaction type
     // For Profit Share and Assistance: revert user balance
     if (
-      (transaction.type === "Profit Share" || transaction.type === "Assistance") &&
+      (transaction.type === "Profit Share" ||
+        transaction.type === "Assistance") &&
       transaction.userEmail
     ) {
       await User.findOneAndUpdate(

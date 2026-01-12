@@ -138,6 +138,11 @@ const generalAdminMenuItems = [
     icon: <MonetizationOnIcon />,
     path: "/admin/withdrawals",
   },
+  {
+    text: "Manual Deposits",
+    icon: <AccountBalanceIcon />,
+    path: "/admin/deposits",
+  },
   { text: "Settings", icon: <SettingsIcon />, path: "/admin/settings" },
 ];
 
@@ -167,6 +172,11 @@ const communityAdminMenuItems = [
     text: "Withdrawals",
     icon: <MonetizationOnIcon />,
     path: "/admin/withdrawals",
+  },
+  {
+    text: "Manual Deposits",
+    icon: <AccountBalanceIcon />,
+    path: "/admin/deposits",
   },
   { text: "Settings", icon: <SettingsIcon />, path: "/admin/settings" },
 ];

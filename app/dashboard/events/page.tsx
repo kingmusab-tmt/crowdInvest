@@ -26,6 +26,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EventIcon from "@mui/icons-material/Event";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useSession } from "next-auth/react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface IEvent {
   _id: string;
@@ -56,6 +60,10 @@ interface ICurrentUser {
 
 export default function EventsPage() {
   const { data: session } = useSession();
+  const { snackbar, closeSnackbar, showWarning, showSuccess, showError } =
+    useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [events, setEvents] = React.useState<IEvent[]>([]);
   const [currentUser, setCurrentUser] = React.useState<ICurrentUser | null>(
     null
@@ -223,20 +231,26 @@ export default function EventsPage() {
   }
 
   async function handleDelete(eventId: string) {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+    openConfirmDialog(
+      "Delete Event",
+      "Are you sure you want to delete this event? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(`/api/events?eventId=${eventId}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const res = await fetch(`/api/events?eventId=${eventId}`, {
-        method: "DELETE",
-      });
+          if (!res.ok) throw new Error("Failed to delete event");
 
-      if (!res.ok) throw new Error("Failed to delete event");
-
-      setSuccess("Event deleted successfully!");
-      fetchEvents();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete event");
-    }
+          setSuccess("Event deleted successfully!");
+          fetchEvents();
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Failed to delete event"
+          );
+        }
+      }
+    );
   }
 
   async function handleRSVP(
@@ -261,6 +275,15 @@ export default function EventsPage() {
       setError(err instanceof Error ? err.message : "Failed to update RSVP");
     }
   }
+
+  const renderSnackbar = () => (
+    <SnackbarAlert
+      open={snackbar.open}
+      message={snackbar.message}
+      severity={snackbar.severity}
+      onClose={closeSnackbar}
+    />
+  );
 
   function getUserRSVPStatus(
     event: IEvent
@@ -349,6 +372,18 @@ export default function EventsPage() {
       maxWidth="lg"
       sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}
     >
+      {renderSnackbar()}
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
       <Box
         sx={{
           display: "flex",

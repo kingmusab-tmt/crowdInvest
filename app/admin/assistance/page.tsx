@@ -33,6 +33,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -85,6 +89,9 @@ interface VoteData {
 export default function AssistancePage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { snackbar, closeSnackbar, showWarning } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [tabValue, setTabValue] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [requests, setRequests] = React.useState<AssistanceRequest[]>([]);
@@ -265,21 +272,25 @@ export default function AssistancePage() {
   };
 
   const handleDeleteRequest = async (requestId: string) => {
-    if (!confirm("Are you sure you want to delete this assistance request?"))
-      return;
-    try {
-      const res = await fetch(`/api/assistance/${requestId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setSuccess("Assistance request deleted");
-        loadData();
-      } else {
-        setError("Failed to delete assistance request");
+    openConfirmDialog(
+      "Delete Assistance Request",
+      "Are you sure you want to delete this assistance request? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(`/api/assistance/${requestId}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            setSuccess("Assistance request deleted");
+            loadData();
+          } else {
+            setError("Failed to delete assistance request");
+          }
+        } catch (err) {
+          setError("Error deleting assistance request");
+        }
       }
-    } catch (err) {
-      setError("Error deleting assistance request");
-    }
+    );
   };
 
   const getStatusColor = (status: string): any => {
@@ -300,6 +311,23 @@ export default function AssistancePage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
       <Box
         sx={{
           display: "flex",

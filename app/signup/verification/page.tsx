@@ -13,19 +13,26 @@ import {
   Typography,
   TextField,
   MenuItem,
-  Alert,
   CircularProgress,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 
 const communities = ["Northside", "Southside", "West End", "Downtown"];
 
 export default function VerificationPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [community, setCommunity] = useState("");
   const [verificationInfo, setVerificationInfo] = useState("");
 
@@ -40,17 +47,16 @@ export default function VerificationPage() {
   ) {
     event.preventDefault();
     if (!session?.user?.email) {
-      setError("No logged in user found.");
+      showError("No logged in user found.");
       return;
     }
 
     if (!community || !verificationInfo) {
-      setError("Please fill out all fields.");
+      showError("Please fill out all fields.");
       return;
     }
 
     setIsSubmitting(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/users/verification", {
@@ -67,11 +73,11 @@ export default function VerificationPage() {
         throw new Error("Failed to submit verification");
       }
 
-      setSuccess("Verification submitted! Redirecting to dashboard...");
+      showSuccess("Verification submitted! Redirecting to dashboard...");
       setTimeout(() => router.push("/dashboard"), 2000);
     } catch (err) {
       console.error("Verification submission error:", err);
-      setError("Failed to submit verification. Please try again.");
+      showError("Failed to submit verification. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -142,18 +148,6 @@ export default function VerificationPage() {
               Complete your profile by providing community details
             </Typography>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
-            {success && (
-              <Alert severity="success" sx={{ mb: 3 }}>
-                {success}
-              </Alert>
-            )}
-
             <Box
               component="form"
               onSubmit={handleVerificationSubmit}
@@ -198,6 +192,12 @@ export default function VerificationPage() {
             </Box>
           </CardContent>
         </Card>
+        <SnackbarAlert
+          open={snackbar.open}
+          message={snackbar.message}
+          severity={snackbar.severity}
+          onClose={closeSnackbar}
+        />
       </Box>
     </Container>
   );

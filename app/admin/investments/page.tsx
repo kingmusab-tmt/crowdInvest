@@ -32,6 +32,10 @@ import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { formatNaira } from "@/lib/utils";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -103,6 +107,9 @@ interface VoteData {
 export default function InvestmentsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { snackbar, closeSnackbar, showWarning } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [tabValue, setTabValue] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [suggestions, setSuggestions] = React.useState<InvestmentSuggestion[]>(
@@ -340,20 +347,25 @@ export default function InvestmentsPage() {
   };
 
   const handleDeleteInvestment = async (investmentId: string) => {
-    if (!confirm("Are you sure you want to delete this investment?")) return;
-    try {
-      const res = await fetch(`/api/investments/${investmentId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setSuccess("Investment deleted");
-        loadData();
-      } else {
-        setError("Failed to delete investment");
+    openConfirmDialog(
+      "Delete Investment",
+      "Are you sure you want to delete this investment? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(`/api/investments/${investmentId}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            setSuccess("Investment deleted");
+            loadData();
+          } else {
+            setError("Failed to delete investment");
+          }
+        } catch (err) {
+          setError("Error deleting investment");
+        }
       }
-    } catch (err) {
-      setError("Error deleting investment");
-    }
+    );
   };
 
   const isGeneralAdmin = session?.user?.role === "General Admin";
@@ -368,6 +380,23 @@ export default function InvestmentsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>

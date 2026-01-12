@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       ) {
         const users = await User.find({ email: emailQuery })
           .select(
-            "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings"
+            "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings kyc"
           )
           .populate("community", "name");
 
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
 
       const users = await User.find({ community: communityIdQuery })
         .select(
-          "name email role status createdAt community permissions profileCompleted isTopUser balance"
+          "name email role status createdAt community permissions profileCompleted isTopUser balance kyc"
         )
         .populate("community", "name");
       return NextResponse.json(users, { status: 200 });
@@ -112,9 +112,11 @@ export async function GET(request: Request) {
         userIdQuery === session.user.id ||
         ensurePermission(role, perms, "canManageUsers")
       ) {
-        const user = await User.findById(userIdQuery).select(
-          "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings"
-        );
+        const user = await User.findById(userIdQuery)
+          .select(
+            "name email role status createdAt community permissions profileCompleted isTopUser balance paymentSettings kyc"
+          )
+          .populate("community", "name");
         if (!user) {
           return NextResponse.json(
             { error: "User not found" },
@@ -140,7 +142,7 @@ export async function GET(request: Request) {
 
     const users = await User.find(query)
       .select(
-        "name email role status createdAt community permissions profileCompleted isTopUser balance"
+        "name email role status createdAt community permissions profileCompleted isTopUser balance kyc"
       )
       .populate("community", "name");
     const enriched = await attachContribution(users);

@@ -20,8 +20,6 @@ import {
   CircularProgress,
   FormControlLabel,
   Checkbox,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -31,6 +29,8 @@ import LocationCityIcon from "@mui/icons-material/LocationCity";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 
 interface StatsData {
   totalUsers: number;
@@ -75,31 +75,18 @@ export default function AdminDashboard() {
     kyc: true,
     withdrawals: true,
   });
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
-  const [snackbar, setSnackbar] = React.useState({
-    open: false,
-    message: "",
-    severity: "info" as "success" | "error" | "warning" | "info",
-  });
-
-  const showSnackbar = (
-    message: string,
-    severity: "success" | "error" | "warning" | "info" = "info"
-  ) => {
-    setSnackbar({ open: true, message, severity });
-  };
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
 
   React.useEffect(() => {
-    // Redirect Community Admins to their community dashboard
-    if (session?.user?.role === "Community Admin") {
-      router.push("/admin/community");
-      return;
-    }
-
-    // Only allow General Admins to access this page
-    if (session && session.user?.role !== "General Admin") {
-      router.push("/dashboard");
+    if (!session?.user?.email || session.user.role !== "General Admin") {
+      router.push("/");
       return;
     }
 
@@ -130,13 +117,9 @@ export default function AdminDashboard() {
   }
 
   const handleCreateCommunity = async () => {
-    setError(null);
-    setSuccess(null);
-
     if (!newCommunity.name || !newCommunity.description) {
       const msg = "Please fill in all fields";
-      setError(msg);
-      showSnackbar(msg, "error");
+      showError(msg);
       return;
     }
 
@@ -155,16 +138,14 @@ export default function AdminDashboard() {
       }
 
       const msg = "Community created successfully";
-      setSuccess(msg);
-      showSnackbar(msg, "success");
+      showSuccess(msg);
       setNewCommunity({ name: "", description: "" });
       setCreateCommunityOpen(false);
       fetchData();
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "Failed to create community";
-      setError(msg);
-      showSnackbar(msg, "error");
+      showError(msg);
     }
   };
 
@@ -306,39 +287,6 @@ export default function AdminDashboard() {
           </Card>
         </Grid>
       </Grid>
-
-      {/* Seed Data Section */}
-      <Paper
-        sx={{ p: 3, mb: 4, bgcolor: "#fff3e0", border: "2px dashed #ff9800" }}
-      >
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          sx={{
-            alignItems: { xs: "flex-start", sm: "center" },
-            justifyContent: "space-between",
-          }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              🌱 Seed Sample Data
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Quickly populate all communities with sample investment data for
-              testing and demonstration purposes.
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            color="warning"
-            startIcon={<CloudUploadIcon />}
-            onClick={() => router.push("/admin/seed-investments")}
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            Seed Investments
-          </Button>
-        </Stack>
-      </Paper>
 
       {/* Communities Section */}
       <Box sx={{ mb: 4 }}>
@@ -536,21 +484,14 @@ export default function AdminDashboard() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar
+      <SnackbarAlert
         open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
         autoHideDuration={4000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-          variant="filled"
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        position={{ vertical: "top", horizontal: "center" }}
+      />
     </Container>
   );
 }

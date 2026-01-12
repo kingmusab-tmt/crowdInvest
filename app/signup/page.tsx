@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 import {
   Box,
   Button,
@@ -10,18 +12,27 @@ import {
   CardContent,
   Container,
   Typography,
-  Alert,
 } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
 import HomeIcon from "@mui/icons-material/Home";
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
+  void showSuccess;
+  void showWarning;
+  void showInfo;
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
-    setError(null);
+    closeSnackbar();
     try {
       await signIn("google", {
         redirect: true,
@@ -29,7 +40,7 @@ export default function SignupPage() {
       });
     } catch (error) {
       console.error("Sign up error:", error);
-      setError("Could not sign up with Google. Please try again.");
+      showError("Could not sign up with Google. Please try again.");
       setIsLoading(false);
     }
   };
@@ -82,12 +93,6 @@ export default function SignupPage() {
               Sign up with Google to join the community
             </Typography>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
             <Button
               fullWidth
               variant="contained"
@@ -120,6 +125,12 @@ export default function SignupPage() {
           </CardContent>
         </Card>
       </Box>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Container>
   );
 }

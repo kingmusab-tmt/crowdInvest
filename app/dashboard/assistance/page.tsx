@@ -28,6 +28,10 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import { useSession } from "next-auth/react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -69,6 +73,10 @@ interface AssistanceRequest {
 
 export default function AssistancePage() {
   const { data: session } = useSession();
+  const { snackbar, closeSnackbar, showWarning, showError, showSuccess } =
+    useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [tabValue, setTabValue] = React.useState(0);
   const [communityRequests, setCommunityRequests] = React.useState<
     AssistanceRequest[]
@@ -241,6 +249,23 @@ export default function AssistancePage() {
       maxWidth="lg"
       sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}
     >
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
       {/* Header */}
       <Box
         sx={{
@@ -459,25 +484,31 @@ export default function AssistancePage() {
                           <Button
                             variant="outlined"
                             color="error"
-                            onClick={async () => {
-                              if (!confirm("Delete this assistance request?"))
-                                return;
-                              try {
-                                const res = await fetch(
-                                  `/api/assistance/${request._id}`,
-                                  { method: "DELETE" }
-                                );
-                                if (res.ok) {
-                                  setSuccess("Assistance request deleted");
-                                  loadRequests();
-                                } else {
-                                  setError(
-                                    "Failed to delete assistance request"
-                                  );
+                            onClick={() => {
+                              openConfirmDialog(
+                                "Delete Assistance Request",
+                                "Are you sure you want to delete this assistance request? This action cannot be undone.",
+                                async () => {
+                                  try {
+                                    const res = await fetch(
+                                      `/api/assistance/${request._id}`,
+                                      { method: "DELETE" }
+                                    );
+                                    if (res.ok) {
+                                      showSuccess("Assistance request deleted");
+                                      loadRequests();
+                                    } else {
+                                      setError(
+                                        "Failed to delete assistance request"
+                                      );
+                                    }
+                                  } catch (e) {
+                                    setError(
+                                      "Error deleting assistance request"
+                                    );
+                                  }
                                 }
-                              } catch (e) {
-                                setError("Error deleting assistance request");
-                              }
+                              );
                             }}
                           >
                             Delete

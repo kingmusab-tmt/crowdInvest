@@ -27,6 +27,8 @@ import {
   Grid,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 import { useThemeRefresh } from "@/components/ThemeContext";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
@@ -127,6 +129,14 @@ const normalizeNotificationSettings = (data: any) => {
 export default function SettingsPage() {
   const { data: session, update: updateSession } = useSession();
   const { refreshTheme } = useThemeRefresh();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
   const [tab, setTab] = React.useState(0);
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -182,8 +192,6 @@ export default function SettingsPage() {
     "public" | "private" | "community"
   >("community");
   const [saving, setSaving] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     fetchProfile();
@@ -241,11 +249,11 @@ export default function SettingsPage() {
         setThemePreference(data.settings?.theme || "system");
         setProfileVisibility(data.settings?.profileVisibility || "community");
       } else {
-        setError("Failed to load profile");
+        showError("Failed to load profile");
       }
     } catch (err) {
       console.error("Failed to load profile", err);
-      setError("Failed to load profile");
+      showError("Failed to load profile");
     } finally {
       setLoading(false);
     }
@@ -253,7 +261,6 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
-    setError(null);
 
     try {
       const submitData = new FormData();
@@ -280,18 +287,19 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
-        setSuccess("Profile updated successfully!");
+        showSuccess("Profile updated successfully!");
         setUpdateDialogOpen(false);
         setTimeout(() => {
-          setSuccess(null);
           fetchProfile();
         }, 2000);
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to update profile");
+        showError(errorData.error || "Failed to update profile");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update profile");
+      showError(
+        err instanceof Error ? err.message : "Failed to update profile"
+      );
     } finally {
       setSaving(false);
     }
@@ -299,7 +307,6 @@ export default function SettingsPage() {
 
   const handleSaveNotificationSettings = async () => {
     setSaving(true);
-    setError(null);
 
     try {
       const res = await fetch("/api/users/settings", {
@@ -309,17 +316,16 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
-        setSuccess("Notification preferences updated successfully!");
+        showSuccess("Notification preferences updated successfully!");
         setTimeout(() => {
-          setSuccess(null);
           fetchProfile();
         }, 2000);
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to update settings");
+        showError(errorData.error || "Failed to update settings");
       }
     } catch (err) {
-      setError(
+      showError(
         err instanceof Error ? err.message : "Failed to update settings"
       );
     } finally {
@@ -329,7 +335,6 @@ export default function SettingsPage() {
 
   const handleSavePrivacySettings = async () => {
     setSaving(true);
-    setError(null);
 
     try {
       const res = await fetch("/api/users/settings", {
@@ -342,7 +347,7 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
-        setSuccess("Privacy settings updated successfully!");
+        showSuccess("Privacy settings updated successfully!");
 
         // Update the session to reflect theme changes immediately
         if (updateSession) {
@@ -353,15 +358,14 @@ export default function SettingsPage() {
         refreshTheme();
 
         setTimeout(() => {
-          setSuccess(null);
           fetchProfile();
         }, 2000);
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to update settings");
+        showError(errorData.error || "Failed to update settings");
       }
     } catch (err) {
-      setError(
+      showError(
         err instanceof Error ? err.message : "Failed to update settings"
       );
     } finally {
@@ -382,23 +386,19 @@ export default function SettingsPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        setSuccess("Data downloaded successfully!");
+        showSuccess("Data downloaded successfully!");
       } else {
-        setError("Failed to download data");
+        showError("Failed to download data");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to download data");
+      showError(err instanceof Error ? err.message : "Failed to download data");
     }
   };
 
   const handleRequestAccountDeletion = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to request account deletion? This action cannot be undone and all your data will be permanently deleted."
-      )
-    ) {
-      return;
-    }
+    showWarning(
+      "Account deletion request initiated. This action cannot be undone and all your data will be permanently deleted."
+    );
 
     try {
       const res = await fetch("/api/users/delete-account", {
@@ -406,16 +406,17 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
-        alert(
+        showSuccess(
           "Account deletion request submitted. An administrator will review your request."
         );
-        setSuccess("Account deletion request submitted successfully!");
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to submit deletion request");
+        showError(errorData.error || "Failed to submit deletion request");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit request");
+      showError(
+        err instanceof Error ? err.message : "Failed to submit request"
+      );
     }
   };
 
@@ -470,21 +471,6 @@ export default function SettingsPage() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
         Manage your profile and verification details.
       </Typography>
-
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          severity="success"
-          onClose={() => setSuccess(null)}
-          sx={{ mb: 3 }}
-        >
-          {success}
-        </Alert>
-      )}
 
       <Paper sx={{ p: 3 }}>
         <Tabs
@@ -1979,6 +1965,13 @@ export default function SettingsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Container>
   );
 }

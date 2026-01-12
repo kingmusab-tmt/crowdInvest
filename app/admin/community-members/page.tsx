@@ -33,10 +33,18 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function CommunityMembersPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { snackbar, closeSnackbar, showWarning, showError, showSuccess } =
+    useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [members, setMembers] = React.useState<any[]>([]);
   const [filteredMembers, setFilteredMembers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -125,24 +133,29 @@ export default function CommunityMembersPage() {
   const handleDeleteMember = async () => {
     if (!selectedMember) return;
 
-    if (!confirm("Are you sure you want to delete this member?")) return;
+    openConfirmDialog(
+      "Delete Member",
+      "Are you sure you want to delete this member? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(`/api/users/${selectedMember._id}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const res = await fetch(`/api/users/${selectedMember._id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        setDetailDialogOpen(false);
-        setMembers(members.filter((m) => m._id !== selectedMember._id));
-        setSelectedMember(null);
-      } else {
-        alert("Failed to delete member");
+          if (res.ok) {
+            setDetailDialogOpen(false);
+            setMembers(members.filter((m) => m._id !== selectedMember._id));
+            setSelectedMember(null);
+            showSuccess("Member deleted");
+          } else {
+            showError("Failed to delete member");
+          }
+        } catch (err) {
+          console.error("Error deleting member:", err);
+          showError("Error deleting member");
+        }
       }
-    } catch (err) {
-      console.error("Error deleting member:", err);
-      alert("Error deleting member");
-    }
+    );
   };
 
   const handleSaveMember = async () => {
@@ -163,13 +176,14 @@ export default function CommunityMembersPage() {
         setEditDialogOpen(false);
         // Refresh members list
         fetchMembers();
+        showSuccess("Member updated");
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to update member");
+        showError(data.error || "Failed to update member");
       }
     } catch (err) {
       console.error("Error updating member:", err);
-      alert("Error updating member");
+      showError("Error updating member");
     }
   };
 
@@ -194,6 +208,23 @@ export default function CommunityMembersPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" sx={{ mb: 1, fontWeight: 700 }}>

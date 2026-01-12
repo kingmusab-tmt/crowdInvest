@@ -35,6 +35,10 @@ import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { useSession } from "next-auth/react";
 import { uploadFileToServer } from "@/utils/uploadHandler";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const CATEGORY_OPTIONS = [
   "Technology",
@@ -114,6 +118,10 @@ interface Business {
 
 export default function MemberBusinessesPage() {
   const { data: session } = useSession();
+  const { snackbar, closeSnackbar, showWarning, showError, showSuccess } =
+    useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [businesses, setBusinesses] = React.useState<Business[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [openDialog, setOpenDialog] = React.useState(false);
@@ -315,21 +323,26 @@ export default function MemberBusinessesPage() {
   };
 
   const handleDeleteBusiness = async (businessId: string) => {
-    if (!confirm("Delete this business? This action cannot be undone.")) return;
+    openConfirmDialog(
+      "Delete Business",
+      "Delete this business? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(`/api/businesses/${businessId}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const res = await fetch(`/api/businesses/${businessId}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        fetchBusinesses();
-      } else {
-        setSubmitError("Failed to delete business");
+          if (res.ok) {
+            showSuccess("Business deleted");
+            fetchBusinesses();
+          } else {
+            setSubmitError("Failed to delete business");
+          }
+        } catch (err) {
+          setSubmitError("Error deleting business");
+        }
       }
-    } catch (err) {
-      setSubmitError("Error deleting business");
-    }
+    );
   };
 
   const categories = React.useMemo(() => CATEGORY_OPTIONS, []);
@@ -372,6 +385,24 @@ export default function MemberBusinessesPage() {
       maxWidth="lg"
       sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
     >
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
+
       <Box
         sx={{
           display: "flex",

@@ -14,7 +14,6 @@ import {
   DialogActions,
   TextField,
   MenuItem,
-  Alert,
   Chip,
   IconButton,
   Table,
@@ -22,14 +21,33 @@ import {
   TableCell,
   TableRow,
   Stack,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { useSession } from "next-auth/react";
 import { formatNaira } from "@/lib/utils";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+
+interface WithdrawalRequest {
+  _id: string;
+  userName: string;
+  userEmail: string;
+  amount: number;
+  status: "Pending" | "Approved" | "Rejected";
+  requestDate: string;
+  processedDate?: string;
+  processedByName?: string;
+  rejectionReason?: string;
+  description?: string;
+}
 
 interface Transaction {
   _id: string;
@@ -56,19 +74,34 @@ interface CommunityMember {
   email: string;
 }
 
+function a11yProps(index: number) {
+  return {
+    id: `withdrawal-tab-${index}`,
+    "aria-controls": `withdrawal-tabpanel-${index}`,
+  };
+}
+
 export default function WithdrawalsPage() {
   const { data: session } = useSession();
+  const [tab, setTab] = React.useState(0);
+  const [withdrawalRequests, setWithdrawalRequests] = React.useState<
+    WithdrawalRequest[]
+  >([]);
   const [withdrawals, setWithdrawals] = React.useState<Transaction[]>([]);
   const [communities, setCommunities] = React.useState<Community[]>([]);
-  const [communityMembers, setCommunityMembers] = React.useState<CommunityMember[]>([]);
+  const [communityMembers, setCommunityMembers] = React.useState<
+    CommunityMember[]
+  >([]);
   const [loading, setLoading] = React.useState(true);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
+  const [approvalDialogOpen, setApprovalDialogOpen] = React.useState(false);
   const [selectedWithdrawal, setSelectedWithdrawal] =
     React.useState<Transaction | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
+  const [selectedRequest, setSelectedRequest] =
+    React.useState<WithdrawalRequest | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [rejectionReason, setRejectionReason] = React.useState("");
 
   const [formData, setFormData] = React.useState({
     type: "Investment" as
@@ -83,6 +116,15 @@ export default function WithdrawalsPage() {
     communityId: "",
   });
 
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
+
   const isGeneralAdmin = session?.user?.role === "General Admin";
 
   React.useEffect(() => {
@@ -92,10 +134,12 @@ export default function WithdrawalsPage() {
   async function fetchData() {
     try {
       setLoading(true);
-      const [withdrawalsRes, communitiesRes] = await Promise.all([
-        fetch("/api/transactions?withdrawal=true"),
-        isGeneralAdmin ? fetch("/api/communities") : Promise.resolve(null),
-      ]);
+      const [withdrawalRequestsRes, withdrawalsRes, communitiesRes] =
+        await Promise.all([
+          fetch("/api/withdrawals"),
+          fetch("/api/transactions?withdrawal=true"),
+          isGeneralAdmin ? fetch("/api/communities") : Promise.resolve(null),
+        ]);
 
       if (withdrawalsRes.ok) {
         const data = await withdrawalsRes.json();
@@ -110,18 +154,98 @@ export default function WithdrawalsPage() {
         setWithdrawals(adminWithdrawals);
       }
 
+      if (withdrawalRequestsRes.ok) {
+        const requestsData = await withdrawalRequestsRes.json();
+        setWithdrawalRequests(requestsData);
+      }
+
       if (isGeneralAdmin && communitiesRes?.ok) {
         const commData = await communitiesRes.json();
         setCommunities(commData);
       }
     } catch (err) {
       console.error("Failed to load data", err);
-      setError("Failed to load withdrawal data");
+      showError("Failed to load withdrawal data");
     } finally {
       setLoading(false);
     }
   }
+  const handleApproveWithdrawal = async (request: WithdrawalRequest) => {
+    if (
+      !window.confirm(
+        `Approve withdrawal of ${formatNaira(request.amount)} for ${
+          request.userName
+        }?`
+      )
+    ) {
+      return;
+    }
 
+    setSubmitting(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/withdrawals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          withdrawalId: request._id,
+          status: "Approved",
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to approve withdrawal");
+      }
+
+      showSuccess(`Withdrawal approved successfully for ${request.userName}`);
+      fetchData();
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRejectWithdrawal = (request: WithdrawalRequest) => {
+    setSelectedRequest(request);
+    setApprovalDialogOpen(true);
+    setRejectionReason("");
+  };
+
+  const handleConfirmRejection = async () => {
+    if (!selectedRequest) return;
+
+    setSubmitting(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/withdrawals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          withdrawalId: selectedRequest._id,
+          status: "Rejected",
+          rejectionReason,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to reject withdrawal");
+      }
+
+      showSuccess(`Withdrawal rejected for ${selectedRequest.userName}`);
+      setApprovalDialogOpen(false);
+      setSelectedRequest(null);
+      fetchData();
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
   const handleOpenCreateDialog = () => {
     const communityId = isGeneralAdmin ? "" : session?.user?.community || "";
     setFormData({
@@ -136,7 +260,7 @@ export default function WithdrawalsPage() {
     if (communityId) {
       fetchCommunityMembers(communityId);
     }
-    setError(null);
+    closeSnackbar();
     setCreateDialogOpen(true);
   };
 
@@ -147,7 +271,11 @@ export default function WithdrawalsPage() {
         const data = await res.json();
         setCommunityMembers(
           Array.isArray(data)
-            ? data.map((u: any) => ({ _id: u._id, name: u.name, email: u.email }))
+            ? data.map((u: any) => ({
+                _id: u._id,
+                name: u.name,
+                email: u.email,
+              }))
             : []
         );
       }
@@ -179,7 +307,7 @@ export default function WithdrawalsPage() {
     }
 
     setSubmitting(true);
-    setError(null);
+    closeSnackbar();
 
     try {
       const res = await fetch(`/api/admin/withdrawals?id=${id}`, {
@@ -187,14 +315,14 @@ export default function WithdrawalsPage() {
       });
 
       if (res.ok) {
-        setSuccess("Withdrawal deleted successfully");
+        showSuccess("Withdrawal deleted successfully");
         fetchData();
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to delete withdrawal");
+        showError(errorData.error || "Failed to delete withdrawal");
       }
     } catch (err) {
-      setError("Error deleting withdrawal");
+      showError("Error deleting withdrawal");
     } finally {
       setSubmitting(false);
     }
@@ -203,33 +331,34 @@ export default function WithdrawalsPage() {
   const handleSubmitWithdrawal = async () => {
     // Validate required fields based on type
     if (!formData.amount) {
-      setError("Amount is required");
+      showError("Amount is required");
       return;
     }
 
     if (!formData.description) {
-      setError("Description is required");
+      showError("Description is required");
       return;
     }
 
-    const needsRecipient = formData.type === "Profit Share" || formData.type === "Assistance";
+    const needsRecipient =
+      formData.type === "Profit Share" || formData.type === "Assistance";
     if (needsRecipient && !formData.recipientName) {
-      setError("Recipient name is required for this withdrawal type");
+      showError("Recipient name is required for this withdrawal type");
       return;
     }
 
     if (needsRecipient && !formData.recipientEmail) {
-      setError("Recipient email is required for this withdrawal type");
+      showError("Recipient email is required for this withdrawal type");
       return;
     }
 
     if (isGeneralAdmin && !formData.communityId) {
-      setError("Please select a community");
+      showError("Please select a community");
       return;
     }
 
     setSubmitting(true);
-    setError(null);
+    closeSnackbar();
 
     try {
       const res = await fetch("/api/admin/withdrawals", {
@@ -247,15 +376,15 @@ export default function WithdrawalsPage() {
       });
 
       if (res.ok) {
-        setSuccess("Withdrawal initiated successfully");
+        showSuccess("Withdrawal initiated successfully");
         handleCloseCreateDialog();
         fetchData();
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to initiate withdrawal");
+        showError(errorData.error || "Failed to initiate withdrawal");
       }
     } catch (err) {
-      setError("Error initiating withdrawal");
+      showError("Error initiating withdrawal");
     } finally {
       setSubmitting(false);
     }
@@ -389,32 +518,120 @@ export default function WithdrawalsPage() {
         </Button>
       </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 3 }}
-          onClose={() => setSuccess(null)}
-        >
-          {success}
-        </Alert>
+      <Paper sx={{ mb: 3 }}>
+        <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)}>
+          <Tab
+            label={`Member Requests (${
+              withdrawalRequests.filter((r) => r.status === "Pending").length
+            })`}
+            {...a11yProps(0)}
+          />
+          <Tab label="Admin Withdrawals" {...a11yProps(1)} />
+        </Tabs>
+      </Paper>
+
+      {tab === 0 && (
+        <Paper sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Member Withdrawal Requests
+          </Typography>
+          <DataGrid
+            rows={withdrawalRequests}
+            columns={[
+              {
+                field: "requestDate",
+                headerName: "Request Date",
+                width: 180,
+                valueFormatter: (params) =>
+                  new Date(params).toLocaleDateString(),
+              },
+              { field: "userName", headerName: "Member", width: 180 },
+              { field: "userEmail", headerName: "Email", width: 200 },
+              {
+                field: "amount",
+                headerName: "Amount",
+                width: 150,
+                valueFormatter: (params) => formatNaira(params),
+              },
+              {
+                field: "status",
+                headerName: "Status",
+                width: 120,
+                renderCell: (params) => (
+                  <Chip
+                    label={params.value}
+                    color={
+                      params.value === "Pending"
+                        ? "warning"
+                        : params.value === "Approved"
+                        ? "success"
+                        : "error"
+                    }
+                    size="small"
+                  />
+                ),
+              },
+              {
+                field: "processedByName",
+                headerName: "Processed By",
+                width: 150,
+              },
+              {
+                field: "actions",
+                headerName: "Actions",
+                width: 200,
+                sortable: false,
+                renderCell: (params) => (
+                  <Box>
+                    {params.row.status === "Pending" ? (
+                      <>
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => handleApproveWithdrawal(params.row)}
+                          disabled={submitting}
+                        >
+                          <CheckCircleIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleRejectWithdrawal(params.row)}
+                          disabled={submitting}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">
+                        {params.row.status}
+                      </Typography>
+                    )}
+                  </Box>
+                ),
+              },
+            ]}
+            getRowId={(row) => row._id}
+            autoHeight
+            pageSizeOptions={[10, 25, 50]}
+            // disableSelectionOnClick
+          />
+        </Paper>
       )}
 
-      <Paper sx={{ height: 600, width: "100%" }}>
-        <DataGrid
-          rows={withdrawals}
-          columns={columns}
-          pageSizeOptions={[5, 10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          getRowId={(row: Transaction) => row._id}
-        />
-      </Paper>
+      {tab === 1 && (
+        <Paper sx={{ height: 600, width: "100%" }}>
+          <DataGrid
+            rows={withdrawals}
+            columns={columns}
+            pageSizeOptions={[5, 10, 25, 50]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 10 } },
+            }}
+            getRowId={(row: Transaction) => row._id}
+          />
+        </Paper>
+      )}
 
       {/* Create Withdrawal Dialog */}
       <Dialog
@@ -473,7 +690,8 @@ export default function WithdrawalsPage() {
               </TextField>
             )}
 
-            {(formData.type === "Profit Share" || formData.type === "Assistance") && (
+            {(formData.type === "Profit Share" ||
+              formData.type === "Assistance") && (
               <TextField
                 select
                 label="Recipient Name"
@@ -500,7 +718,8 @@ export default function WithdrawalsPage() {
               </TextField>
             )}
 
-            {(formData.type === "Profit Share" || formData.type === "Assistance") && (
+            {(formData.type === "Profit Share" ||
+              formData.type === "Assistance") && (
               <TextField
                 label="Recipient Email"
                 type="email"
@@ -626,6 +845,59 @@ export default function WithdrawalsPage() {
           <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Rejection Dialog */}
+      <Dialog
+        open={approvalDialogOpen}
+        onClose={() => setApprovalDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Reject Withdrawal Request</DialogTitle>
+        <DialogContent>
+          {selectedRequest && (
+            <>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                Are you sure you want to reject the withdrawal request from{" "}
+                <strong>{selectedRequest.userName}</strong> for{" "}
+                <strong>{formatNaira(selectedRequest.amount)}</strong>?
+              </Typography>
+              <TextField
+                fullWidth
+                label="Rejection Reason"
+                multiline
+                rows={3}
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Explain why this withdrawal is being rejected..."
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setApprovalDialogOpen(false)}
+            disabled={submitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmRejection}
+            color="error"
+            variant="contained"
+            disabled={submitting}
+          >
+            {submitting ? "Rejecting..." : "Confirm Rejection"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Container>
   );
 }

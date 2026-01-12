@@ -11,6 +11,7 @@ export interface ITransaction extends Document {
     | "Assistance"
     | "Event"
     | "profit_deposit"
+    | "manual_deposit"
     | "refund_deposit";
   status: "Completed" | "Pending" | "Failed";
   amount: number;
@@ -36,6 +37,7 @@ const TransactionSchema = new Schema<ITransaction>(
         "Event",
         "profit_deposit",
         "refund_deposit",
+        "manual_deposit",
       ],
       required: true,
     },
@@ -68,5 +70,9 @@ const TransactionSchema = new Schema<ITransaction>(
   { timestamps: true }
 );
 
-export default mongoose.models.Transaction ||
-  mongoose.model<ITransaction>("Transaction", TransactionSchema);
+// Delete the cached model to ensure schema updates are applied
+if (mongoose.models.Transaction) {
+  delete mongoose.models.Transaction;
+}
+
+export default mongoose.model<ITransaction>("Transaction", TransactionSchema);

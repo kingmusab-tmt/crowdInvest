@@ -1,6 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   Box,
   Button,
@@ -10,7 +14,6 @@ import {
   Grid,
   CircularProgress,
   Stack,
-  Alert,
   Tabs,
   Tab,
   Chip,
@@ -22,6 +25,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -70,6 +74,16 @@ interface Proposal {
 
 export default function ProposalsPage() {
   const { data: session } = useSession();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [tabValue, setTabValue] = React.useState(0);
   const [communityProposals, setCommunityProposals] = React.useState<
     Proposal[]
@@ -82,8 +96,6 @@ export default function ProposalsPage() {
     null
   );
   const [refreshing, setRefreshing] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
   const [proposalForm, setProposalForm] = React.useState({
     title: "",
     description: "",
@@ -101,7 +113,6 @@ export default function ProposalsPage() {
 
   async function loadProposals() {
     try {
-      setError(null);
       setLoading(true);
 
       const queryParams = `?community=${session?.user?.community}`;
@@ -129,7 +140,7 @@ export default function ProposalsPage() {
       }
     } catch (err) {
       console.error("Failed to load proposals", err);
-      setError("Failed to load proposals");
+      showError("Failed to load proposals");
     } finally {
       setLoading(false);
     }
@@ -147,7 +158,7 @@ export default function ProposalsPage() {
 
   const handleSubmitProposal = async () => {
     if (!proposalForm.title || !proposalForm.description) {
-      setError("Please fill in all fields");
+      showError("Please fill in all fields");
       return;
     }
 
@@ -174,7 +185,7 @@ export default function ProposalsPage() {
       });
 
       if (res.ok) {
-        setSuccess(
+        showSuccess(
           isEditing
             ? "Proposal updated and resubmitted"
             : "Proposal created successfully"
@@ -185,10 +196,10 @@ export default function ProposalsPage() {
         loadProposals();
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to create proposal");
+        showError(data.error || "Failed to create proposal");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error creating proposal");
+      showError(err instanceof Error ? err.message : "Error creating proposal");
     }
   };
 
@@ -201,14 +212,14 @@ export default function ProposalsPage() {
       });
 
       if (res.ok) {
-        setSuccess(`Vote recorded: ${vote.toUpperCase()}`);
+        showSuccess(`Vote recorded: ${vote.toUpperCase()}`);
         setVotingDialog(false);
         loadProposals();
       } else {
-        setError("Failed to record vote");
+        showError("Failed to record vote");
       }
     } catch (err) {
-      setError("Error recording vote");
+      showError("Error recording vote");
     }
   };
 
@@ -259,21 +270,6 @@ export default function ProposalsPage() {
           </Button>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 3 }}
-          onClose={() => setSuccess(null)}
-        >
-          {success}
-        </Alert>
-      )}
 
       {/* Tabs */}
       <Paper>
@@ -443,22 +439,27 @@ export default function ProposalsPage() {
                           <Button
                             variant="outlined"
                             color="error"
-                            onClick={async () => {
-                              if (!confirm("Delete this proposal?")) return;
-                              try {
-                                const res = await fetch(
-                                  `/api/proposals/${proposal._id}`,
-                                  { method: "DELETE" }
-                                );
-                                if (res.ok) {
-                                  setSuccess("Proposal deleted");
-                                  loadProposals();
-                                } else {
-                                  setError("Failed to delete proposal");
+                            onClick={() => {
+                              openConfirmDialog(
+                                "Delete Proposal",
+                                "Are you sure you want to delete this proposal? This action cannot be undone.",
+                                async () => {
+                                  try {
+                                    const res = await fetch(
+                                      `/api/proposals/${proposal._id}`,
+                                      { method: "DELETE" }
+                                    );
+                                    if (res.ok) {
+                                      showSuccess("Proposal deleted");
+                                      loadProposals();
+                                    } else {
+                                      showError("Failed to delete proposal");
+                                    }
+                                  } catch (error) {
+                                    showError("Error deleting proposal");
+                                  }
                                 }
-                              } catch (e) {
-                                setError("Error deleting proposal");
-                              }
+                              );
                             }}
                           >
                             Delete
@@ -682,6 +683,24 @@ export default function ProposalsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
     </Container>
   );
 }

@@ -10,6 +10,7 @@ export interface INotification extends Document {
     | "withdrawal"
     | "monthly_contribution"
     | "profit_deposit"
+    | "manual_deposit"
     | "refund_deposit"
     | "assistance"
     | "profit_share"
@@ -45,6 +46,7 @@ const NotificationSchema = new Schema<INotification>(
         "withdrawal",
         "monthly_contribution",
         "profit_deposit",
+        "manual_deposit",
         "refund_deposit",
         "assistance",
         "profit_share",

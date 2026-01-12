@@ -23,6 +23,10 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -47,6 +51,9 @@ interface Community {
 export default function CommunitiesPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { snackbar, closeSnackbar, showWarning } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [communities, setCommunities] = React.useState<Community[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
@@ -196,30 +203,28 @@ export default function CommunitiesPage() {
   };
 
   const handleDelete = async (community: Community) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete "${community.name}"? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    openConfirmDialog(
+      "Delete Community",
+      `Are you sure you want to delete "${community.name}"? This action cannot be undone.`,
+      async () => {
+        try {
+          const res = await fetch(`/api/communities/${community._id}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const res = await fetch(`/api/communities/${community._id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        setSuccess("Community deleted successfully");
-        fetchCommunities();
-      } else {
-        const data = await res.json();
-        setError(data.error || "Failed to delete community");
+          if (res.ok) {
+            setSuccess("Community deleted successfully");
+            fetchCommunities();
+          } else {
+            const data = await res.json();
+            setError(data.error || "Failed to delete community");
+          }
+        } catch (err) {
+          setError("Error deleting community");
+          console.error(err);
+        }
       }
-    } catch (err) {
-      setError("Error deleting community");
-      console.error(err);
-    }
+    );
   };
 
   const columns: GridColDef[] = [
@@ -265,6 +270,23 @@ export default function CommunitiesPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
       {/* Header with Create Button */}
       <Box
         sx={{

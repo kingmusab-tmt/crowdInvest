@@ -12,7 +12,6 @@ import {
   CardActions,
   Button,
   CircularProgress,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -31,11 +30,14 @@ import {
   TableCell,
   TableContainer,
   TableRow,
+  Alert,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import VerifiedIcon from "@mui/icons-material/Verified";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 
 interface KYCUser {
   _id: string;
@@ -94,11 +96,18 @@ export default function KYCPage() {
   const [verificationNotes, setVerificationNotes] = React.useState("");
   const [rejectionReason, setRejectionReason] = React.useState("");
   const [verifying, setVerifying] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
   const [filterStatus, setFilterStatus] = React.useState<
     "all" | "verified" | "pending"
   >("all");
+
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
 
   React.useEffect(() => {
     fetchKYCUsers();
@@ -112,11 +121,11 @@ export default function KYCPage() {
         const data = await res.json();
         setKYCUsers(data);
       } else {
-        setError("Failed to load KYC users");
+        showError("Failed to load KYC users");
       }
     } catch (err) {
       console.error("Failed to load KYC users", err);
-      setError("Failed to load KYC users");
+      showError("Failed to load KYC users");
     } finally {
       setLoading(false);
     }
@@ -138,7 +147,6 @@ export default function KYCPage() {
     if (!selectedUser) return;
 
     setVerifying(true);
-    setError(null);
 
     try {
       const res = await fetch("/api/admin/kyc", {
@@ -152,19 +160,18 @@ export default function KYCPage() {
       });
 
       if (res.ok) {
-        setSuccess(`KYC for ${selectedUser.name} verified successfully!`);
+        showSuccess(`KYC for ${selectedUser.name} verified successfully!`);
         setVerifyDialogOpen(false);
         setTimeout(() => {
-          setSuccess(null);
           setFilterStatus("all"); // Reset filter to show updated status
           fetchKYCUsers();
         }, 2000);
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to process KYC");
+        showError(errorData.error || "Failed to process KYC");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to process KYC");
+      showError(err instanceof Error ? err.message : "Failed to process KYC");
     } finally {
       setVerifying(false);
     }
@@ -172,12 +179,11 @@ export default function KYCPage() {
 
   const handleRejectSubmit = async () => {
     if (!selectedUser || !rejectionReason.trim()) {
-      setError("Rejection reason is required");
+      showError("Rejection reason is required");
       return;
     }
 
     setVerifying(true);
-    setError(null);
 
     try {
       const res = await fetch("/api/admin/kyc", {
@@ -191,22 +197,21 @@ export default function KYCPage() {
       });
 
       if (res.ok) {
-        setSuccess(
+        showSuccess(
           `KYC for ${selectedUser.name} rejected and notification sent!`
         );
         setRejectionDialogOpen(false);
         setVerifyDialogOpen(false);
         setTimeout(() => {
           setFilterStatus("all"); // Reset filter to show updated status
-          setSuccess(null);
           fetchKYCUsers();
         }, 2000);
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to process KYC");
+        showError(errorData.error || "Failed to process KYC");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to process KYC");
+      showError(err instanceof Error ? err.message : "Failed to process KYC");
     } finally {
       setVerifying(false);
     }
@@ -241,21 +246,12 @@ export default function KYCPage() {
         </Typography>
       </Box>
 
-      {/* Status Alerts */}
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          severity="success"
-          onClose={() => setSuccess(null)}
-          sx={{ mb: 3 }}
-        >
-          {success}
-        </Alert>
-      )}
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
 
       {/* Stats */}
       <Grid container spacing={2} sx={{ mb: 4 }}>

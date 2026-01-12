@@ -1,16 +1,34 @@
 "use client";
 
 import * as React from "react";
-import { Box, Button, Container, Paper, Typography, Alert, CircularProgress, List, ListItem, ListItemText } from "@mui/material";
+import {
+  Box,
+  Button,
+  Container,
+  Paper,
+  Typography,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 
 export default function SeedPage() {
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<any>(null);
-  const [error, setError] = React.useState<string | null>(null);
 
   const seedCommunities = async () => {
     setLoading(true);
-    setError(null);
     setResult(null);
 
     try {
@@ -24,9 +42,12 @@ export default function SeedPage() {
         throw new Error(data.error || "Failed to seed communities");
       }
 
+      showSuccess(data.message || "Communities seeded");
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to seed communities");
+      const message =
+        err instanceof Error ? err.message : "Failed to seed communities";
+      showError(message);
     } finally {
       setLoading(false);
     }
@@ -42,15 +63,11 @@ export default function SeedPage() {
           Click the button below to populate the database with IMIC communities.
         </Typography>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
         {result && (
-          <Alert severity="success" sx={{ mb: 3 }}>
-            {result.message}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              {result.message}
+            </Typography>
             {result.communities && (
               <List>
                 {result.communities.map((c: any) => (
@@ -60,7 +77,7 @@ export default function SeedPage() {
                 ))}
               </List>
             )}
-          </Alert>
+          </Box>
         )}
 
         <Button
@@ -71,6 +88,12 @@ export default function SeedPage() {
         >
           {loading ? <CircularProgress size={24} /> : "Seed Communities"}
         </Button>
+        <SnackbarAlert
+          open={snackbar.open}
+          message={snackbar.message}
+          severity={snackbar.severity}
+          onClose={closeSnackbar}
+        />
       </Paper>
     </Container>
   );

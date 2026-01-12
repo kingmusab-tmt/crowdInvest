@@ -31,6 +31,8 @@ import Alert from "@mui/material/Alert";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { formatNaira } from "@/lib/utils";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 
 // Stats Card Component
 function StatsCard({ title, value, icon, color, action }: any) {
@@ -140,6 +142,14 @@ function InvestmentCard({ investment }: any) {
 export default function UserDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
   const [investments, setInvestments] = React.useState([]);
   const [transactions, setTransactions] = React.useState([]);
   const [events, setEvents] = React.useState([]);
@@ -151,7 +161,6 @@ export default function UserDashboard() {
     date: "",
     location: "",
   });
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
@@ -162,7 +171,13 @@ export default function UserDashboard() {
   const [contributionPercentage, setContributionPercentage] = React.useState(0);
   const [totalSpending, setTotalSpending] = React.useState(0);
   const [totalIncome, setTotalIncome] = React.useState(0);
+  const [communityTotalWithdrawals, setCommunityTotalWithdrawals] =
+    React.useState(0);
+  const [communityRemainingIncome, setCommunityRemainingIncome] =
+    React.useState(0);
   const [memberProfitShare, setMemberProfitShare] = React.useState(0);
+  const [memberTotalWithdrawn, setMemberTotalWithdrawn] = React.useState(0);
+  const [memberGrossProfitShare, setMemberGrossProfitShare] = React.useState(0);
   const [monthlyContributionStatus, setMonthlyContributionStatus] =
     React.useState({
       hasPaid: false,
@@ -267,7 +282,9 @@ export default function UserDashboard() {
           const memberDeposits = transactionsData.filter(
             (t: any) =>
               t.userEmail === session.user.email &&
-              t.type === "Monthly_Contribution" &&
+              (t.type === "Monthly_Contribution" ||
+                t.type === "manual_deposit" ||
+                t.type === "refund_deposit") &&
               t.status === "Completed"
           );
           const memberTotalContribution = memberDeposits.reduce(
@@ -279,7 +296,10 @@ export default function UserDashboard() {
           // Calculate total community contributions (all members' deposits)
           const allDeposits = transactionsData.filter(
             (t: any) =>
-              t.type === "Monthly_Contribution" && t.status === "Completed"
+              (t.type === "Monthly_Contribution" ||
+                t.type === "manual_deposit" ||
+                t.type === "refund_deposit") &&
+              t.status === "Completed"
           );
           const communityTotal = allDeposits.reduce(
             (sum: number, t: any) => sum + t.amount,
@@ -309,32 +329,88 @@ export default function UserDashboard() {
           );
           setTotalSpending(totalSpent);
 
-          // Calculate total income from investments
-          const memberInvestmentsRes = await fetch(
-            `/api/investments/member?userId=${currentUser._id}`
+          // Calculate total income from investments (Total Investment Income)
+          // This includes profit_deposit transactions which represent actual investment profits
+          const profitDepositTransactions = transactionsData.filter(
+            (t: any) => t.type === "profit_deposit" && t.status === "Completed"
           );
-          const memberInvestmentsData = await memberInvestmentsRes.json();
-          const investmentsArray = Array.isArray(memberInvestmentsData)
-            ? memberInvestmentsData
-            : memberInvestmentsData?.investments || [];
-          const totalProfit = investmentsArray.reduce(
-            (sum: number, inv: any) => sum + (inv.profitOrLoss || 0),
+          const totalInvestmentIncome = profitDepositTransactions.reduce(
+            (sum: number, t: any) => sum + t.amount,
             0
           );
-          setTotalIncome(totalProfit);
+          setTotalIncome(totalInvestmentIncome);
 
-          // Calculate member's profit share based on contribution percentage
-          const memberShare = totalProfit * (percentage / 100);
-          setMemberProfitShare(memberShare);
+          // Calculate community-level withdrawals (all members)
+          // Get all Profit Share transactions (positive = distributions, negative = withdrawals)
+          const allProfitShareTransactions = transactionsData.filter(
+            (t: any) => t.type === "Profit Share" && t.status === "Completed"
+          );
 
-          // Check monthly contribution status
+          // Calculate total withdrawals by all members (negative amounts)
+          const communityWithdrawals = Math.abs(
+            allProfitShareTransactions
+              .filter((t: any) => t.amount < 0)
+              .reduce((sum: number, t: any) => sum + t.amount, 0)
+          );
+          setCommunityTotalWithdrawals(communityWithdrawals);
+
+          // Calculate remaining investment income after withdrawals
+          const remainingIncome = totalInvestmentIncome - communityWithdrawals;
+          setCommunityRemainingIncome(remainingIncome);
+
+          // Calculate member's profit share from actual Profit Share transactions
+          // Positive amounts = profit distributions, Negative amounts = withdrawals/contributions
+          const memberProfitShareTransactions = transactionsData.filter(
+            (t: any) =>
+              t.userEmail === session.user.email &&
+              t.type === "Profit Share" &&
+              t.status === "Completed"
+          );
+
+          // Calculate gross profit share (only positive transactions - distributions)
+          const grossProfitShare = memberProfitShareTransactions
+            .filter((t: any) => t.amount > 0)
+            .reduce((sum: number, t: any) => sum + t.amount, 0);
+          setMemberGrossProfitShare(grossProfitShare);
+
+          // Calculate total withdrawn (only negative transactions - withdrawals/contributions)
+          const totalWithdrawn = Math.abs(
+            memberProfitShareTransactions
+              .filter((t: any) => t.amount < 0)
+              .reduce((sum: number, t: any) => sum + t.amount, 0)
+          );
+          setMemberTotalWithdrawn(totalWithdrawn);
+
+          // Calculate available profit share (sum of all including negative)
+          const availableProfitShare = memberProfitShareTransactions.reduce(
+            (sum: number, t: any) => sum + t.amount,
+            0
+          );
+
+          console.log("Profit Share Calculation:", {
+            contributionPercentage: percentage,
+            profitShareTransactions: memberProfitShareTransactions.length,
+            grossProfitShare,
+            totalWithdrawn,
+            availableProfitShare,
+          });
+          setMemberProfitShare(availableProfitShare);
+
+          // Check monthly contribution status (only for Monthly_Contribution type)
           const currentMonth = new Date().getMonth();
           const currentYear = new Date().getFullYear();
-          const monthlyContribution = memberDeposits.find((t: any) => {
+          const monthlyContributions = transactionsData.filter(
+            (t: any) =>
+              t.userEmail === session.user.email &&
+              t.type === "Monthly_Contribution" &&
+              t.status === "Completed"
+          );
+          const monthlyContribution = monthlyContributions.find((t: any) => {
             const tDate = new Date(t.date);
             return (
               tDate.getMonth() === currentMonth &&
-              tDate.getFullYear() === currentYear
+              tDate.getFullYear() === currentYear &&
+              t.type === "Monthly_Contribution"
             );
           });
 
@@ -344,7 +420,7 @@ export default function UserDashboard() {
             dueDate: new Date(currentYear, currentMonth + 1, 0).toDateString(),
           });
 
-          // Get last contribution
+          // Get last contribution (from all deposit types)
           const lastDeposit = memberDeposits.sort(
             (a: any, b: any) =>
               new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -360,18 +436,44 @@ export default function UserDashboard() {
           const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
           const lastMonthYear =
             currentMonth === 0 ? currentYear - 1 : currentYear;
+
+          console.log("Calculating last month contributors:", {
+            currentMonth,
+            currentYear,
+            lastMonth,
+            lastMonthYear,
+            totalTransactions: transactionsData.length,
+          });
+
           const lastMonthDeposits = transactionsData.filter((t: any) => {
+            if (!t.type || !t.status) return false;
             if (t.type !== "Monthly_Contribution" || t.status !== "Completed")
               return false;
+            if (!t.date) return false;
             const tDate = new Date(t.date);
-            return (
-              tDate.getMonth() === lastMonth &&
-              tDate.getFullYear() === lastMonthYear
-            );
+            const matchesMonth = tDate.getMonth() === lastMonth;
+            const matchesYear = tDate.getFullYear() === lastMonthYear;
+            return matchesMonth && matchesYear;
           });
+
+          console.log("Last month deposits:", {
+            count: lastMonthDeposits.length,
+            deposits: lastMonthDeposits.map((d: any) => ({
+              email: d.userEmail,
+              date: d.date,
+              amount: d.amount,
+            })),
+          });
+
           const uniqueContributors = new Set(
             lastMonthDeposits.map((t: any) => t.userEmail)
           );
+
+          console.log("Unique contributors:", {
+            count: uniqueContributors.size,
+            contributors: Array.from(uniqueContributors),
+          });
+
           setLastMonthContributors(uniqueContributors.size);
 
           // Get upcoming events info
@@ -487,14 +589,12 @@ export default function UserDashboard() {
   }, [fetchDashboardData, checkMonthlyContributions, verifyPaymentIfReturned]);
 
   const handleSubmitEvent = React.useCallback(async () => {
-    setSubmitError(null);
-
     if (
       !eventFormData.title ||
       !eventFormData.date ||
       !eventFormData.location
     ) {
-      setSubmitError("Please fill in all required fields");
+      showError("Please fill in all required fields");
       return;
     }
 
@@ -521,7 +621,7 @@ export default function UserDashboard() {
       // Refresh events list
       fetchDashboardData();
     } catch (error) {
-      setSubmitError(
+      showError(
         error instanceof Error ? error.message : "Failed to submit event"
       );
     } finally {
@@ -612,7 +712,7 @@ export default function UserDashboard() {
             Welcome back, {session?.user?.name}!
           </Typography>
           <Typography variant="body1" color="textSecondary">
-            Here's what's happening with your investments today.
+            Here's what's happening with your community today.
           </Typography>
         </Box>
 
@@ -972,22 +1072,63 @@ export default function UserDashboard() {
               <Grid item xs={12} md={6}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="textSecondary">
-                    Net Community Profit
+                    Total Investment Income Ever Achieved
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      color: totalIncome > 0 ? "success.main" : "text.primary",
+                    }}
+                  >
+                    {formatNaira(totalIncome)}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    All profit deposits received by community
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Total Withdrawn by All Members
                   </Typography>
                   <Typography
                     variant="h5"
                     sx={{
                       fontWeight: 600,
                       color:
-                        totalIncome - totalSpending > 0
-                          ? "success.main"
-                          : "error.main",
+                        communityTotalWithdrawals > 0
+                          ? "warning.main"
+                          : "text.primary",
                     }}
                   >
-                    {formatNaira(totalIncome - totalSpending)}
+                    {formatNaira(communityTotalWithdrawals)}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    Investment income minus expenses
+                    Amount withdrawn or converted by members
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Current Investment Income Balance
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      color:
+                        communityRemainingIncome > 0
+                          ? "primary.main"
+                          : "text.primary",
+                    }}
+                  >
+                    {formatNaira(communityRemainingIncome)}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    Remaining after all member withdrawals
                   </Typography>
                 </Box>
               </Grid>
@@ -1156,7 +1297,6 @@ export default function UserDashboard() {
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}
         >
-          {submitError && <Alert severity="error">{submitError}</Alert>}
           <TextField
             label="Event Title"
             fullWidth
@@ -1205,6 +1345,12 @@ export default function UserDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Box>
   );
 }

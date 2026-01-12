@@ -53,6 +53,8 @@ export interface IUser extends Document {
     accountNumber?: string;
     accountName?: string;
   };
+  bvn?: string;
+  nin?: string;
   termsAccepted?: boolean;
   privacyAccepted?: boolean;
   permissions?: {
@@ -174,6 +176,8 @@ const UserSchema = new Schema<IUser>(
       accountNumber: String,
       accountName: String,
     },
+    bvn: String,
+    nin: String,
     termsAccepted: { type: Boolean, default: false },
     privacyAccepted: { type: Boolean, default: false },
     permissions: {

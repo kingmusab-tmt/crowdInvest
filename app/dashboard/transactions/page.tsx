@@ -36,6 +36,7 @@ interface Transaction {
     | "Assistance"
     | "Event"
     | "profit_deposit"
+    | "manual_deposit"
     | "refund_deposit";
   status: "Completed" | "Pending" | "Failed";
   amount: number;
@@ -119,6 +120,8 @@ export default function TransactionsPage() {
         return "default";
       case "profit_deposit":
         return "success";
+      case "manual_deposit":
+        return "primary";
       case "refund_deposit":
         return "warning";
       default:
@@ -271,6 +274,7 @@ export default function TransactionsPage() {
               <MenuItem value="Event">Event</MenuItem>
               <MenuItem value="profit_deposit">Profit Deposit</MenuItem>
               <MenuItem value="refund_deposit">Refund Deposit</MenuItem>
+              <MenuItem value="manual_deposit">Manual Deposit</MenuItem>
             </TextField>
             <TextField
               select

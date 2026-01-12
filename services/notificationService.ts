@@ -13,6 +13,7 @@ export interface CreateNotificationParams {
     | "monthly_contribution"
     | "profit_deposit"
     | "refund_deposit"
+    | "manual_deposit"
     | "assistance"
     | "profit_share"
     | "proposal"
@@ -107,6 +108,7 @@ function shouldSendEmailForType(type: string, emailPreferences: any): boolean {
     refund_deposit: "withdrawals",
     monthly_contribution: "investments",
     profit_deposit: "investments",
+    manual_deposit: "announcements",
     profit_share: "investments",
     assistance: "announcements",
     proposal: "proposals",
@@ -296,6 +298,7 @@ function getNotificationTypeLabel(type: string): string {
     monthly_contribution: "Monthly Contribution",
     profit_deposit: "Profit Deposit",
     refund_deposit: "Refund Deposit",
+    manual_deposit: "Manual Deposit",
     assistance: "Assistance",
     profit_share: "Profit Share",
     proposal: "Proposal",

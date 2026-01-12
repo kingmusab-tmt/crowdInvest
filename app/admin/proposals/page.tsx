@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Alert,
   Chip,
   IconButton,
   Grid,
@@ -35,6 +34,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -87,13 +90,21 @@ interface VoteData {
 export default function ProposalsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [tabValue, setTabValue] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [proposals, setProposals] = React.useState<Proposal[]>([]);
   const [activeProposals, setActiveProposals] = React.useState<Proposal[]>([]);
   const [votes, setVotes] = React.useState<VoteData[]>([]);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
 
   // Dialogs
   const [editProposalDialog, setEditProposalDialog] = React.useState(false);
@@ -120,7 +131,6 @@ export default function ProposalsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const isGeneralAdmin = session?.user?.role === "General Admin";
       const queryParams = isGeneralAdmin
@@ -153,7 +163,7 @@ export default function ProposalsPage() {
       }
     } catch (err) {
       console.error("Failed to load data", err);
-      setError("Failed to load data");
+      showError("Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -171,11 +181,11 @@ export default function ProposalsPage() {
         body: JSON.stringify({ status: "approved" }),
       });
       if (res.ok) {
-        setSuccess("Proposal approved");
+        showSuccess("Proposal approved");
         loadData();
       }
     } catch (err) {
-      setError("Failed to approve proposal");
+      showError("Failed to approve proposal");
     }
   };
 
@@ -197,12 +207,12 @@ export default function ProposalsPage() {
         }),
       });
       if (res.ok) {
-        setSuccess("Proposal rejected");
+        showSuccess("Proposal rejected");
         setRejectionReasonDialog(false);
         loadData();
       }
     } catch (err) {
-      setError("Failed to reject proposal");
+      showError("Failed to reject proposal");
     }
   };
 
@@ -225,14 +235,14 @@ export default function ProposalsPage() {
         body: JSON.stringify(proposalForm),
       });
       if (res.ok) {
-        setSuccess("Proposal updated");
+        showSuccess("Proposal updated");
         setEditProposalDialog(false);
         loadData();
       } else {
-        setError("Failed to update proposal");
+        showError("Failed to update proposal");
       }
     } catch (err) {
-      setError("Error updating proposal");
+      showError("Error updating proposal");
     }
   };
 
@@ -248,7 +258,7 @@ export default function ProposalsPage() {
         }),
       });
       if (res.ok) {
-        setSuccess("Proposal created");
+        showSuccess("Proposal created");
         setCreateProposalDialog(false);
         setProposalForm({
           title: "",
@@ -258,28 +268,33 @@ export default function ProposalsPage() {
         loadData();
       } else {
         const errorData = await res.json();
-        setError(errorData.error || "Failed to create proposal");
+        showError(errorData.error || "Failed to create proposal");
       }
     } catch (err) {
-      setError("Error creating proposal");
+      showError("Error creating proposal");
     }
   };
 
   const handleDeleteProposal = async (proposalId: string) => {
-    if (!confirm("Are you sure you want to delete this proposal?")) return;
-    try {
-      const res = await fetch(`/api/proposals/${proposalId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setSuccess("Proposal deleted");
-        loadData();
-      } else {
-        setError("Failed to delete proposal");
+    openConfirmDialog(
+      "Delete Proposal",
+      "Are you sure you want to delete this proposal? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(`/api/proposals/${proposalId}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            showSuccess("Proposal deleted");
+            loadData();
+          } else {
+            showError("Failed to delete proposal");
+          }
+        } catch (err) {
+          showError("Error deleting proposal");
+        }
       }
-    } catch (err) {
-      setError("Error deleting proposal");
-    }
+    );
   };
 
   const getStatusColor = (status: string): any => {
@@ -324,21 +339,6 @@ export default function ProposalsPage() {
           New Proposal
         </Button>
       </Box>
-
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          severity="success"
-          onClose={() => setSuccess(null)}
-          sx={{ mb: 2 }}
-        >
-          {success}
-        </Alert>
-      )}
 
       {loading ? (
         <CircularProgress />
@@ -724,6 +724,23 @@ export default function ProposalsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
     </Container>
   );
 }

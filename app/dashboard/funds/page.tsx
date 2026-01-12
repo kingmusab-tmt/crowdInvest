@@ -17,7 +17,6 @@ import {
   Radio,
   FormControl,
   FormLabel,
-  Alert,
   Card,
   CardContent,
   Divider,
@@ -26,9 +25,12 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Alert,
 } from "@mui/material";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import PaymentIcon from "@mui/icons-material/Payment";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
@@ -44,6 +46,14 @@ function a11yProps(index: number) {
 function FundsContent() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
   const initialTab = searchParams?.get("tab") === "withdrawal" ? 1 : 0;
   const [tab, setTab] = React.useState(initialTab);
   const [amount, setAmount] = React.useState("");
@@ -51,8 +61,6 @@ function FundsContent() {
     "one-time" | "reserved-account" | "recurring"
   >("one-time");
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
   const [reservedAccount, setReservedAccount] = React.useState<any>(null);
   const [recurringSetupOpen, setRecurringSetupOpen] = React.useState(false);
   const [recurringAmount, setRecurringAmount] = React.useState("");
@@ -61,12 +69,18 @@ function FundsContent() {
   const [recurringDetails, setRecurringDetails] = React.useState<any>(null);
   const [modifyRecurringOpen, setModifyRecurringOpen] = React.useState(false);
   const [newRecurringAmount, setNewRecurringAmount] = React.useState("");
+  const [profitShare, setProfitShare] = React.useState(0);
+  const [bvnNinDialogOpen, setBvnNinDialogOpen] = React.useState(false);
+  const [bvn, setBvn] = React.useState("");
+  const [nin, setNin] = React.useState("");
+  const [submittingBvnNin, setSubmittingBvnNin] = React.useState(false);
 
   React.useEffect(() => {
     fetchUserPaymentSettings();
     fetchPaymentFailures();
     fetchRecurringDetails();
     verifyPaymentIfReturned();
+    fetchProfitShare();
   }, []);
 
   const verifyPaymentIfReturned = async () => {
@@ -91,17 +105,17 @@ function FundsContent() {
           const data = await response.json();
 
           if (response.ok) {
-            setSuccess(
+            showSuccess(
               `Payment of ${formatNaira(
                 data.amount
               )} verified successfully! Your balance has been updated.`
             );
           } else {
-            setError(data.error || "Failed to verify payment");
+            showError(data.error || "Failed to verify payment");
           }
         } else if (paymentStatus === "recurring-success") {
           // Recurring payment setup completed
-          setSuccess(
+          showSuccess(
             "Recurring payment setup successful! Your first charge will process on the scheduled date."
           );
           // Refetch recurring details
@@ -117,7 +131,7 @@ function FundsContent() {
         // Refresh user data
         fetchUserPaymentSettings();
       } catch (err: any) {
-        setError(err.message || "Failed to verify payment");
+        showError(err.message || "Failed to verify payment");
       } finally {
         setVerifyingPayment(false);
       }
@@ -175,8 +189,6 @@ function FundsContent() {
     method: "one-time" | "reserved-account" | "recurring"
   ) => {
     setPaymentMethod(method);
-    setError(null);
-    setSuccess(null);
 
     // If reserved account is selected and not yet created, create it
     if (method === "reserved-account" && !reservedAccount) {
@@ -191,7 +203,6 @@ function FundsContent() {
 
   const createReservedAccount = async () => {
     setLoading(true);
-    setError(null);
     try {
       const response = await fetch("/api/payment/reserved-account", {
         method: "POST",
@@ -205,9 +216,9 @@ function FundsContent() {
       }
 
       setReservedAccount(data.account);
-      setSuccess("Reserved account created successfully!");
+      showSuccess("Reserved account created successfully!");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -215,12 +226,11 @@ function FundsContent() {
 
   const handleOneTimePayment = async () => {
     if (!amount || parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount");
+      showError("Please enter a valid amount");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/payment/initialize", {
@@ -241,19 +251,18 @@ function FundsContent() {
       // Redirect to Paystack payment page
       window.location.href = data.authorization_url;
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
       setLoading(false);
     }
   };
 
   const handleRecurringSetup = async () => {
     if (!recurringAmount || parseFloat(recurringAmount) <= 0) {
-      setError("Please enter a valid recurring amount");
+      showError("Please enter a valid recurring amount");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/payment/recurring", {
@@ -274,14 +283,13 @@ function FundsContent() {
       // Redirect to Paystack to authorize recurring payment
       window.location.href = data.authorization_url;
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
       setLoading(false);
     }
   };
 
   const handleCancelRecurring = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/payment/recurring", {
@@ -294,46 +302,140 @@ function FundsContent() {
         throw new Error(data.error || "Failed to cancel recurring payment");
       }
 
-      setSuccess("Recurring payment cancelled successfully!");
+      showSuccess("Recurring payment cancelled successfully!");
       setRecurringSetupOpen(false);
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchProfitShare = async () => {
+    try {
+      const transactionsRes = await fetch("/api/transactions");
+      if (transactionsRes.ok) {
+        const transactionsData = await transactionsRes.json();
+
+        // Calculate member's profit share from actual Profit Share transactions
+        // Positive amounts = profit distributions, Negative amounts = withdrawals/contributions
+        const memberProfitShareTransactions = transactionsData.filter(
+          (t: any) =>
+            t.userEmail === session?.user?.email &&
+            t.type === "Profit Share" &&
+            t.status === "Completed"
+        );
+        const availableProfitShare = memberProfitShareTransactions.reduce(
+          (sum: number, t: any) => sum + t.amount,
+          0
+        );
+
+        setProfitShare(availableProfitShare);
+      }
+    } catch (error) {
+      console.error("Error fetching profit share:", error);
+    }
+  };
+
   const handleWithdrawal = async () => {
     if (!amount || parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount");
+      showError("Please enter a valid amount");
+      return;
+    }
+
+    const withdrawalAmount = parseFloat(amount);
+
+    // Check if withdrawal amount is within available profit share
+    if (withdrawalAmount > profitShare) {
+      showError(
+        `Insufficient profit share. You can withdraw up to ${formatNaira(
+          profitShare
+        )}`
+      );
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
-      const response = await fetch("/api/transactions", {
+      const response = await fetch("/api/withdrawals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: "Withdrawal",
-          amount: parseFloat(amount),
+          amount: withdrawalAmount,
           userName: session?.user?.name,
           userEmail: session?.user?.email,
+          communityId: session?.user?.community,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to process withdrawal");
+        throw new Error(data.error || "Failed to process withdrawal request");
       }
 
-      setSuccess("Withdrawal request submitted successfully!");
+      showSuccess(
+        `Withdrawal request of ${formatNaira(
+          withdrawalAmount
+        )} submitted successfully! Please wait for admin approval.`
+      );
       setAmount("");
+      fetchProfitShare(); // Refresh profit share
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleContribute = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      showError("Please enter a valid amount");
+      return;
+    }
+
+    const contributionAmount = parseFloat(amount);
+
+    // Check if contribution amount is within available profit share
+    if (contributionAmount > profitShare) {
+      showError(
+        `Insufficient profit share. You can contribute up to ${formatNaira(
+          profitShare
+        )}`
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/contributions/from-profit-share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: contributionAmount,
+          userName: session?.user?.name,
+          userEmail: session?.user?.email,
+          communityId: session?.user?.community,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to process contribution");
+      }
+
+      showSuccess(
+        `Successfully contributed ${formatNaira(
+          contributionAmount
+        )} from your profit share!`
+      );
+      setAmount("");
+      fetchProfitShare(); // Refresh profit share
+    } catch (err: any) {
+      showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -341,7 +443,6 @@ function FundsContent() {
 
   const handleManualRecurringCharge = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/payment/manual-charge", {
@@ -355,12 +456,12 @@ function FundsContent() {
         throw new Error(data.error || "Failed to process manual charge");
       }
 
-      setSuccess(
+      showSuccess(
         `Manual charge of ${formatNaira(data.amount)} processed successfully!`
       );
       fetchRecurringDetails();
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -368,12 +469,11 @@ function FundsContent() {
 
   const handleModifyRecurringAmount = async () => {
     if (!newRecurringAmount || parseFloat(newRecurringAmount) <= 0) {
-      setError("Please enter a valid amount");
+      showError("Please enter a valid amount");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/payment/recurring-details", {
@@ -390,11 +490,11 @@ function FundsContent() {
         throw new Error(data.error || "Failed to modify recurring amount");
       }
 
-      setSuccess("Recurring amount updated successfully!");
+      showSuccess("Recurring amount updated successfully!");
       setModifyRecurringOpen(false);
       fetchRecurringDetails();
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -402,7 +502,6 @@ function FundsContent() {
 
   const handleRetryPayment = async (failureId: string) => {
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/payment/retry", {
@@ -417,14 +516,61 @@ function FundsContent() {
         throw new Error(data.error || "Failed to retry payment");
       }
 
-      setSuccess(
+      showSuccess(
         `Payment retry of ${formatNaira(data.amount)} processed successfully!`
       );
       fetchPaymentFailures();
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitBvnNin = async () => {
+    if (!bvn || !nin) {
+      showError("Please enter both BVN and NIN");
+      return;
+    }
+
+    if (bvn.length !== 11) {
+      showError("BVN must be 11 digits");
+      return;
+    }
+
+    if (nin.length !== 11) {
+      showError("NIN must be 11 digits");
+      return;
+    }
+
+    setSubmittingBvnNin(true);
+
+    try {
+      const response = await fetch("/api/users/update-bvn-nin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bvn, nin }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit BVN/NIN");
+      }
+
+      showSuccess(
+        "BVN and NIN submitted successfully! Your reserved account will be created shortly."
+      );
+      setBvn("");
+      setNin("");
+      setBvnNinDialogOpen(false);
+      // Refresh user data or reserved account
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      window.location.reload();
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setSubmittingBvnNin(false);
     }
   };
 
@@ -472,22 +618,6 @@ function FundsContent() {
           <Tab label="Recurring Payments" {...a11yProps(2)} />
           <Tab label="Failed Payments" {...a11yProps(3)} />
         </Tabs>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert
-            severity="success"
-            sx={{ mb: 2 }}
-            onClose={() => setSuccess(null)}
-          >
-            {success}
-          </Alert>
-        )}
 
         {tab === 0 && (
           <Box>
@@ -706,10 +836,20 @@ function FundsContent() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <Alert severity="info">
-                    Click "Select Payment Method" above to create your reserved
-                    account
-                  </Alert>
+                  <Stack spacing={2}>
+                    <Alert severity="warning">
+                      To create a reserved account, you need to provide your BVN
+                      (Bank Verification Number) and NIN (National
+                      Identification Number) as required by CBN regulations.
+                    </Alert>
+                    <Button
+                      variant="contained"
+                      onClick={() => setBvnNinDialogOpen(true)}
+                      fullWidth
+                    >
+                      Request Reserved Account
+                    </Button>
+                  </Stack>
                 )}
               </Box>
             )}
@@ -728,6 +868,17 @@ function FundsContent() {
             <Typography variant="h6" sx={{ mb: 2 }}>
               Withdraw Funds
             </Typography>
+
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Available Profit Share:{" "}
+              <strong>{formatNaira(profitShare)}</strong>
+            </Alert>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              You can only withdraw from your profit share. Your withdrawal
+              request will be sent to the admin for approval.
+            </Typography>
+
             <Stack spacing={2}>
               <TextField
                 label="Amount (₦)"
@@ -735,16 +886,31 @@ function FundsContent() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 fullWidth
+                helperText={`Maximum: ${formatNaira(profitShare)}`}
+                inputProps={{ max: profitShare, min: 0, step: "0.01" }}
               />
-              <Button
-                variant="contained"
-                color="warning"
-                onClick={handleWithdrawal}
-                disabled={loading}
-                startIcon={loading && <CircularProgress size={20} />}
-              >
-                {loading ? "Processing..." : "Withdraw"}
-              </Button>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={handleWithdrawal}
+                  disabled={loading || profitShare <= 0}
+                  startIcon={loading && <CircularProgress size={20} />}
+                  fullWidth
+                >
+                  {loading ? "Processing..." : "Request Withdrawal"}
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleContribute}
+                  disabled={loading || profitShare <= 0}
+                  startIcon={loading && <CircularProgress size={20} />}
+                  fullWidth
+                >
+                  {loading ? "Processing..." : "Contribute"}
+                </Button>
+              </Box>
             </Stack>
           </Box>
         )}
@@ -967,10 +1133,82 @@ function FundsContent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* BVN/NIN Dialog for Reserved Account */}
+      <Dialog
+        open={bvnNinDialogOpen}
+        onClose={() => setBvnNinDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Request Reserved Account</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Please provide your BVN and NIN as required by CBN regulations for
+            virtual account creation. These are 11-digit numbers.
+          </Typography>
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            <TextField
+              label="BVN (Bank Verification Number)"
+              type="text"
+              value={bvn}
+              onChange={(e) =>
+                setBvn(e.target.value.replace(/\D/g, "").slice(0, 11))
+              }
+              placeholder="11 digits"
+              fullWidth
+              required
+              inputProps={{ maxLength: 11, pattern: "[0-9]{11}" }}
+              helperText={`${bvn.length}/11 digits`}
+            />
+            <TextField
+              label="NIN (National Identification Number)"
+              type="text"
+              value={nin}
+              onChange={(e) =>
+                setNin(e.target.value.replace(/\D/g, "").slice(0, 11))
+              }
+              placeholder="11 digits"
+              fullWidth
+              required
+              inputProps={{ maxLength: 11, pattern: "[0-9]{11}" }}
+              helperText={`${nin.length}/11 digits`}
+            />
+          </Stack>
+          <Alert severity="info" sx={{ mt: 3 }}>
+            Your BVN and NIN are required by the Central Bank of Nigeria (CBN)
+            for virtual account operations and will be securely stored.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setBvnNinDialogOpen(false)}
+            disabled={submittingBvnNin}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmitBvnNin}
+            variant="contained"
+            disabled={
+              submittingBvnNin || bvn.length !== 11 || nin.length !== 11
+            }
+          >
+            {submittingBvnNin ? "Submitting..." : "Submit & Create Account"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar Alert */}
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Container>
   );
 }
-
 export default function FundsPage() {
   return (
     <Suspense fallback={<Box sx={{ p: 4 }}>Loading...</Box>}>

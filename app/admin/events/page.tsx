@@ -29,6 +29,8 @@ import EventIcon from "@mui/icons-material/Event";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AddIcon from "@mui/icons-material/Add";
 import { useSession } from "next-auth/react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 
 interface IEvent {
   _id: string;
@@ -76,9 +78,10 @@ export default function AdminEventsPage() {
     eventDate: "",
     location: "",
   });
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+  const [eventToDelete, setEventToDelete] = React.useState<string | null>(null);
+  const { snackbar, closeSnackbar, showError, showSuccess } = useSnackbar();
 
   React.useEffect(() => {
     fetchCurrentUser();
@@ -107,18 +110,17 @@ export default function AdminEventsPage() {
       }
     } catch (err) {
       console.error("Failed to load events", err);
-      setError("Failed to load events");
+      showError("Failed to load events");
     } finally {
       setLoading(false);
     }
   }
 
   async function handleSubmit() {
-    setError(null);
-    setSuccess(null);
-
     if (!form.title || !form.eventDate || !form.location) {
-      setError("Please fill in the required fields: Title, Date, and Location");
+      showError(
+        "Please fill in the required fields: Title, Date, and Location"
+      );
       return;
     }
 
@@ -154,7 +156,7 @@ export default function AdminEventsPage() {
       });
       setEditingEvent(null);
       setOpen(false);
-      setSuccess(
+      showSuccess(
         editingEvent
           ? "Event updated successfully!"
           : "Event created successfully!"
@@ -163,17 +165,23 @@ export default function AdminEventsPage() {
       await new Promise((resolve) => setTimeout(resolve, 500));
       fetchEvents();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit event");
+      showError(err instanceof Error ? err.message : "Failed to submit event");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleDelete(eventId: string) {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+  function handleDeleteClick(eventId: string) {
+    setEventToDelete(eventId);
+    setDeleteConfirmOpen(true);
+  }
 
+  async function confirmDelete() {
+    if (!eventToDelete) return;
+
+    setDeleteConfirmOpen(false);
     try {
-      const res = await fetch(`/api/events?eventId=${eventId}`, {
+      const res = await fetch(`/api/events?eventId=${eventToDelete}`, {
         method: "DELETE",
       });
 
@@ -182,10 +190,12 @@ export default function AdminEventsPage() {
         throw new Error(errorData.error || "Failed to delete event");
       }
 
-      setSuccess("Event deleted successfully!");
+      showSuccess("Event deleted successfully!");
       fetchEvents();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete event");
+      showError(err instanceof Error ? err.message : "Failed to delete event");
+    } finally {
+      setEventToDelete(null);
     }
   }
 
@@ -353,7 +363,7 @@ export default function AdminEventsPage() {
                   <IconButton
                     size="small"
                     color="error"
-                    onClick={() => handleDelete(event._id)}
+                    onClick={() => handleDeleteClick(event._id)}
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
@@ -431,22 +441,6 @@ export default function AdminEventsPage() {
           </Button>
         </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert
-            severity="success"
-            sx={{ mb: 2 }}
-            onClose={() => setSuccess(null)}
-          >
-            {success}
-          </Alert>
-        )}
-
         {/* Statistics Cards */}
         <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
           <Card sx={{ flex: 1 }}>
@@ -523,7 +517,6 @@ export default function AdminEventsPage() {
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}
         >
-          {error && <Alert severity="error">{error}</Alert>}
           <TextField
             label="Event Title"
             fullWidth
@@ -749,7 +742,7 @@ export default function AdminEventsPage() {
               <Button
                 onClick={() => {
                   setViewOpen(false);
-                  handleDelete(viewingEvent._id);
+                  handleDeleteClick(viewingEvent._id);
                 }}
                 variant="outlined"
                 color="error"
@@ -760,6 +753,35 @@ export default function AdminEventsPage() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this event? This action cannot be
+            undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={confirmDelete} variant="contained" color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Container>
   );
 }

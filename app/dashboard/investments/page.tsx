@@ -2,6 +2,10 @@
 
 import * as React from "react";
 import { formatNaira } from "@/lib/utils";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   Box,
   Button,
@@ -11,11 +15,11 @@ import {
   Grid,
   CircularProgress,
   Stack,
-  Alert,
   Tabs,
   Tab,
   Chip,
   Divider,
+  Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -89,6 +93,16 @@ interface InvestmentSuggestion {
 
 export default function InvestmentsPage() {
   const { data: session } = useSession();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [tabValue, setTabValue] = React.useState(0);
   const [communityInvestments, setCommunityInvestments] = React.useState<
     CommunityInvestment[]
@@ -103,11 +117,9 @@ export default function InvestmentsPage() {
   const [editingSuggestion, setEditingSuggestion] =
     React.useState<InvestmentSuggestion | null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
   const loadInvestments = React.useCallback(async () => {
     try {
-      setError(null);
       const [investments, suggestions] = await Promise.all([
         getCommunityInvestments(session?.user?.community || ""),
         getCommunityInvestmentSuggestions(session?.user?.community || ""),
@@ -125,7 +137,7 @@ export default function InvestmentsPage() {
       setAllCommunityVotingSuggestions(votingSuggestions);
     } catch (err) {
       console.error("Failed to load investments", err);
-      setError("Failed to load investments");
+      showError("Failed to load investments");
     } finally {
       setLoading(false);
     }
@@ -149,25 +161,31 @@ export default function InvestmentsPage() {
   };
 
   const handleDeleteSuggestion = async (suggestionId: string) => {
-    if (!confirm("Are you sure you want to delete this suggestion?")) {
-      return;
-    }
+    openConfirmDialog(
+      "Delete Suggestion",
+      "Are you sure you want to delete this suggestion? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(
+            `/api/investments/suggestions/${suggestionId}`,
+            {
+              method: "DELETE",
+            }
+          );
 
-    try {
-      const res = await fetch(`/api/investments/suggestions/${suggestionId}`, {
-        method: "DELETE",
-      });
+          if (!res.ok) {
+            throw new Error("Failed to delete suggestion");
+          }
 
-      if (!res.ok) {
-        throw new Error("Failed to delete suggestion");
+          // Refresh the suggestions list
+          await loadInvestments();
+          showSuccess("Suggestion deleted");
+        } catch (error) {
+          console.error("Error deleting suggestion:", error);
+          showError("Failed to delete suggestion. Please try again.");
+        }
       }
-
-      // Refresh the suggestions list
-      await loadInvestments();
-    } catch (error) {
-      console.error("Error deleting suggestion:", error);
-      setError("Failed to delete suggestion. Please try again.");
-    }
+    );
   };
 
   const handleFormClose = () => {
@@ -195,7 +213,7 @@ export default function InvestmentsPage() {
       await loadInvestments();
     } catch (error) {
       console.error("Error voting:", error);
-      setError(
+      showError(
         error instanceof Error
           ? error.message
           : "Failed to record vote. Please try again."
@@ -320,12 +338,6 @@ export default function InvestmentsPage() {
           </Button>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
 
       {/* Overall Stats */}
       {communityInvestments.length > 0 && (
@@ -905,6 +917,24 @@ export default function InvestmentsPage() {
         userId={session?.user?.id || ""}
         onSuccess={handleRefresh}
         editingSuggestion={editingSuggestion}
+      />
+
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
       />
     </Container>
   );

@@ -20,8 +20,15 @@ import {
 import BuildIcon from "@mui/icons-material/Build";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function FixCommunitiesPage() {
+  const { snackbar, closeSnackbar, showWarning } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [loading, setLoading] = React.useState(false);
   const [checking, setChecking] = React.useState(false);
   const [checkResult, setCheckResult] = React.useState<any>(null);
@@ -46,31 +53,31 @@ export default function FixCommunitiesPage() {
   };
 
   const fixBusinesses = async () => {
-    if (
-      !confirm(
-        "This will update all businesses without a community field. Continue?"
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      setFixResult(null);
-      const res = await fetch("/api/businesses/fix-communities", {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Failed to fix businesses");
-      const data = await res.json();
-      setFixResult(data.results);
-      // Refresh check
-      await checkBusinesses();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fix businesses");
-    } finally {
-      setLoading(false);
-    }
+    openConfirmDialog(
+      "Fix Businesses",
+      "This will update all businesses without a community field. Continue?",
+      async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          setFixResult(null);
+          const res = await fetch("/api/businesses/fix-communities", {
+            method: "POST",
+          });
+          if (!res.ok) throw new Error("Failed to fix businesses");
+          const data = await res.json();
+          setFixResult(data.results);
+          // Refresh check
+          await checkBusinesses();
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Failed to fix businesses"
+          );
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
   };
 
   React.useEffect(() => {
@@ -79,6 +86,23 @@ export default function FixCommunitiesPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Fix"
+        isDangerous
+      />
       <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
         Fix Business Communities
       </Typography>

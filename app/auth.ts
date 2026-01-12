@@ -15,6 +15,7 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           prompt: "consent",
@@ -88,7 +89,8 @@ export const authOptions = {
     updateAge: 1 * 60, // 1 minute
   },
   pages: {
-    error: "/auth/error",
+    signIn: "/login",
+    error: "/login",
   },
   callbacks: {
     async redirect({ url, baseUrl }) {

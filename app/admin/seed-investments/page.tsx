@@ -51,7 +51,7 @@ export default function SeedInvestmentsPage() {
     return (
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
-          ❌ Access Denied: Only General Admin can access this page
+          Access Denied: Only General Admin can access this page
         </Alert>
         <Button variant="contained" onClick={() => router.back()}>
           Go Back

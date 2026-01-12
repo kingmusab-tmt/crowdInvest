@@ -13,7 +13,6 @@ import {
   DialogActions,
   TextField,
   Button,
-  Alert,
   Stack,
   IconButton,
   Menu,
@@ -36,6 +35,10 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { useSession } from "next-auth/react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const CATEGORY_OPTIONS = [
   "Technology",
@@ -114,10 +117,18 @@ interface Business {
 
 export default function BusinessesPage() {
   const { data: session } = useSession();
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
+  const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
+    useConfirmDialog();
   const [businesses, setBusinesses] = React.useState<Business[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [viewOpen, setViewOpen] = React.useState(false);
@@ -148,7 +159,6 @@ export default function BusinessesPage() {
   async function fetchBusinesses() {
     try {
       setLoading(true);
-      setError(null);
 
       const isGeneralAdmin = session?.user?.role === "General Admin";
       const query = isGeneralAdmin
@@ -170,7 +180,7 @@ export default function BusinessesPage() {
       setBusinesses(data);
     } catch (err) {
       console.error("[Admin Businesses] Error:", err);
-      setError("Failed to load businesses");
+      showError("Failed to load businesses");
     } finally {
       setLoading(false);
     }
@@ -206,24 +216,31 @@ export default function BusinessesPage() {
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error("Failed to update business");
-      setSuccess("Business updated");
+      showSuccess("Business updated");
       setEditOpen(false);
       fetchBusinesses();
     } catch (err) {
-      setError("Failed to update business");
+      showError("Failed to update business");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this business?")) return;
-    try {
-      const res = await fetch(`/api/businesses/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete business");
-      setSuccess("Business deleted");
-      fetchBusinesses();
-    } catch (err) {
-      setError("Failed to delete business");
-    }
+    openConfirmDialog(
+      "Delete Business",
+      "Delete this business? This action cannot be undone.",
+      async () => {
+        try {
+          const res = await fetch(`/api/businesses/${id}`, {
+            method: "DELETE",
+          });
+          if (!res.ok) throw new Error("Failed to delete business");
+          showSuccess("Business deleted");
+          fetchBusinesses();
+        } catch (err) {
+          showError("Failed to delete business");
+        }
+      }
+    );
   };
 
   const handleRejectClick = (business: Business) => {
@@ -235,7 +252,7 @@ export default function BusinessesPage() {
 
   const handleRejectSubmit = async () => {
     if (!selected || !rejectionReason.trim()) {
-      setError("Please provide a rejection reason");
+      showError("Please provide a rejection reason");
       return;
     }
 
@@ -249,12 +266,12 @@ export default function BusinessesPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed to reject business");
-      setSuccess("Business rejected");
+      showSuccess("Business rejected");
       setRejectOpen(false);
       setRejectionReason("");
       fetchBusinesses();
     } catch (err) {
-      setError("Failed to reject business");
+      showError("Failed to reject business");
     }
   };
 
@@ -266,10 +283,10 @@ export default function BusinessesPage() {
         body: JSON.stringify({ status: "Approved" }),
       });
       if (!res.ok) throw new Error("Failed to approve business");
-      setSuccess("Business approved");
+      showSuccess("Business approved");
       fetchBusinesses();
     } catch (err) {
-      setError("Failed to approve business");
+      showError("Failed to approve business");
     }
   };
 
@@ -338,7 +355,9 @@ export default function BusinessesPage() {
       b.fullAddress,
     ]
       .filter(Boolean)
-      .some((field) => field.toLowerCase().includes(search.toLowerCase()));
+      .some(
+        (field) => field && field.toLowerCase().includes(search.toLowerCase())
+      );
 
     const matchesStatus =
       statusFilter === "All" ||
@@ -360,20 +379,6 @@ export default function BusinessesPage() {
       <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
         Businesses Management
       </Typography>
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          severity="success"
-          onClose={() => setSuccess(null)}
-          sx={{ mb: 2 }}
-        >
-          {success}
-        </Alert>
-      )}
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
         <TextField
           placeholder="Search name, category, owner or location"
@@ -672,6 +677,23 @@ export default function BusinessesPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
+
+      <ConfirmDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmDialog}
+        isLoading={dialog.isLoading}
+        confirmButtonText="Delete"
+        isDangerous
+      />
     </Container>
   );
 }

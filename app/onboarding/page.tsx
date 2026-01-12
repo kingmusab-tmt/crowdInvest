@@ -15,7 +15,6 @@ import {
   MenuItem,
   FormControlLabel,
   Checkbox,
-  Alert,
   CircularProgress,
   Card,
   CardContent,
@@ -32,6 +31,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import SnackbarAlert from "@/components/SnackbarAlert";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import GroupsIcon from "@mui/icons-material/Groups";
 
@@ -58,12 +59,22 @@ export default function OnboardingPage() {
   const [loading, setLoading] = React.useState(false);
   const [uploadingImage, setUploadingImage] = React.useState(false);
   const [communities, setCommunities] = React.useState<Community[]>([]);
-  const [error, setError] = React.useState<string | null>(null);
   const [termsOpen, setTermsOpen] = React.useState(false);
   const [privacyOpen, setPrivacyOpen] = React.useState(false);
   const [profileImage, setProfileImage] = React.useState<string | null>(
     session?.user?.image || null
   );
+  const {
+    snackbar,
+    closeSnackbar,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+  } = useSnackbar();
+  void showSuccess;
+  void showWarning;
+  void showInfo;
 
   const [formData, setFormData] = React.useState({
     community: "",
@@ -113,7 +124,7 @@ export default function OnboardingPage() {
     if (!file) return;
 
     setUploadingImage(true);
-    setError(null);
+    closeSnackbar();
 
     try {
       const formDataFile = new FormData();
@@ -143,7 +154,7 @@ export default function OnboardingPage() {
       setProfileImage(imageUrl);
       setFormData({ ...formData, profileImageUrl: imageUrl });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload image");
+      showError(err instanceof Error ? err.message : "Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -163,12 +174,12 @@ export default function OnboardingPage() {
 
   const handleNext = () => {
     if (activeStep === 0 && !formData.community) {
-      setError("Please select a community to continue");
+      showError("Please select a community to continue");
       return;
     }
     if (activeStep === 1) {
       if (!formData.name || !formData.dateOfBirth || !formData.placeOfWork) {
-        setError("Please fill in all required fields");
+        showError("Please fill in all required fields");
         return;
       }
     }
@@ -178,36 +189,38 @@ export default function OnboardingPage() {
         !formData.address.city ||
         !formData.address.country
       ) {
-        setError("Please fill in all required fields");
+        showError("Please fill in all required fields");
         return;
       }
     }
     if (activeStep === 3) {
       if (!formData.nextOfKin.name || !formData.nextOfKin.phoneNumber) {
-        setError("Please provide next of kin details");
+        showError("Please provide next of kin details");
         return;
       }
     }
     if (activeStep === 4) {
       if (!formData.termsAccepted || !formData.privacyAccepted) {
-        setError("You must accept the terms and conditions and privacy policy");
+        showError(
+          "You must accept the terms and conditions and privacy policy"
+        );
         return;
       }
       handleSubmit();
       return;
     }
-    setError(null);
+    closeSnackbar();
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
-    setError(null);
+    closeSnackbar();
   };
 
   const handleSubmit = async () => {
     setLoading(true);
-    setError(null);
+    closeSnackbar();
 
     try {
       const submissionData = {
@@ -239,7 +252,7 @@ export default function OnboardingPage() {
       // Redirect to dashboard after successful profile completion
       router.push("/dashboard");
     } catch (err) {
-      setError(
+      showError(
         err instanceof Error ? err.message : "Failed to complete profile"
       );
       setLoading(false);
@@ -819,12 +832,6 @@ export default function OnboardingPage() {
           ))}
         </Stepper>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
         <Box sx={{ mb: 4 }}>{getStepContent(activeStep)}</Box>
 
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
@@ -932,6 +939,13 @@ export default function OnboardingPage() {
           <Button onClick={() => setPrivacyOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Container>
   );
 }
