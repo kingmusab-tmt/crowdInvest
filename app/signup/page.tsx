@@ -67,7 +67,9 @@ export default function SignupPage() {
               }}
             >
               <HomeIcon sx={{ fontSize: 32 }} color="primary" />
-              <Typography variant="h4" component="h1" fontWeight="bold">
+              <Typography variant="h4" component="h1" sx={{
+                fontWeight: "bold"
+              }}>
                 CROWD Invest
               </Typography>
             </Box>
@@ -79,17 +81,20 @@ export default function SignupPage() {
             <Typography
               variant="h5"
               component="h2"
-              textAlign="center"
               gutterBottom
+              sx={{
+                textAlign: "center"
+              }}
             >
               Create Your Account
             </Typography>
             <Typography
               variant="body2"
-              color="text.secondary"
-              textAlign="center"
-              sx={{ mb: 4 }}
-            >
+              sx={{
+                color: "text.secondary",
+                textAlign: "center",
+                mb: 4
+              }}>
               Sign up with Google to join the community
             </Typography>
 
@@ -106,14 +111,18 @@ export default function SignupPage() {
             </Button>
 
             <Box sx={{ textAlign: "center", mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 After signing up, you&apos;ll complete your community
                 verification
               </Typography>
             </Box>
 
             <Box sx={{ textAlign: "center", mt: 3 }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Already have an account?{" "}
                 <Link href="/login" style={{ textDecoration: "none" }}>
                   <Typography component="span" color="primary">

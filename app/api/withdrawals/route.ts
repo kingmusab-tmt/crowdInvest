@@ -210,7 +210,7 @@ export async function PATCH(request: NextRequest) {
         status: "Completed",
         date: new Date(),
         isAdminTransaction: true,
-        performedByName: session.user.name,
+        performedByName: session.user.name ?? undefined,
         description: `Withdrawal approved - ${
           withdrawal.description || "Profit share withdrawal"
         }`,

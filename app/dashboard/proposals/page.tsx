@@ -270,7 +270,6 @@ export default function ProposalsPage() {
           </Button>
         </Box>
       </Box>
-
       {/* Tabs */}
       <Paper>
         <Tabs
@@ -559,7 +558,7 @@ export default function ProposalsPage() {
                       </Box>
 
                       <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="caption" color="textSecondary">
                             Yes Votes
                           </Typography>
@@ -570,7 +569,7 @@ export default function ProposalsPage() {
                             {yesVotes}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="caption" color="textSecondary">
                             No Votes
                           </Typography>
@@ -619,7 +618,6 @@ export default function ProposalsPage() {
           )}
         </TabPanel>
       </Paper>
-
       {/* Make Proposal Dialog */}
       <Dialog
         open={proposalFormOpen}
@@ -683,14 +681,12 @@ export default function ProposalsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}

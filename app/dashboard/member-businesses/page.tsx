@@ -391,7 +391,6 @@ export default function MemberBusinessesPage() {
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}
@@ -402,7 +401,6 @@ export default function MemberBusinessesPage() {
         confirmButtonText="Delete"
         isDangerous
       />
-
       <Box
         sx={{
           display: "flex",
@@ -415,7 +413,9 @@ export default function MemberBusinessesPage() {
           <Typography variant="h4" sx={{ fontWeight: 600 }}>
             Member Businesses
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Browse community businesses or add your own
           </Typography>
         </Box>
@@ -427,7 +427,6 @@ export default function MemberBusinessesPage() {
           Add My Business
         </Button>
       </Box>
-
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3 }}>
         <TextField
           fullWidth
@@ -435,12 +434,14 @@ export default function MemberBusinessesPage() {
           placeholder="Search business name, category, owner, location"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }
           }}
         />
         <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -487,13 +488,19 @@ export default function MemberBusinessesPage() {
           </Select>
         </FormControl>
       </Stack>
-
       {businesses.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: "center" }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{
+            color: "text.secondary"
+          }}>
             No businesses yet
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 2
+            }}>
             Be the first to add your business to the community!
           </Typography>
           <Button
@@ -507,7 +514,13 @@ export default function MemberBusinessesPage() {
       ) : (
         <Grid container spacing={3}>
           {filtered.map((business) => (
-            <Grid item xs={12} sm={6} md={4} key={business._id}>
+            <Grid
+              key={business._id}
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4
+              }}>
               <Card
                 sx={{
                   height: "100%",
@@ -605,45 +618,55 @@ export default function MemberBusinessesPage() {
                   />
                   <Typography
                     variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 1 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      mb: 1
+                    }}>
                     {business.description}
                   </Typography>
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block"
+                    }}>
                     📍 {business.location}
                   </Typography>
                   {business.fullAddress && (
                     <Typography
                       variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        display: "block"
+                      }}>
                       🏠 {business.fullAddress}
                     </Typography>
                   )}
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block"
+                    }}>
                     👤 Owner: {business.ownerName}
                   </Typography>
                   <Box sx={{ mt: 1, display: "grid", gap: 0.5 }}>
-                    <Typography variant="body2" color="text.primary">
+                    <Typography variant="body2" sx={{
+                      color: "text.primary"
+                    }}>
                       Contact Email: {business.contactEmail}
                     </Typography>
                     {business.contactPhone && (
-                      <Typography variant="body2" color="text.primary">
+                      <Typography variant="body2" sx={{
+                        color: "text.primary"
+                      }}>
                         Contact Phone: {business.contactPhone}
                       </Typography>
                     )}
                     {business.website && (
-                      <Typography variant="body2" color="text.primary">
+                      <Typography variant="body2" sx={{
+                        color: "text.primary"
+                      }}>
                         Website: {business.website}
                       </Typography>
                     )}
@@ -679,7 +702,6 @@ export default function MemberBusinessesPage() {
           ))}
         </Grid>
       )}
-
       {/* Add/Edit Business Dialog */}
       <Dialog
         open={openDialog}
@@ -721,7 +743,11 @@ export default function MemberBusinessesPage() {
           />
 
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <FormControl fullWidth required>
                 <InputLabel>Category</InputLabel>
                 <Select
@@ -739,7 +765,11 @@ export default function MemberBusinessesPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <FormControl fullWidth required>
                 <InputLabel>Location (State)</InputLabel>
                 <Select
@@ -769,7 +799,11 @@ export default function MemberBusinessesPage() {
           />
 
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <TextField
                 label="Contact Email"
                 fullWidth
@@ -781,7 +815,11 @@ export default function MemberBusinessesPage() {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <TextField
                 label="Contact Phone"
                 fullWidth

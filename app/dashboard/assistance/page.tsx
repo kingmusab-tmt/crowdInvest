@@ -255,7 +255,6 @@ export default function AssistancePage() {
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}
@@ -300,7 +299,6 @@ export default function AssistancePage() {
           </Button>
         </Box>
       </Box>
-
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
@@ -315,7 +313,6 @@ export default function AssistancePage() {
           {success}
         </Alert>
       )}
-
       {/* Tabs */}
       <Paper>
         <Tabs
@@ -612,7 +609,7 @@ export default function AssistancePage() {
                       </Box>
 
                       <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="caption" color="textSecondary">
                             Assist Votes
                           </Typography>
@@ -623,7 +620,7 @@ export default function AssistancePage() {
                             {assistVotes}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="caption" color="textSecondary">
                             Not Assist Votes
                           </Typography>
@@ -666,7 +663,6 @@ export default function AssistancePage() {
           )}
         </TabPanel>
       </Paper>
-
       {/* Request Assistance Dialog */}
       <Dialog
         open={requestFormOpen}

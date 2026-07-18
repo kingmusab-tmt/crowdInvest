@@ -386,7 +386,6 @@ export default function InvestmentsPage() {
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}
@@ -408,7 +407,6 @@ export default function InvestmentsPage() {
             : "Manage your community investments and suggestions"}
         </Typography>
       </Box>
-
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
@@ -423,7 +421,6 @@ export default function InvestmentsPage() {
           {success}
         </Alert>
       )}
-
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
         <Tabs
@@ -498,7 +495,11 @@ export default function InvestmentsPage() {
                       </Typography>
 
                       <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6} sm={3}>
+                        <Grid
+                          size={{
+                            xs: 6,
+                            sm: 3
+                          }}>
                           <Typography variant="caption" color="textSecondary">
                             Amount Required
                           </Typography>
@@ -506,7 +507,11 @@ export default function InvestmentsPage() {
                             {formatNaira(suggestion.amountRequired)}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid
+                          size={{
+                            xs: 6,
+                            sm: 3
+                          }}>
                           <Typography variant="caption" color="textSecondary">
                             Timeframe
                           </Typography>
@@ -514,7 +519,11 @@ export default function InvestmentsPage() {
                             {suggestion.timeframe}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid
+                          size={{
+                            xs: 6,
+                            sm: 3
+                          }}>
                           <Typography variant="caption" color="textSecondary">
                             Risk Level
                           </Typography>
@@ -533,7 +542,11 @@ export default function InvestmentsPage() {
                             {suggestion.riskLevel}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid
+                          size={{
+                            xs: 6,
+                            sm: 3
+                          }}>
                           <Typography variant="caption" color="textSecondary">
                             Suggested On
                           </Typography>
@@ -608,7 +621,13 @@ export default function InvestmentsPage() {
           ) : (
             <Grid container spacing={2}>
               {investments.map((investment) => (
-                <Grid item xs={12} md={6} lg={4} key={investment._id}>
+                <Grid
+                  key={investment._id}
+                  size={{
+                    xs: 12,
+                    md: 6,
+                    lg: 4
+                  }}>
                   <Card>
                     <CardContent>
                       <Box
@@ -791,7 +810,7 @@ export default function InvestmentsPage() {
                     </Box>
 
                     <Grid container spacing={2}>
-                      <Grid item xs={4}>
+                      <Grid size={4}>
                         <Typography variant="caption" color="textSecondary">
                           Yes Votes
                         </Typography>
@@ -802,7 +821,7 @@ export default function InvestmentsPage() {
                           {vote.yesVotes}
                         </Typography>
                       </Grid>
-                      <Grid item xs={4}>
+                      <Grid size={4}>
                         <Typography variant="caption" color="textSecondary">
                           No Votes
                         </Typography>
@@ -813,7 +832,7 @@ export default function InvestmentsPage() {
                           {vote.noVotes}
                         </Typography>
                       </Grid>
-                      <Grid item xs={4}>
+                      <Grid size={4}>
                         <Typography variant="caption" color="textSecondary">
                           Pending
                         </Typography>
@@ -835,7 +854,6 @@ export default function InvestmentsPage() {
           )}
         </TabPanel>
       </Paper>
-
       {/* Edit Investment Dialog */}
       <Dialog
         open={editInvestmentDialog}
@@ -930,7 +948,6 @@ export default function InvestmentsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Create Investment Dialog */}
       <Dialog
         open={createInvestmentDialog}
@@ -954,8 +971,10 @@ export default function InvestmentsPage() {
                 }
                 fullWidth
                 required
-                SelectProps={{
-                  native: true,
+                slotProps={{
+                  select: {
+                    native: true,
+                  }
                 }}
               >
                 <option value="">Select a community</option>
@@ -1067,7 +1086,6 @@ export default function InvestmentsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Rejection Reason Dialog */}
       <Dialog
         open={rejectionReasonDialog}

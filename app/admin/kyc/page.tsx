@@ -241,51 +241,77 @@ export default function KYCPage() {
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
           KYC Verification Management
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Verify new members who have completed their onboarding
         </Typography>
       </Box>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       {/* Stats */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#f5f5f5" }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {kycUsers.length}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               Total Members
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#e8f5e9" }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#2e7d32" }}>
               {verifiedCount}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               Verified
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#fff3e0" }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#e65100" }}>
               {pendingCount}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               Pending
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#f5f5f5" }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {kycUsers.length > 0
@@ -293,13 +319,14 @@ export default function KYCPage() {
                 : 0}
               %
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               Verified Rate
             </Typography>
           </Paper>
         </Grid>
       </Grid>
-
       {/* Filter */}
       <Box sx={{ mb: 3 }}>
         <FormControl size="small">
@@ -317,7 +344,6 @@ export default function KYCPage() {
           </Select>
         </FormControl>
       </Box>
-
       {/* KYC Users Grid */}
       {filteredUsers.length === 0 ? (
         <Alert severity="info">
@@ -330,7 +356,13 @@ export default function KYCPage() {
       ) : (
         <Grid container spacing={2}>
           {filteredUsers.map((user) => (
-            <Grid item xs={12} sm={6} md={4} key={user._id}>
+            <Grid
+              key={user._id}
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4
+              }}>
               <Card
                 sx={{
                   height: "100%",
@@ -370,7 +402,9 @@ export default function KYCPage() {
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {user.name}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         {user.email}
                       </Typography>
                       <Box sx={{ mt: 0.5 }}>
@@ -399,7 +433,9 @@ export default function KYCPage() {
                     )}
 
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         Phone
                       </Typography>
                       <Typography variant="body2">
@@ -408,7 +444,9 @@ export default function KYCPage() {
                     </Box>
 
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         Location
                       </Typography>
                       <Typography variant="body2">
@@ -418,7 +456,9 @@ export default function KYCPage() {
                     </Box>
 
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         Joined
                       </Typography>
                       <Typography variant="body2">
@@ -446,7 +486,6 @@ export default function KYCPage() {
           ))}
         </Grid>
       )}
-
       {/* Profile Review Dialog */}
       <Dialog
         open={verifyDialogOpen}
@@ -458,7 +497,9 @@ export default function KYCPage() {
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Review Profile: {selectedUser?.name}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Check the information below to verify this member
           </Typography>
         </DialogTitle>
@@ -476,7 +517,9 @@ export default function KYCPage() {
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   {selectedUser.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   {selectedUser.email}
                 </Typography>
                 <Chip
@@ -672,7 +715,6 @@ export default function KYCPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Rejection Reason Dialog */}
       <Dialog
         open={rejectionDialogOpen}
@@ -684,7 +726,9 @@ export default function KYCPage() {
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Reject KYC Verification
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Please provide a reason for rejecting this member's KYC
           </Typography>
         </DialogTitle>

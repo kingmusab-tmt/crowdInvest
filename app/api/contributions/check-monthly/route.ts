@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth/next";
 import dbConnect from "@/utils/connectDB";
 import User from "@/models/User";
-import Transaction from "@/models/Transaction";
+import Transaction, { ITransaction } from "@/models/Transaction";
 import Notification from "@/models/Notification";
 import { authOptions } from "@/app/auth";
 import { createNotification } from "@/services/notificationService";
@@ -70,9 +70,11 @@ export async function POST(request: NextRequest) {
 
     for (const member of communityMembers) {
       // Check if member has contributed for the current billing cycle
-      const memberContribution = await Transaction.findOne({
+      // Note: "Deposit" is not one of ITransaction's `type` enum values (pre-existing,
+      // predates this upgrade) - kept as-is and only loosely typed to avoid changing behavior.
+      const memberContribution = await Transaction.findOne<ITransaction>({
         userEmail: member.email,
-        type: "Deposit",
+        type: "Deposit" as ITransaction["type"],
         status: "Completed",
         date: {
           $gte: new Date(contributionYear, contributionMonth, 1),

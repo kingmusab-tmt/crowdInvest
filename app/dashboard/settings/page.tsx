@@ -468,10 +468,14 @@ export default function SettingsPage() {
       >
         Settings
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          mb: 4
+        }}>
         Manage your profile and verification details.
       </Typography>
-
       <Paper sx={{ p: 3 }}>
         <Tabs
           value={tab}
@@ -528,9 +532,10 @@ export default function SettingsPage() {
                         </Typography>
                         <Typography
                           variant="body1"
-                          color="text.secondary"
-                          sx={{ mb: 2 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            mb: 2
+                          }}>
                           {profile.email}
                         </Typography>
                         <Box
@@ -576,17 +581,20 @@ export default function SettingsPage() {
                       Personal Information
                     </Typography>
                     <Grid container spacing={3}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid
+                        size={{
+                          xs: 12,
+                          sm: 6
+                        }}>
                         <Box>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               fontWeight: 600,
                               textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                            }}
-                          >
+                              letterSpacing: 0.5
+                            }}>
                             Full Name
                           </Typography>
                           <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -594,17 +602,20 @@ export default function SettingsPage() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid
+                        size={{
+                          xs: 12,
+                          sm: 6
+                        }}>
                         <Box>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               fontWeight: 600,
                               textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                            }}
-                          >
+                              letterSpacing: 0.5
+                            }}>
                             Date of Birth
                           </Typography>
                           <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -616,17 +627,20 @@ export default function SettingsPage() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid
+                        size={{
+                          xs: 12,
+                          sm: 6
+                        }}>
                         <Box>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               fontWeight: 600,
                               textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                            }}
-                          >
+                              letterSpacing: 0.5
+                            }}>
                             Phone Number
                           </Typography>
                           <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -634,17 +648,20 @@ export default function SettingsPage() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid
+                        size={{
+                          xs: 12,
+                          sm: 6
+                        }}>
                         <Box>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               fontWeight: 600,
                               textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                            }}
-                          >
+                              letterSpacing: 0.5
+                            }}>
                             WhatsApp Number
                           </Typography>
                           <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -652,17 +669,20 @@ export default function SettingsPage() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid
+                        size={{
+                          xs: 12,
+                          sm: 6
+                        }}>
                         <Box>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               fontWeight: 600,
                               textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                            }}
-                          >
+                              letterSpacing: 0.5
+                            }}>
                             Marital Status
                           </Typography>
                           <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -670,17 +690,20 @@ export default function SettingsPage() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid
+                        size={{
+                          xs: 12,
+                          sm: 6
+                        }}>
                         <Box>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               fontWeight: 600,
                               textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                            }}
-                          >
+                              letterSpacing: 0.5
+                            }}>
                             Place of Work
                           </Typography>
                           <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -688,22 +711,21 @@ export default function SettingsPage() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12}>
+                      <Grid size={12}>
                         <Divider sx={{ my: 1 }} />
                       </Grid>
-                      <Grid item xs={12}>
+                      <Grid size={12}>
                         <Box>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               fontWeight: 600,
                               textTransform: "uppercase",
                               letterSpacing: 0.5,
                               mb: 1,
-                              display: "block",
-                            }}
-                          >
+                              display: "block"
+                            }}>
                             Address
                           </Typography>
                           <Typography variant="body1">
@@ -735,7 +757,11 @@ export default function SettingsPage() {
                         Social Media Links
                       </Typography>
                       <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box
                             sx={{
                               display: "flex",
@@ -745,9 +771,11 @@ export default function SettingsPage() {
                           >
                             <Typography
                               variant="caption"
-                              color="text.secondary"
-                              sx={{ fontWeight: 600, minWidth: 80 }}
-                            >
+                              sx={{
+                                color: "text.secondary",
+                                fontWeight: 600,
+                                minWidth: 80
+                              }}>
                               Facebook:
                             </Typography>
                             <Typography
@@ -758,7 +786,11 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box
                             sx={{
                               display: "flex",
@@ -768,9 +800,11 @@ export default function SettingsPage() {
                           >
                             <Typography
                               variant="caption"
-                              color="text.secondary"
-                              sx={{ fontWeight: 600, minWidth: 80 }}
-                            >
+                              sx={{
+                                color: "text.secondary",
+                                fontWeight: 600,
+                                minWidth: 80
+                              }}>
                               Twitter:
                             </Typography>
                             <Typography
@@ -781,7 +815,11 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box
                             sx={{
                               display: "flex",
@@ -791,9 +829,11 @@ export default function SettingsPage() {
                           >
                             <Typography
                               variant="caption"
-                              color="text.secondary"
-                              sx={{ fontWeight: 600, minWidth: 80 }}
-                            >
+                              sx={{
+                                color: "text.secondary",
+                                fontWeight: 600,
+                                minWidth: 80
+                              }}>
                               LinkedIn:
                             </Typography>
                             <Typography
@@ -804,7 +844,11 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box
                             sx={{
                               display: "flex",
@@ -814,9 +858,11 @@ export default function SettingsPage() {
                           >
                             <Typography
                               variant="caption"
-                              color="text.secondary"
-                              sx={{ fontWeight: 600, minWidth: 80 }}
-                            >
+                              sx={{
+                                color: "text.secondary",
+                                fontWeight: 600,
+                                minWidth: 80
+                              }}>
                               Instagram:
                             </Typography>
                             <Typography
@@ -840,17 +886,20 @@ export default function SettingsPage() {
                         Next of Kin Information
                       </Typography>
                       <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
                               sx={{
+                                color: "text.secondary",
                                 fontWeight: 600,
                                 textTransform: "uppercase",
-                                letterSpacing: 0.5,
-                              }}
-                            >
+                                letterSpacing: 0.5
+                              }}>
                               Name
                             </Typography>
                             <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -858,17 +907,20 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
                               sx={{
+                                color: "text.secondary",
                                 fontWeight: 600,
                                 textTransform: "uppercase",
-                                letterSpacing: 0.5,
-                              }}
-                            >
+                                letterSpacing: 0.5
+                              }}>
                               Relationship
                             </Typography>
                             <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -876,17 +928,20 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
                               sx={{
+                                color: "text.secondary",
                                 fontWeight: 600,
                                 textTransform: "uppercase",
-                                letterSpacing: 0.5,
-                              }}
-                            >
+                                letterSpacing: 0.5
+                              }}>
                               Phone Number
                             </Typography>
                             <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -894,17 +949,20 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                          size={{
+                            xs: 12,
+                            sm: 6
+                          }}>
                           <Box>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
                               sx={{
+                                color: "text.secondary",
                                 fontWeight: 600,
                                 textTransform: "uppercase",
-                                letterSpacing: 0.5,
-                              }}
-                            >
+                                letterSpacing: 0.5
+                              }}>
                               Email
                             </Typography>
                             <Typography variant="body1" sx={{ mt: 0.5 }}>
@@ -912,19 +970,18 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={12}>
                           <Box>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
                               sx={{
+                                color: "text.secondary",
                                 fontWeight: 600,
                                 textTransform: "uppercase",
                                 letterSpacing: 0.5,
                                 mb: 1,
-                                display: "block",
-                              }}
-                            >
+                                display: "block"
+                              }}>
                               Address
                             </Typography>
                             <Typography variant="body1">
@@ -988,7 +1045,9 @@ export default function SettingsPage() {
                           {kycStatus.label}
                         </Typography>
                         {profile.kyc?.verifiedAt && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Verified on{" "}
                             {new Date(
                               profile.kyc.verifiedAt
@@ -996,7 +1055,9 @@ export default function SettingsPage() {
                           </Typography>
                         )}
                         {profile.kyc?.rejectionDate && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Rejected on{" "}
                             {new Date(
                               profile.kyc.rejectionDate
@@ -1026,7 +1087,9 @@ export default function SettingsPage() {
 
                 <Divider />
 
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   {kycStatus.status === "verified"
                     ? "Your KYC verification is complete. You have full access to all community features."
                     : kycStatus.status === "rejected"
@@ -1085,7 +1148,9 @@ export default function SettingsPage() {
                           <Typography variant="body1">
                             In-App Notifications
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Receive notifications within the dashboard
                           </Typography>
                         </Box>
@@ -1108,7 +1173,9 @@ export default function SettingsPage() {
                           <Typography variant="body1">
                             Email Notifications
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Receive notifications via email
                           </Typography>
                         </Box>
@@ -1129,9 +1196,10 @@ export default function SettingsPage() {
                   </Typography>
                   <Typography
                     variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      mb: 2
+                    }}>
                     Choose which types of notifications you want to receive via
                     email
                   </Typography>
@@ -1290,9 +1358,10 @@ export default function SettingsPage() {
                   </Typography>
                   <Typography
                     variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      mb: 2
+                    }}>
                     Choose your preferred theme for the dashboard
                   </Typography>
                   <FormGroup>
@@ -1350,9 +1419,10 @@ export default function SettingsPage() {
                   </Typography>
                   <Typography
                     variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      mb: 2
+                    }}>
                     Control who can see your profile information
                   </Typography>
                   <FormGroup>
@@ -1370,7 +1440,9 @@ export default function SettingsPage() {
                       label={
                         <Box>
                           <Typography variant="body1">Public</Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Your profile is visible to everyone
                           </Typography>
                         </Box>
@@ -1392,7 +1464,9 @@ export default function SettingsPage() {
                           <Typography variant="body1">
                             Community Only
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Only members of your community can see your profile
                           </Typography>
                         </Box>
@@ -1412,7 +1486,9 @@ export default function SettingsPage() {
                       label={
                         <Box>
                           <Typography variant="body1">Private</Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Your profile is completely private
                           </Typography>
                         </Box>
@@ -1457,9 +1533,10 @@ export default function SettingsPage() {
                     </Typography>
                     <Typography
                       variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        mb: 2
+                      }}>
                       Download a copy of all your personal data, including
                       profile information, investments, transactions, and
                       activity history.
@@ -1481,9 +1558,10 @@ export default function SettingsPage() {
                     </Typography>
                     <Typography
                       variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        mb: 2
+                      }}>
                       Permanently delete your account and all associated data.
                       This action cannot be undone.
                     </Typography>
@@ -1512,7 +1590,9 @@ export default function SettingsPage() {
                       <Typography variant="body2" sx={{ mb: 0.5 }}>
                         Privacy Policy
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         Last accepted:{" "}
                         {profile.privacyAccepted
                           ? new Date().toLocaleDateString()
@@ -1523,7 +1603,9 @@ export default function SettingsPage() {
                       <Typography variant="body2" sx={{ mb: 0.5 }}>
                         Terms of Service
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         Last accepted:{" "}
                         {profile.termsAccepted
                           ? new Date().toLocaleDateString()
@@ -1537,7 +1619,6 @@ export default function SettingsPage() {
           </Box>
         )}
       </Paper>
-
       {/* Update Profile Dialog */}
       <Dialog
         open={updateDialogOpen}
@@ -1612,7 +1693,9 @@ export default function SettingsPage() {
                 setFormData({ ...formData, dateOfBirth: e.target.value })
               }
               fullWidth
-              InputLabelProps={{ shrink: true }}
+              slotProps={{
+                inputLabel: { shrink: true }
+              }}
             />
             <TextField
               label="Phone Number"
@@ -1781,7 +1864,12 @@ export default function SettingsPage() {
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 2 }}>
               Personal Account Details
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                mb: 2
+              }}>
               Bank account information for withdrawals
             </Typography>
             <TextField
@@ -1897,7 +1985,12 @@ export default function SettingsPage() {
               rows={2}
             />
 
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 2 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                mt: 2
+              }}>
               Next of Kin Bank Account Details (Optional)
             </Typography>
             <TextField
@@ -1965,7 +2058,6 @@ export default function SettingsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

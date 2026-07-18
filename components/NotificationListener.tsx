@@ -12,7 +12,7 @@ interface NotificationActionType {
 }
 
 export default function NotificationListener() {
-  const notificationTimerRef = useRef<NodeJS.Timeout>();
+  const notificationTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useNotificationPermission();
 
   useEffect(() => {

@@ -415,7 +415,9 @@ export default function AdminEventsPage() {
                 <Chip label="Your Community" color="warning" size="small" />
               )}
             </Box>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               {currentUser?.role === "General Admin"
                 ? "Manage all community events across the platform"
                 : "Manage events for your community members"}
@@ -445,7 +447,9 @@ export default function AdminEventsPage() {
         <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
           <Card sx={{ flex: 1 }}>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="body2">
+              <Typography gutterBottom variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Total Events
               </Typography>
               <Typography variant="h4">{filteredEvents.length}</Typography>
@@ -453,7 +457,9 @@ export default function AdminEventsPage() {
           </Card>
           <Card sx={{ flex: 1 }}>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="body2">
+              <Typography gutterBottom variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Upcoming Events
               </Typography>
               <Typography variant="h4">
@@ -467,7 +473,9 @@ export default function AdminEventsPage() {
           </Card>
           <Card sx={{ flex: 1 }}>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="body2">
+              <Typography gutterBottom variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 This Week
               </Typography>
               <Typography variant="h4">
@@ -482,7 +490,6 @@ export default function AdminEventsPage() {
           </Card>
         </Stack>
       </Box>
-
       <Paper sx={{ height: 600, width: "100%" }}>
         <DataGrid
           rows={filteredEvents}
@@ -503,7 +510,6 @@ export default function AdminEventsPage() {
           }}
         />
       </Paper>
-
       {/* Create/Edit Dialog */}
       <Dialog
         open={open}
@@ -549,8 +555,10 @@ export default function AdminEventsPage() {
             type="datetime-local"
             value={form.eventDate}
             onChange={(e) => handleChange("eventDate", e.target.value)}
-            InputLabelProps={{ shrink: true }}
             required
+            slotProps={{
+              inputLabel: { shrink: true }
+            }}
           />
           <TextField
             label="Location"
@@ -575,7 +583,6 @@ export default function AdminEventsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* View Dialog */}
       <Dialog
         open={viewOpen}
@@ -615,7 +622,9 @@ export default function AdminEventsPage() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <EventIcon color="action" />
                   <Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Date & Time
                     </Typography>
                     <Typography variant="body2">
@@ -636,7 +645,9 @@ export default function AdminEventsPage() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <LocationOnIcon color="action" />
                   <Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Location
                     </Typography>
                     <Typography variant="body2">
@@ -649,8 +660,10 @@ export default function AdminEventsPage() {
               <Box>
                 <Typography
                   variant="subtitle2"
-                  color="text.secondary"
                   gutterBottom
+                  sx={{
+                    color: "text.secondary"
+                  }}
                 >
                   Description
                 </Typography>
@@ -663,12 +676,16 @@ export default function AdminEventsPage() {
                 <Box>
                   <Typography
                     variant="subtitle2"
-                    color="text.secondary"
                     gutterBottom
+                    sx={{
+                      color: "text.secondary"
+                    }}
                   >
                     Additional Details
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     {viewingEvent.longDescription}
                   </Typography>
                 </Box>
@@ -677,8 +694,10 @@ export default function AdminEventsPage() {
               <Box>
                 <Typography
                   variant="subtitle2"
-                  color="text.secondary"
                   gutterBottom
+                  sx={{
+                    color: "text.secondary"
+                  }}
                 >
                   Event Information
                 </Typography>
@@ -753,7 +772,6 @@ export default function AdminEventsPage() {
           )}
         </DialogActions>
       </Dialog>
-
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
@@ -775,7 +793,6 @@ export default function AdminEventsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

@@ -122,7 +122,9 @@ export default function VerificationPage() {
               }}
             >
               <HomeIcon sx={{ fontSize: 32 }} color="primary" />
-              <Typography variant="h4" component="h1" fontWeight="bold">
+              <Typography variant="h4" component="h1" sx={{
+                fontWeight: "bold"
+              }}>
                 CROWD Invest
               </Typography>
             </Box>
@@ -134,17 +136,20 @@ export default function VerificationPage() {
             <Typography
               variant="h5"
               component="h2"
-              textAlign="center"
               gutterBottom
+              sx={{
+                textAlign: "center"
+              }}
             >
               Community Verification
             </Typography>
             <Typography
               variant="body2"
-              color="text.secondary"
-              textAlign="center"
-              sx={{ mb: 4 }}
-            >
+              sx={{
+                color: "text.secondary",
+                textAlign: "center",
+                mb: 4
+              }}>
               Complete your profile by providing community details
             </Typography>
 

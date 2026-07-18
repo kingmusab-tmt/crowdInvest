@@ -206,15 +206,16 @@ export default function NotificationBell() {
           <NotificationsIcon />
         </Badge>
       </IconButton>
-
       <Menu
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        PaperProps={{
-          sx: {
-            width: 380,
-            maxHeight: 500,
+        slotProps={{
+          paper: {
+            sx: {
+              width: 380,
+              maxHeight: 500,
+            },
           },
         }}
         transformOrigin={{ horizontal: "right", vertical: "top" }}
@@ -247,7 +248,9 @@ export default function NotificationBell() {
           </Box>
         ) : notifications.length === 0 ? (
           <Box sx={{ p: 4, textAlign: "center" }}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               No notifications yet
             </Typography>
           </Box>
@@ -269,7 +272,9 @@ export default function NotificationBell() {
                 }}
               >
                 <Box sx={{ width: "100%", pr: 1 }}>
-                  <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <Stack direction="row" spacing={1} sx={{
+                    alignItems: "flex-start"
+                  }}>
                     <Typography sx={{ fontSize: 20, lineHeight: 1, mt: 0.5 }}>
                       {getNotificationIcon(notification.type)}
                     </Typography>
@@ -285,22 +290,23 @@ export default function NotificationBell() {
                       </Typography>
                       <Typography
                         variant="body2"
-                        color="text.secondary"
                         sx={{
+                          color: "text.secondary",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           display: "-webkit-box",
                           WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                        }}
-                      >
+                          WebkitBoxOrient: "vertical"
+                        }}>
                         {notification.message}
                       </Typography>
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        sx={{ mt: 0.5, display: "block" }}
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          mt: 0.5,
+                          display: "block"
+                        }}>
                         {formatTimeAgo(notification.createdAt)}
                       </Typography>
                     </Box>

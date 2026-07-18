@@ -593,19 +593,24 @@ function FundsContent() {
           }}
         >
           <CircularProgress size={24} />
-          <Typography variant="body2" color="info.main">
+          <Typography variant="body2" sx={{
+            color: "info.main"
+          }}>
             Verifying your payment...
           </Typography>
         </Box>
       )}
-
       <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
         Funds
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+      <Typography
+        variant="body1"
+        sx={{
+          color: "text.secondary",
+          mb: 4
+        }}>
         Manage your deposits and withdrawals in one place.
       </Typography>
-
       <Paper sx={{ p: 3 }}>
         <Tabs
           value={tab}
@@ -664,10 +669,14 @@ function FundsContent() {
                         >
                           <PaymentIcon color="primary" />
                           <Box>
-                            <Typography variant="subtitle1" fontWeight={600}>
+                            <Typography variant="subtitle1" sx={{
+                              fontWeight: 600
+                            }}>
                               One-Time Payment
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                              color: "text.secondary"
+                            }}>
                               Make instant payments using Paystack
                             </Typography>
                           </Box>
@@ -703,10 +712,14 @@ function FundsContent() {
                         >
                           <AccountBalanceIcon color="primary" />
                           <Box>
-                            <Typography variant="subtitle1" fontWeight={600}>
+                            <Typography variant="subtitle1" sx={{
+                              fontWeight: 600
+                            }}>
                               Reserved Account
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                              color: "text.secondary"
+                            }}>
                               Get a dedicated account number for automatic
                               deposits
                             </Typography>
@@ -742,10 +755,14 @@ function FundsContent() {
                         >
                           <AutorenewIcon color="primary" />
                           <Box>
-                            <Typography variant="subtitle1" fontWeight={600}>
+                            <Typography variant="subtitle1" sx={{
+                              fontWeight: 600
+                            }}>
                               Recurring Payment
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                              color: "text.secondary"
+                            }}>
                               Set up automatic monthly contributions
                             </Typography>
                           </Box>
@@ -796,35 +813,48 @@ function FundsContent() {
                       </Typography>
                       <Typography
                         variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 2 }}
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          mb: 2
+                        }}>
                         Transfer funds to this account and it will automatically
                         reflect in your dashboard
                       </Typography>
                       <Divider sx={{ my: 2 }} />
                       <Stack spacing={1}>
                         <Box>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Account Number
                           </Typography>
-                          <Typography variant="h5" fontWeight={600}>
+                          <Typography variant="h5" sx={{
+                            fontWeight: 600
+                          }}>
                             {reservedAccount.accountNumber}
                           </Typography>
                         </Box>
                         <Box>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Account Name
                           </Typography>
-                          <Typography variant="body1" fontWeight={600}>
+                          <Typography variant="body1" sx={{
+                            fontWeight: 600
+                          }}>
                             {reservedAccount.accountName}
                           </Typography>
                         </Box>
                         <Box>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Bank Name
                           </Typography>
-                          <Typography variant="body1" fontWeight={600}>
+                          <Typography variant="body1" sx={{
+                            fontWeight: 600
+                          }}>
                             {reservedAccount.bankName}
                           </Typography>
                         </Box>
@@ -874,7 +904,12 @@ function FundsContent() {
               <strong>{formatNaira(profitShare)}</strong>
             </Alert>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 2
+              }}>
               You can only withdraw from your profit share. Your withdrawal
               request will be sent to the admin for approval.
             </Typography>
@@ -887,7 +922,9 @@ function FundsContent() {
                 onChange={(e) => setAmount(e.target.value)}
                 fullWidth
                 helperText={`Maximum: ${formatNaira(profitShare)}`}
-                inputProps={{ max: profitShare, min: 0, step: "0.01" }}
+                slotProps={{
+                  htmlInput: { max: profitShare, min: 0, step: "0.01" }
+                }}
               />
               <Box sx={{ display: "flex", gap: 2 }}>
                 <Button
@@ -926,15 +963,21 @@ function FundsContent() {
                   <CardContent>
                     <Stack spacing={2}>
                       <Box>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Active Monthly Amount
                         </Typography>
-                        <Typography variant="h5" fontWeight={600}>
+                        <Typography variant="h5" sx={{
+                          fontWeight: 600
+                        }}>
                           {formatNaira(recurringDetails.amount)}
                         </Typography>
                       </Box>
                       <Box>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Next Charge Date
                         </Typography>
                         <Typography variant="body1">
@@ -944,7 +987,9 @@ function FundsContent() {
                         </Typography>
                       </Box>
                       <Box>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Subscription Status
                         </Typography>
                         <Typography variant="body1">Active</Typography>
@@ -998,12 +1043,16 @@ function FundsContent() {
                           }}
                         >
                           <Box>
-                            <Typography variant="subtitle2" fontWeight={600}>
+                            <Typography variant="subtitle2" sx={{
+                              fontWeight: 600
+                            }}>
                               {formatNaira(failure.amount)}
                             </Typography>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
+                              sx={{
+                                color: "text.secondary"
+                              }}
                             >
                               {failure.type} payment
                             </Typography>
@@ -1023,15 +1072,21 @@ function FundsContent() {
                             </Typography>
                           </Box>
                         </Box>
-                        <Typography variant="caption" color="error.main">
+                        <Typography variant="caption" sx={{
+                          color: "error.main"
+                        }}>
                           Reason: {failure.reason}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Failed:{" "}
                           {new Date(failure.failedAt).toLocaleDateString()}
                         </Typography>
                         {failure.nextRetryDate && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             Next auto-retry:{" "}
                             {new Date(
                               failure.nextRetryDate
@@ -1060,7 +1115,6 @@ function FundsContent() {
           </Box>
         )}
       </Paper>
-
       {/* Recurring Payment Setup Dialog */}
       <Dialog
         open={recurringSetupOpen}
@@ -1070,7 +1124,12 @@ function FundsContent() {
       >
         <DialogTitle>Setup Recurring Payment</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 3
+            }}>
             Set up automatic monthly contributions. You will be charged on the
             same day each month.
           </Typography>
@@ -1098,7 +1157,6 @@ function FundsContent() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Modify Recurring Amount Dialog */}
       <Dialog
         open={modifyRecurringOpen}
@@ -1108,7 +1166,12 @@ function FundsContent() {
       >
         <DialogTitle>Modify Recurring Amount</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 3
+            }}>
             Update your monthly contribution amount. Changes will take effect
             from the next billing cycle.
           </Typography>
@@ -1133,7 +1196,6 @@ function FundsContent() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* BVN/NIN Dialog for Reserved Account */}
       <Dialog
         open={bvnNinDialogOpen}
@@ -1143,7 +1205,12 @@ function FundsContent() {
       >
         <DialogTitle>Request Reserved Account</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 3
+            }}>
             Please provide your BVN and NIN as required by CBN regulations for
             virtual account creation. These are 11-digit numbers.
           </Typography>
@@ -1158,8 +1225,10 @@ function FundsContent() {
               placeholder="11 digits"
               fullWidth
               required
-              inputProps={{ maxLength: 11, pattern: "[0-9]{11}" }}
               helperText={`${bvn.length}/11 digits`}
+              slotProps={{
+                htmlInput: { maxLength: 11, pattern: "[0-9]{11}" }
+              }}
             />
             <TextField
               label="NIN (National Identification Number)"
@@ -1171,8 +1240,10 @@ function FundsContent() {
               placeholder="11 digits"
               fullWidth
               required
-              inputProps={{ maxLength: 11, pattern: "[0-9]{11}" }}
               helperText={`${nin.length}/11 digits`}
+              slotProps={{
+                htmlInput: { maxLength: 11, pattern: "[0-9]{11}" }
+              }}
             />
           </Stack>
           <Alert severity="info" sx={{ mt: 3 }}>
@@ -1198,7 +1269,6 @@ function FundsContent() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Snackbar Alert */}
       <SnackbarAlert
         open={snackbar.open}

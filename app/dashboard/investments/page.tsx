@@ -317,7 +317,9 @@ export default function InvestmentsPage() {
           <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
             Investments
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             View your portfolio and explore investment opportunities
           </Typography>
         </Box>
@@ -338,11 +340,15 @@ export default function InvestmentsPage() {
           </Button>
         </Box>
       </Box>
-
       {/* Overall Stats */}
       {communityInvestments.length > 0 && (
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Total Invested
@@ -355,7 +361,12 @@ export default function InvestmentsPage() {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Current Value
@@ -370,7 +381,12 @@ export default function InvestmentsPage() {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Profit/Loss
@@ -388,7 +404,12 @@ export default function InvestmentsPage() {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Overall ROI
@@ -407,7 +428,6 @@ export default function InvestmentsPage() {
           </Grid>
         </Grid>
       )}
-
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
         <Tabs
@@ -458,7 +478,13 @@ export default function InvestmentsPage() {
           ) : (
             <Grid container spacing={3}>
               {communityInvestments.map((investment) => (
-                <Grid item xs={12} md={6} lg={4} key={investment.id}>
+                <Grid
+                  key={investment.id}
+                  size={{
+                    xs: 12,
+                    md: 6,
+                    lg: 4
+                  }}>
                   <MemberInvestmentCard {...investment} />
                 </Grid>
               ))}
@@ -546,7 +572,11 @@ export default function InvestmentsPage() {
                   </Box>
 
                   <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Amount Required
@@ -558,7 +588,11 @@ export default function InvestmentsPage() {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Timeframe
@@ -568,7 +602,11 @@ export default function InvestmentsPage() {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Risk Level
@@ -589,7 +627,11 @@ export default function InvestmentsPage() {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Suggested On
@@ -768,7 +810,11 @@ export default function InvestmentsPage() {
                   </Box>
 
                   <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Amount Required
@@ -780,7 +826,11 @@ export default function InvestmentsPage() {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Timeframe
@@ -790,7 +840,11 @@ export default function InvestmentsPage() {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Risk Level
@@ -811,7 +865,11 @@ export default function InvestmentsPage() {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid
+                      size={{
+                        xs: 6,
+                        sm: 3
+                      }}>
                       <Box>
                         <Typography variant="caption" color="textSecondary">
                           Suggested On
@@ -852,7 +910,9 @@ export default function InvestmentsPage() {
                               >
                                 <Typography
                                   variant="caption"
-                                  color="text.secondary"
+                                  sx={{
+                                    color: "text.secondary"
+                                  }}
                                 >
                                   Yes: {voteCounts.yes} | No: {voteCounts.no} |
                                   Total: {voteCounts.total}
@@ -860,7 +920,6 @@ export default function InvestmentsPage() {
                               </Box>
                             </Box>
                           )}
-
                           <Stack direction="row" spacing={2}>
                             <Button
                               variant={
@@ -883,7 +942,6 @@ export default function InvestmentsPage() {
                               👎 Vote No
                             </Button>
                           </Stack>
-
                           {userVote && (
                             <Typography
                               variant="caption"
@@ -908,7 +966,6 @@ export default function InvestmentsPage() {
           )}
         </TabPanel>
       </Paper>
-
       {/* Investment Suggestion Form Modal */}
       <InvestmentSuggestionForm
         open={suggestionFormOpen}
@@ -918,14 +975,12 @@ export default function InvestmentsPage() {
         onSuccess={handleRefresh}
         editingSuggestion={editingSuggestion}
       />
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}

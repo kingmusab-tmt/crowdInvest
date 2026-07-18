@@ -201,11 +201,12 @@ export default function TransactionsPage() {
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
           Transaction History
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           View and track all your transactions
         </Typography>
       </Box>
-
       {/* Summary Stats */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box
@@ -216,7 +217,9 @@ export default function TransactionsPage() {
           }}
         >
           <Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+            <Typography variant="body2" gutterBottom sx={{
+              color: "text.secondary"
+            }}>
               Total Transactions
             </Typography>
             <Typography variant="h5" sx={{ fontWeight: 600 }}>
@@ -224,7 +227,9 @@ export default function TransactionsPage() {
             </Typography>
           </Box>
           <Box sx={{ textAlign: "right" }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+            <Typography variant="body2" gutterBottom sx={{
+              color: "text.secondary"
+            }}>
               Total Amount
             </Typography>
             <Typography
@@ -236,7 +241,6 @@ export default function TransactionsPage() {
           </Box>
         </Box>
       </Paper>
-
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Stack spacing={2}>
@@ -301,14 +305,17 @@ export default function TransactionsPage() {
           </Box>
         </Stack>
       </Paper>
-
       {/* Transactions Table */}
       {filteredTransactions.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: "center" }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{
+            color: "text.secondary"
+          }}>
             No transactions found
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Try adjusting your filters or make your first transaction
           </Typography>
         </Paper>
@@ -335,7 +342,9 @@ export default function TransactionsPage() {
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {transaction.performedByName || transaction.userName}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         {transaction.isAdminTransaction ? "Admin" : "Member"}
                       </Typography>
                     </Box>

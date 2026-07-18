@@ -59,7 +59,12 @@ export default function SeedPage() {
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
           Seed Communities
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        <Typography
+          variant="body1"
+          sx={{
+            color: "text.secondary",
+            mb: 4
+          }}>
           Click the button below to populate the database with IMIC communities.
         </Typography>
 

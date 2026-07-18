@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       status: "Completed",
       date: new Date(),
       isAdminTransaction: true,
-      performedByName: session.user.name,
+      performedByName: session.user.name ?? undefined,
       description: "Profit share converted to monthly contribution",
     });
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       status: "Completed",
       date: new Date(),
       isAdminTransaction: false,
-      performedByName: session.user.name,
+      performedByName: session.user.name ?? undefined,
       description: "Monthly contribution from profit share",
     });
 

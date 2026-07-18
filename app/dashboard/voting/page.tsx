@@ -272,54 +272,74 @@ export default function VotingProposalsPage() {
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
           Voting & Proposals
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Review and vote on community proposals, investments, and assistance
           requests
         </Typography>
       </Box>
-
       {/* Summary Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 4
+          }}>
           <Paper sx={{ p: 3, textAlign: "center" }}>
             <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
               {activeItems.length}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Active Voting Items
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 4
+          }}>
           <Paper sx={{ p: 3, textAlign: "center" }}>
             <Typography
               variant="h4"
-              color="success.main"
-              sx={{ fontWeight: 600 }}
-            >
+              sx={{
+                color: "success.main",
+                fontWeight: 600
+              }}>
               {passedItems.length}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Passed
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 4
+          }}>
           <Paper sx={{ p: 3, textAlign: "center" }}>
             <Typography
               variant="h4"
-              color="warning.main"
-              sx={{ fontWeight: 600 }}
-            >
+              sx={{
+                color: "warning.main",
+                fontWeight: 600
+              }}>
               {totalVotes}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Total Votes Cast
             </Typography>
           </Paper>
         </Grid>
       </Grid>
-
       {/* Tabs for filtering */}
       <Paper sx={{ mb: 4 }}>
         <Tabs
@@ -334,17 +354,20 @@ export default function VotingProposalsPage() {
           <Tab label={`Assistance (${assistance.length})`} />
         </Tabs>
       </Paper>
-
       {/* Voting Items Grid */}
       {currentItems.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: "center" }}>
           <HowToVoteIcon
             sx={{ fontSize: 48, color: "text.secondary", mb: 1 }}
           />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{
+            color: "text.secondary"
+          }}>
             No voting items available
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Check back soon for new items to vote on!
           </Typography>
         </Paper>
@@ -368,7 +391,12 @@ export default function VotingProposalsPage() {
             const voteOptions = getVoteOptions(item.itemType);
 
             return (
-              <Grid item xs={12} md={6} key={item._id}>
+              <Grid
+                key={item._id}
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Card
                   sx={{
                     height: "100%",
@@ -407,9 +435,10 @@ export default function VotingProposalsPage() {
                           )}
                           <Typography
                             variant="caption"
-                            color="text.secondary"
-                            sx={{ textTransform: "capitalize" }}
-                          >
+                            sx={{
+                              color: "text.secondary",
+                              textTransform: "capitalize"
+                            }}>
                             {item.itemType}
                           </Typography>
                         </Box>
@@ -426,15 +455,18 @@ export default function VotingProposalsPage() {
 
                     <Typography
                       variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        mb: 2
+                      }}>
                       {item.description}
                     </Typography>
 
                     {item.itemType === "investment" && (
                       <Box sx={{ mb: 2 }}>
-                        <Stack direction="row" spacing={2} flexWrap="wrap">
+                        <Stack direction="row" spacing={2} sx={{
+                          flexWrap: "wrap"
+                        }}>
                           {item.investmentType && (
                             <Chip
                               label={item.investmentType}
@@ -480,7 +512,9 @@ export default function VotingProposalsPage() {
                           mb: 1,
                         }}
                       >
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                          color: "text.secondary"
+                        }}>
                           Voting Progress
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -508,7 +542,9 @@ export default function VotingProposalsPage() {
                               />
                               <Typography
                                 variant="caption"
-                                color="text.secondary"
+                                sx={{
+                                  color: "text.secondary"
+                                }}
                               >
                                 {voteOptions.yes.label}
                               </Typography>
@@ -553,7 +589,9 @@ export default function VotingProposalsPage() {
                               />
                               <Typography
                                 variant="caption"
-                                color="text.secondary"
+                                sx={{
+                                  color: "text.secondary"
+                                }}
                               >
                                 {voteOptions.no.label}
                               </Typography>
@@ -605,7 +643,6 @@ export default function VotingProposalsPage() {
           })}
         </Grid>
       )}
-
       {/* Vote Dialog */}
       <Dialog
         open={voteDialogOpen}
@@ -645,9 +682,10 @@ export default function VotingProposalsPage() {
                   )}
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ textTransform: "capitalize" }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      textTransform: "capitalize"
+                    }}>
                     {selectedItem.itemType}
                   </Typography>
                 </Box>
@@ -655,7 +693,12 @@ export default function VotingProposalsPage() {
                   {selectedItem.title}
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 2
+                }}>
                 {selectedItem.longDescription || selectedItem.description}
               </Typography>
 
@@ -680,7 +723,9 @@ export default function VotingProposalsPage() {
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {voteOptions.yes.label}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             {voteOptions.yes.description}
                           </Typography>
                         </Box>
@@ -694,7 +739,9 @@ export default function VotingProposalsPage() {
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {voteOptions.no.label}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             {voteOptions.no.description}
                           </Typography>
                         </Box>
@@ -705,7 +752,9 @@ export default function VotingProposalsPage() {
               })()}
 
               <Box sx={{ mt: 2, p: 2, bgcolor: "info.light", borderRadius: 1 }}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   Current Vote Results:
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>

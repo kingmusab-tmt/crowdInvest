@@ -131,11 +131,10 @@ export default function MemberInvestmentCard({
         subheader={`Purchased: ${new Date(purchaseDate).toLocaleDateString()}`}
         sx={{ pb: 1 }}
       />
-
       <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Grid container spacing={2} sx={{ mb: 2 }}>
           {/* Price Section */}
-          <Grid item xs={6}>
+          <Grid size={6}>
             <Box>
               <Typography variant="caption" color="textSecondary">
                 Base Price
@@ -145,7 +144,7 @@ export default function MemberInvestmentCard({
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={6}>
+          <Grid size={6}>
             <Box>
               <Typography variant="caption" color="textSecondary">
                 Current Price
@@ -160,7 +159,7 @@ export default function MemberInvestmentCard({
           </Grid>
 
           {/* Investment Amount */}
-          <Grid item xs={6}>
+          <Grid size={6}>
             <Box>
               <Typography variant="caption" color="textSecondary">
                 Quantity
@@ -170,7 +169,7 @@ export default function MemberInvestmentCard({
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={6}>
+          <Grid size={6}>
             <Box>
               <Typography variant="caption" color="textSecondary">
                 Total Invested
@@ -182,7 +181,7 @@ export default function MemberInvestmentCard({
           </Grid>
 
           {/* Current Value */}
-          <Grid item xs={6}>
+          <Grid size={6}>
             <Box>
               <Typography variant="caption" color="textSecondary">
                 Current Value
@@ -194,7 +193,7 @@ export default function MemberInvestmentCard({
           </Grid>
 
           {/* Dividend */}
-          <Grid item xs={6}>
+          <Grid size={6}>
             <Box>
               <Typography variant="caption" color="textSecondary">
                 Dividend Received
@@ -219,7 +218,12 @@ export default function MemberInvestmentCard({
             gap: 2,
           }}
         >
-          <Stack direction="row" alignItems="center" gap={1}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              gap: 1
+            }}>
             <Box sx={{ color: profitColor }}>{profitIcon}</Box>
             <Box>
               <Typography variant="caption" color="textSecondary">

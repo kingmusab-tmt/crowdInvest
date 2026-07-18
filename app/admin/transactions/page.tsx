@@ -148,7 +148,9 @@ export default function TransactionsPage() {
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {params.row.performedByName || params.row.userName}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             {params.row.isAdminTransaction ? "Admin" : "Member"}
           </Typography>
         </Box>

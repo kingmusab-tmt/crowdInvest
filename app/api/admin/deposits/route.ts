@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       status: "Completed",
       date: new Date(),
       isAdminTransaction: true,
-      performedByName: session.user.name,
+      performedByName: session.user.name ?? undefined,
     };
 
     // Handle different transaction types
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
               status: "Completed",
               date: new Date(),
               isAdminTransaction: true,
-              performedByName: session.user.name,
+              performedByName: session.user.name ?? undefined,
               description: `Profit share from investment income (${contributionPercentage.toFixed(
                 2
               )}% contribution)`,

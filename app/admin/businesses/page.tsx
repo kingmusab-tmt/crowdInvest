@@ -384,15 +384,17 @@ export default function BusinessesPage() {
           placeholder="Search name, category, owner or location"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          }}
           fullWidth
           size="small"
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }
+          }}
         />
         <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel>Status</InputLabel>
@@ -419,7 +421,6 @@ export default function BusinessesPage() {
           getRowId={(row: Business) => row._id}
         />
       </Paper>
-
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
@@ -474,7 +475,6 @@ export default function BusinessesPage() {
           <DeleteIcon fontSize="small" style={{ marginRight: 8 }} /> Delete
         </MenuItem>
       </Menu>
-
       <Dialog
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -582,7 +582,6 @@ export default function BusinessesPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={viewOpen}
         onClose={() => setViewOpen(false)}
@@ -642,7 +641,6 @@ export default function BusinessesPage() {
           <Button onClick={() => setViewOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={rejectOpen}
         onClose={() => setRejectOpen(false)}
@@ -683,7 +681,6 @@ export default function BusinessesPage() {
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}

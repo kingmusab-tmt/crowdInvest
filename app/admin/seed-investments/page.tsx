@@ -99,7 +99,6 @@ export default function SeedInvestmentsPage() {
           Populate all communities with sample investment data
         </Typography>
       </Box>
-
       {/* Info Card */}
       <Card sx={{ mb: 4, bgcolor: "#e3f2fd", border: "1px solid #90caf9" }}>
         <CardContent>
@@ -140,7 +139,6 @@ export default function SeedInvestmentsPage() {
           </Stack>
         </CardContent>
       </Card>
-
       {/* Sample Data Info */}
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -148,7 +146,11 @@ export default function SeedInvestmentsPage() {
         </Typography>
 
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6
+            }}>
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                 📊 Member Investments
@@ -183,7 +185,11 @@ export default function SeedInvestmentsPage() {
             </Box>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6
+            }}>
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                 💡 Investment Suggestions
@@ -219,14 +225,12 @@ export default function SeedInvestmentsPage() {
           community. Users and community selection is done automatically.
         </Typography>
       </Paper>
-
       {/* Error Alert */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           <strong>Error:</strong> {error}
         </Alert>
       )}
-
       {/* Success Alert */}
       {success && (
         <Card sx={{ mb: 4, bgcolor: "#e8f5e9", border: "2px solid #4caf50" }}>
@@ -268,7 +272,6 @@ export default function SeedInvestmentsPage() {
           </CardContent>
         </Card>
       )}
-
       {/* Action Button */}
       {!success && (
         <Box
@@ -294,7 +297,6 @@ export default function SeedInvestmentsPage() {
           </Button>
         </Box>
       )}
-
       {/* Confirmation Dialog */}
       <Dialog
         open={confirmDialogOpen}

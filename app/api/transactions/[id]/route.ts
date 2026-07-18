@@ -5,19 +5,20 @@ import { Types } from "mongoose";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid transaction ID" },
         { status: 400 }
       );
     }
 
-    const transaction = await Transaction.findById(params.id).select("-__v");
+    const transaction = await Transaction.findById(id).select("-__v");
 
     if (!transaction) {
       return NextResponse.json(
@@ -38,12 +39,13 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid transaction ID" },
         { status: 400 }
@@ -51,7 +53,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const transaction = await Transaction.findByIdAndUpdate(params.id, body, {
+    const transaction = await Transaction.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
     }).select("-__v");
@@ -75,19 +77,20 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid transaction ID" },
         { status: 400 }
       );
     }
 
-    const transaction = await Transaction.findByIdAndDelete(params.id);
+    const transaction = await Transaction.findByIdAndDelete(id);
 
     if (!transaction) {
       return NextResponse.json(

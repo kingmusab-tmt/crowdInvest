@@ -429,7 +429,9 @@ export default function WithdrawalsPage() {
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {params.row.performedByName || params.row.userName}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Admin
           </Typography>
         </Box>
@@ -505,7 +507,9 @@ export default function WithdrawalsPage() {
           <Typography variant="h4" sx={{ fontWeight: 600 }}>
             Withdrawals Management
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Initiate and manage community withdrawals
           </Typography>
         </Box>
@@ -517,7 +521,6 @@ export default function WithdrawalsPage() {
           Initiate Withdrawal
         </Button>
       </Box>
-
       <Paper sx={{ mb: 3 }}>
         <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)}>
           <Tab
@@ -529,7 +532,6 @@ export default function WithdrawalsPage() {
           <Tab label="Admin Withdrawals" {...a11yProps(1)} />
         </Tabs>
       </Paper>
-
       {tab === 0 && (
         <Paper sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
@@ -603,7 +605,9 @@ export default function WithdrawalsPage() {
                         </IconButton>
                       </>
                     ) : (
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         {params.row.status}
                       </Typography>
                     )}
@@ -618,7 +622,6 @@ export default function WithdrawalsPage() {
           />
         </Paper>
       )}
-
       {tab === 1 && (
         <Paper sx={{ height: 600, width: "100%" }}>
           <DataGrid
@@ -632,7 +635,6 @@ export default function WithdrawalsPage() {
           />
         </Paper>
       )}
-
       {/* Create Withdrawal Dialog */}
       <Dialog
         open={createDialogOpen}
@@ -742,8 +744,10 @@ export default function WithdrawalsPage() {
               }
               fullWidth
               required
-              InputProps={{
-                startAdornment: <Typography sx={{ mr: 1 }}>₦</Typography>,
+              slotProps={{
+                input: {
+                  startAdornment: <Typography sx={{ mr: 1 }}>₦</Typography>,
+                }
               }}
             />
 
@@ -774,7 +778,6 @@ export default function WithdrawalsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Withdrawal Details Dialog */}
       <Dialog
         open={detailsDialogOpen}
@@ -845,7 +848,6 @@ export default function WithdrawalsPage() {
           <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       {/* Rejection Dialog */}
       <Dialog
         open={approvalDialogOpen}
@@ -891,7 +893,6 @@ export default function WithdrawalsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

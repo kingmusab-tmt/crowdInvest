@@ -113,7 +113,9 @@ function LoginPageContent() {
               }}
             >
               <HomeIcon sx={{ fontSize: 32 }} color="primary" />
-              <Typography variant="h4" component="h1" fontWeight="bold">
+              <Typography variant="h4" component="h1" sx={{
+                fontWeight: "bold"
+              }}>
                 CROWD Invest
               </Typography>
             </Box>
@@ -125,17 +127,20 @@ function LoginPageContent() {
             <Typography
               variant="h5"
               component="h2"
-              textAlign="center"
               gutterBottom
+              sx={{
+                textAlign: "center"
+              }}
             >
               Welcome Back
             </Typography>
             <Typography
               variant="body2"
-              color="text.secondary"
-              textAlign="center"
-              sx={{ mb: 4 }}
-            >
+              sx={{
+                color: "text.secondary",
+                textAlign: "center",
+                mb: 4
+              }}>
               Sign in to your account to continue
             </Typography>
 
@@ -152,7 +157,9 @@ function LoginPageContent() {
             </Button>
 
             <Box sx={{ textAlign: "center", mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 New user?
               </Typography>
             </Box>

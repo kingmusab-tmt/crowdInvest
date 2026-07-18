@@ -235,14 +235,19 @@ export default function ManualDepositPage() {
         <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
           Manual Deposit
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 4
+          }}>
           Record manual deposits, refunds, and investment profits
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             {/* Transaction Type */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControl fullWidth required>
                 <InputLabel>Transaction Type</InputLabel>
                 <Select
@@ -266,9 +271,11 @@ export default function ManualDepositPage() {
               {formData.transactionType && (
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1, display: "block" }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    mt: 1,
+                    display: "block"
+                  }}>
                   {getTransactionTypeDescription(formData.transactionType)}
                 </Typography>
               )}
@@ -276,7 +283,7 @@ export default function ManualDepositPage() {
 
             {/* Community Selection (General Admin only) */}
             {isGeneralAdmin && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Community</InputLabel>
                   <Select
@@ -299,7 +306,7 @@ export default function ManualDepositPage() {
             {/* Member Selection (for manual_deposit and refund_deposit) */}
             {(formData.transactionType === "manual_deposit" ||
               formData.transactionType === "refund_deposit") && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Member</InputLabel>
                   <Select
@@ -325,7 +332,7 @@ export default function ManualDepositPage() {
             )}
 
             {/* Amount */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 required
@@ -333,12 +340,14 @@ export default function ManualDepositPage() {
                 type="number"
                 value={formData.amount}
                 onChange={(e) => handleInputChange("amount", e.target.value)}
-                inputProps={{ min: 0, step: "0.01" }}
+                slotProps={{
+                  htmlInput: { min: 0, step: "0.01" }
+                }}
               />
             </Grid>
 
             {/* Description */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Description (Optional)"
@@ -353,7 +362,7 @@ export default function ManualDepositPage() {
             </Grid>
 
             {/* Submit Button */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Button
                 type="submit"
                 variant="contained"

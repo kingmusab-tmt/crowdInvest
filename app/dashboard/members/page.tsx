@@ -119,34 +119,38 @@ export default function MembersDirectoryPage() {
       >
         Community Members Directory
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          mb: 4
+        }}>
         Connect with other members in your community
       </Typography>
-
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
-
       <Box sx={{ mb: 4 }}>
         <TextField
           fullWidth
           placeholder="Search members..."
-          inputProps={{ style: { fontSize: "0.9rem" } }}
           size="small"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
 
+            htmlInput: { style: { fontSize: "0.9rem" } }
+          }} />
+      </Box>
       {filteredMembers.length === 0 && !loading && (
         <Alert severity="info">
           {searchQuery
@@ -154,10 +158,15 @@ export default function MembersDirectoryPage() {
             : "No members available in your community yet."}
         </Alert>
       )}
-
       <Grid container spacing={3}>
         {filteredMembers.map((member) => (
-          <Grid item xs={12} sm={6} md={4} key={member._id}>
+          <Grid
+            key={member._id}
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Card
               sx={{
                 height: "100%",
@@ -171,7 +180,9 @@ export default function MembersDirectoryPage() {
               }}
             >
               <CardContent>
-                <Stack spacing={2} alignItems="center">
+                <Stack spacing={2} sx={{
+                  alignItems: "center"
+                }}>
                   <Avatar src={member.avatarUrl} sx={{ width: 80, height: 80 }}>
                     {member.name?.charAt(0)}
                   </Avatar>
@@ -201,9 +212,10 @@ export default function MembersDirectoryPage() {
 
                     <Typography
                       variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        mb: 2
+                      }}>
                       {member.email}
                     </Typography>
 
@@ -211,9 +223,10 @@ export default function MembersDirectoryPage() {
                       <Box sx={{ mb: 1 }}>
                         <Typography
                           variant="caption"
-                          color="text.secondary"
-                          sx={{ fontWeight: 600 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            fontWeight: 600
+                          }}>
                           Works at
                         </Typography>
                         <Typography variant="body2">
@@ -226,9 +239,10 @@ export default function MembersDirectoryPage() {
                       <Box sx={{ mb: 1 }}>
                         <Typography
                           variant="caption"
-                          color="text.secondary"
-                          sx={{ fontWeight: 600 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            fontWeight: 600
+                          }}>
                           Phone
                         </Typography>
                         <Typography variant="body2">
@@ -241,9 +255,10 @@ export default function MembersDirectoryPage() {
                       <Box sx={{ mb: 1 }}>
                         <Typography
                           variant="caption"
-                          color="text.secondary"
-                          sx={{ fontWeight: 600 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            fontWeight: 600
+                          }}>
                           Location
                         </Typography>
                         <Typography variant="body2">
@@ -266,15 +281,20 @@ export default function MembersDirectoryPage() {
                         <Box sx={{ mt: 2, mb: 1 }}>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
-                            sx={{ fontWeight: 600, display: "block", mb: 1 }}
-                          >
+                            sx={{
+                              color: "text.secondary",
+                              fontWeight: 600,
+                              display: "block",
+                              mb: 1
+                            }}>
                             Social Media
                           </Typography>
                           <Stack
                             direction="row"
                             spacing={0.5}
-                            justifyContent="center"
+                            sx={{
+                              justifyContent: "center"
+                            }}
                           >
                             {member.socialMedia.facebook && (
                               <Tooltip title="Facebook">
@@ -334,9 +354,11 @@ export default function MembersDirectoryPage() {
 
                     <Typography
                       variant="caption"
-                      color="text.secondary"
-                      sx={{ mt: 2, display: "block" }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        mt: 2,
+                        display: "block"
+                      }}>
                       Member since{" "}
                       {new Date(member.dateJoined).toLocaleDateString()}
                     </Typography>

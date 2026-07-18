@@ -4,11 +4,11 @@ import InvestmentSuggestion from "@/models/InvestmentSuggestion";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; action: string } }
+  { params }: { params: Promise<{ id: string; action: string }> }
 ) {
   try {
     await dbConnect();
-    const { id, action } = params;
+    const { id, action } = await params;
     const body = await request.json();
 
     const suggestion = await InvestmentSuggestion.findById(id);

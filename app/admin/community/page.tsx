@@ -500,10 +500,9 @@ export default function CommunityAdminDashboard() {
           Manage your community, members, and activities
         </Typography>
       </Box>
-
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -512,7 +511,12 @@ export default function CommunityAdminDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Community Members"
             value={stats.totalMembers}
@@ -525,7 +529,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Active Investments"
             value={stats.activeInvestments}
@@ -538,7 +547,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Pending Investments"
             value={stats.pendingInvestments}
@@ -551,7 +565,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Upcoming Events"
             value={stats.upcomingEvents}
@@ -564,7 +583,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Pending Proposals"
             value={stats.pendingProposals}
@@ -577,7 +601,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Pending Businesses"
             value={stats.pendingBusinesses}
@@ -590,10 +619,9 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
       </Grid>
-
       {/* Financial Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -602,7 +630,12 @@ export default function CommunityAdminDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
           <StatsCard
             title="Total Contributions"
             value={formatNaira(stats.totalContributions)}
@@ -611,7 +644,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
           <StatsCard
             title="Total Spending"
             value={formatNaira(stats.totalSpending)}
@@ -620,7 +658,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
           <StatsCard
             title="Available for Investment"
             value={formatNaira(stats.availableForInvestment)}
@@ -629,10 +672,9 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
       </Grid>
-
       {/* Investment Income Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -641,7 +683,12 @@ export default function CommunityAdminDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
           <StatsCard
             title="Total Investment Income"
             value={formatNaira(stats.totalInvestmentIncome)}
@@ -654,7 +701,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
           <StatsCard
             title="Total Withdrawn by Members"
             value={formatNaira(stats.communityWithdrawals)}
@@ -663,7 +715,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
           <StatsCard
             title="Current Income Balance"
             value={formatNaira(stats.remainingIncome)}
@@ -672,10 +729,9 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
       </Grid>
-
       {/* Pending Actions */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -684,7 +740,12 @@ export default function CommunityAdminDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Pending Withdrawals"
             value={stats.pendingWithdrawals}
@@ -697,7 +758,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Pending Assistance"
             value={stats.pendingAssistance}
@@ -710,7 +776,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="KYC Pending"
             value={stats.kycPending}
@@ -723,7 +794,12 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="KYC Approved"
             value={stats.kycApproved}
@@ -732,7 +808,6 @@ export default function CommunityAdminDashboard() {
           />
         </Grid>
       </Grid>
-
       {/* Community Info */}
       {communityData && (
         <Paper sx={{ p: 3, mb: 4 }}>
@@ -740,13 +815,21 @@ export default function CommunityAdminDashboard() {
             Community Information
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Typography variant="body2" color="textSecondary">
                 Community Name
               </Typography>
               <Typography variant="h6">{communityData.name}</Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Typography variant="body2" color="textSecondary">
                 Status
               </Typography>
@@ -755,7 +838,7 @@ export default function CommunityAdminDashboard() {
                 color={communityData.status === "Active" ? "success" : "error"}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="body2" color="textSecondary">
                 Description
               </Typography>
@@ -824,14 +907,17 @@ export default function CommunityAdminDashboard() {
           )}
         </Paper>
       )}
-
       {/* Financial Summary */}
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
           Financial Summary
         </Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" color="textSecondary">
                 Total Community Contributions
@@ -874,7 +960,11 @@ export default function CommunityAdminDashboard() {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" color="textSecondary">
                 Total Investment Income Achieved
@@ -922,14 +1012,18 @@ export default function CommunityAdminDashboard() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Quick Actions */}
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
           Quick Actions
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Button
               variant="outlined"
               fullWidth
@@ -939,7 +1033,12 @@ export default function CommunityAdminDashboard() {
               Manage Members
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Button
               variant="outlined"
               fullWidth
@@ -949,7 +1048,12 @@ export default function CommunityAdminDashboard() {
               Manual Deposit
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Button
               variant="outlined"
               fullWidth
@@ -959,7 +1063,12 @@ export default function CommunityAdminDashboard() {
               Review Withdrawals
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Button
               variant="outlined"
               fullWidth
@@ -969,7 +1078,12 @@ export default function CommunityAdminDashboard() {
               Manage Investments
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Button
               variant="outlined"
               fullWidth
@@ -979,7 +1093,12 @@ export default function CommunityAdminDashboard() {
               Manage Events
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Button
               variant="outlined"
               fullWidth
@@ -991,14 +1110,12 @@ export default function CommunityAdminDashboard() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Action Buttons */}
       <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-start" }}>
         <Button variant="outlined" onClick={() => router.push("/dashboard")}>
           Back to Dashboard
         </Button>
       </Box>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

@@ -214,7 +214,6 @@ export default function CommunityMembersPage() {
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}
@@ -234,13 +233,11 @@ export default function CommunityMembersPage() {
           Manage members of your community
         </Typography>
       </Box>
-
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
-
       {/* Members Section */}
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
@@ -257,13 +254,15 @@ export default function CommunityMembersPage() {
             placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <SearchIcon sx={{ mr: 1, color: "textSecondary" }} />
-              ),
-            }}
             size="small"
             sx={{ flex: 1, minWidth: "250px" }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <SearchIcon sx={{ mr: 1, color: "textSecondary" }} />
+                ),
+              }
+            }}
           />
           <TextField
             select
@@ -348,7 +347,6 @@ export default function CommunityMembersPage() {
           </Typography>
         )}
       </Paper>
-
       {/* Detail Modal */}
       <Dialog
         open={detailDialogOpen}
@@ -434,7 +432,6 @@ export default function CommunityMembersPage() {
           <Button onClick={() => setDetailDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       {/* Edit Modal */}
       <Dialog
         open={editDialogOpen}

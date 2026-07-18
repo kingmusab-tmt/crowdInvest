@@ -373,7 +373,6 @@ export default function EventsPage() {
       sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}
     >
       {renderSnackbar()}
-
       <ConfirmDialog
         open={dialog.open}
         title={dialog.title}
@@ -410,7 +409,9 @@ export default function EventsPage() {
               <Chip label="Community Admin" color="warning" size="small" />
             )}
           </Box>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             {currentUser?.role === "General Admin"
               ? "Manage all community events across the platform."
               : currentUser?.role === "Community Admin"
@@ -438,13 +439,11 @@ export default function EventsPage() {
           Create Event
         </Button>
       </Box>
-
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-
       {success && (
         <Alert
           severity="success"
@@ -454,11 +453,12 @@ export default function EventsPage() {
           {success}
         </Alert>
       )}
-
       {events.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: "center" }}>
           <EventIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
-          <Typography color="text.secondary" variant="body1">
+          <Typography variant="body1" sx={{
+            color: "text.secondary"
+          }}>
             No events yet. Create one to get started!
           </Typography>
         </Paper>
@@ -521,7 +521,9 @@ export default function EventsPage() {
                           <EventIcon
                             sx={{ fontSize: 18, color: "text.secondary" }}
                           />
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                          }}>
                             {new Date(event.eventDate).toLocaleDateString(
                               "en-US",
                               {
@@ -546,7 +548,9 @@ export default function EventsPage() {
                           <LocationOnIcon
                             sx={{ fontSize: 18, color: "text.secondary" }}
                           />
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                          }}>
                             {event.location}
                           </Typography>
                         </Box>
@@ -568,9 +572,10 @@ export default function EventsPage() {
                       {event.longDescription && (
                         <Typography
                           variant="body2"
-                          color="text.secondary"
-                          sx={{ mb: 1 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            mb: 1
+                          }}>
                           {event.longDescription}
                         </Typography>
                       )}
@@ -686,20 +691,28 @@ export default function EventsPage() {
                           flexWrap: "wrap",
                         }}
                       >
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Created by: <strong>{event.createdBy.name}</strong>
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           •
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Community: <strong>{event.community.name}</strong>
                         </Typography>
                         {currentUser?.role && currentUser.role !== "User" && (
                           <>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
+                              sx={{
+                                color: "text.secondary"
+                              }}
                             >
                               •
                             </Typography>
@@ -745,7 +758,6 @@ export default function EventsPage() {
             ))}
         </Stack>
       )}
-
       <Dialog
         open={open}
         onClose={() => {
@@ -794,8 +806,10 @@ export default function EventsPage() {
             type="datetime-local"
             value={form.eventDate}
             onChange={(e) => handleChange("eventDate", e.target.value)}
-            InputLabelProps={{ shrink: true }}
             required
+            slotProps={{
+              inputLabel: { shrink: true }
+            }}
           />
           <TextField
             label="Location"

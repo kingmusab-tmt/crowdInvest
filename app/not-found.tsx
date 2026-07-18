@@ -149,10 +149,11 @@ const NotFoundPage = () => {
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={2}
-          justifyContent="center"
-          alignItems="center"
-          sx={{ mb: 4 }}
-        >
+          sx={{
+            justifyContent: "center",
+            alignItems: "center",
+            mb: 4
+          }}>
           <Button
             component={Link}
             href="/"
@@ -237,7 +238,6 @@ const NotFoundPage = () => {
           }}
         />
       </Paper>
-
       {/* Background Pattern */}
       <Box
         sx={{

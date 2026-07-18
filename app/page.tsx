@@ -28,7 +28,9 @@ export default function Home() {
             sx={{ display: "flex", alignItems: "center", gap: 1, flexGrow: 1 }}
           >
             <HomeIcon />
-            <Typography variant="h6" component="span" fontWeight="bold">
+            <Typography variant="h6" component="span" sx={{
+              fontWeight: "bold"
+            }}>
               CROWD Invest
             </Typography>
           </Box>
@@ -37,7 +39,6 @@ export default function Home() {
           </Button>
         </Toolbar>
       </AppBar>
-
       {/* Main Content */}
       <Box component="main" sx={{ flexGrow: 1 }}>
         {/* Hero Section */}
@@ -45,26 +46,32 @@ export default function Home() {
           sx={{ py: { xs: 6, md: 12, lg: 16 }, bgcolor: "background.default" }}
         >
           <Container maxWidth="lg">
-            <Grid container spacing={4} alignItems="center">
-              <Grid item xs={12} md={6}>
+            <Grid container spacing={4} sx={{
+              alignItems: "center"
+            }}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Box sx={{ mb: 2 }}>
                   <Typography
                     variant="h3"
                     component="h1"
-                    fontWeight="bold"
                     gutterBottom
                     sx={{
-                      fontSize: { xs: "1.875rem", sm: "2.25rem", md: "3rem" },
-                    }}
-                  >
+                      fontWeight: "bold",
+                      fontSize: { xs: "1.875rem", sm: "2.25rem", md: "3rem" }
+                    }}>
                     Contribute together, Assist each other, Invest together,
                     Grow together.
                   </Typography>
                   <Typography
                     variant="h6"
-                    color="text.secondary"
-                    sx={{ mb: 4 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      mb: 4
+                    }}>
                     CROWD Invest is a platform for community-based investments
                     for events and projects. Deposit funds, track profits, and
                     see your contributions make a difference.
@@ -80,7 +87,11 @@ export default function Home() {
                   Get Started
                 </Button>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Box
                   component="img"
                   src="https://picsum.photos/600/400"
@@ -102,55 +113,83 @@ export default function Home() {
             <Typography
               variant="h4"
               component="h2"
-              textAlign="center"
-              fontWeight="bold"
-              sx={{ mb: 6 }}
-            >
+              sx={{
+                textAlign: "center",
+                fontWeight: "bold",
+                mb: 6
+              }}>
               Why Choose CROWD Invest?
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card elevation={2}>
                   <CardContent>
                     <TrendingUpIcon
                       sx={{ fontSize: 40, color: "primary.main", mb: 2 }}
                     />
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    <Typography variant="h6" gutterBottom sx={{
+                      fontWeight: "bold"
+                    }}>
                       Grow Your Wealth
                     </Typography>
-                    <Typography color="text.secondary">
+                    <Typography sx={{
+                      color: "text.secondary"
+                    }}>
                       Invest in community projects and events with transparent
                       returns and real impact.
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card elevation={2}>
                   <CardContent>
                     <GroupsIcon
                       sx={{ fontSize: 40, color: "success.main", mb: 2 }}
                     />
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    <Typography variant="h6" gutterBottom sx={{
+                      fontWeight: "bold"
+                    }}>
                       Community Driven
                     </Typography>
-                    <Typography color="text.secondary">
+                    <Typography sx={{
+                      color: "text.secondary"
+                    }}>
                       Join your community members in collective investments that
                       create shared value.
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card elevation={2}>
                   <CardContent>
                     <SecurityIcon
                       sx={{ fontSize: 40, color: "warning.main", mb: 2 }}
                     />
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    <Typography variant="h6" gutterBottom sx={{
+                      fontWeight: "bold"
+                    }}>
                       Secure & Transparent
                     </Typography>
-                    <Typography color="text.secondary">
+                    <Typography sx={{
+                      color: "text.secondary"
+                    }}>
                       Track all investments, profits, and community votes with
                       complete transparency.
                     </Typography>
@@ -161,7 +200,6 @@ export default function Home() {
           </Container>
         </Box>
       </Box>
-
       {/* Footer */}
       <Box
         component="footer"
@@ -175,17 +213,23 @@ export default function Home() {
       >
         <Container maxWidth="lg">
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" color="text.secondary">
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 &copy; 2024 CROWD Invest. All rights reserved.
               </Typography>
             </Grid>
             <Grid
-              item
-              xs={12}
-              sm={6}
               sx={{ textAlign: { xs: "left", sm: "right" } }}
-            >
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Link
                 href="#"
                 style={{ textDecoration: "none", marginRight: 16 }}

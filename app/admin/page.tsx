@@ -176,14 +176,20 @@ export default function AdminDashboard() {
         >
           General Admin Dashboard
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Manage all communities, users, and platform functions
         </Typography>
       </Box>
-
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Box
@@ -208,7 +214,12 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Box
@@ -233,7 +244,12 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Box
@@ -258,7 +274,12 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Box
@@ -287,7 +308,6 @@ export default function AdminDashboard() {
           </Card>
         </Grid>
       </Grid>
-
       {/* Communities Section */}
       <Box sx={{ mb: 4 }}>
         <Box
@@ -314,16 +334,23 @@ export default function AdminDashboard() {
 
         <Grid container spacing={3}>
           {communities.length === 0 ? (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Paper sx={{ p: 4, textAlign: "center" }}>
-                <Typography variant="body1" color="text.secondary">
+                <Typography variant="body1" sx={{
+                  color: "text.secondary"
+                }}>
                   No communities yet. Create one to get started.
                 </Typography>
               </Paper>
             </Grid>
           ) : (
             communities.map((community) => (
-              <Grid item xs={12} md={6} key={community._id}>
+              <Grid
+                key={community._id}
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Paper
                   sx={{ p: 3, borderLeft: 4, borderLeftColor: "primary.main" }}
                 >
@@ -341,9 +368,10 @@ export default function AdminDashboard() {
                       </Typography>
                       <Typography
                         variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          mt: 0.5
+                        }}>
                         {community.description}
                       </Typography>
                     </Box>
@@ -357,7 +385,9 @@ export default function AdminDashboard() {
                   </Box>
 
                   <Box sx={{ my: 2 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Members: {community.memberCount} | Admin:{" "}
                       {community.communityAdmin?.name || "Unassigned"}
                     </Typography>
@@ -415,7 +445,6 @@ export default function AdminDashboard() {
           )}
         </Grid>
       </Box>
-
       {/* Create Community Dialog */}
       <Dialog
         open={createCommunityOpen}
@@ -483,7 +512,6 @@ export default function AdminDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

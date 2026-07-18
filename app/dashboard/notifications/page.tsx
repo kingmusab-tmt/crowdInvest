@@ -231,7 +231,6 @@ function NotificationsContent() {
           <Typography variant="body1" sx={{ mb: 1 }}>
             {notification.message}
           </Typography>
-
           {/* Event Details Card */}
           <Paper
             sx={{
@@ -244,11 +243,13 @@ function NotificationsContent() {
           >
             <Grid container spacing={3}>
               {/* Title */}
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   <EventIcon sx={{ color: "primary.main", fontSize: 28 }} />
                   <Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Event Name
                     </Typography>
                     <Typography
@@ -266,13 +267,19 @@ function NotificationsContent() {
               </Grid>
 
               {/* Date & Time */}
-              <Grid item xs={12} sm={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6
+                }}>
                 <Box
                   sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
                 >
                   <AccessTimeIcon sx={{ color: "info.main", mt: 0.5 }} />
                   <Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Date & Time
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -280,9 +287,11 @@ function NotificationsContent() {
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mt: 0.5 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        display: "block",
+                        mt: 0.5
+                      }}>
                       {formatEventTime(eventDate)}
                     </Typography>
                   </Box>
@@ -291,7 +300,11 @@ function NotificationsContent() {
 
               {/* Days Remaining */}
               {daysRemaining !== undefined && (
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Box
                     sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
                   >
@@ -318,7 +331,9 @@ function NotificationsContent() {
                       {daysRemaining}
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         Days Remaining
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -334,13 +349,15 @@ function NotificationsContent() {
               )}
 
               {/* Location */}
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Box
                   sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
                 >
                   <LocationOnIcon sx={{ color: "error.main", mt: 0.5 }} />
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Location
                     </Typography>
                     <Typography
@@ -369,7 +386,6 @@ function NotificationsContent() {
       return (
         <Stack spacing={2}>
           <Typography variant="body1">{notification.message}</Typography>
-
           <Paper sx={{ p: 2, bgcolor: "background.default" }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
               Additional Information
@@ -378,9 +394,10 @@ function NotificationsContent() {
               <Typography
                 key={key}
                 variant="body2"
-                color="text.secondary"
-                sx={{ mb: 0.5 }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  mb: 0.5
+                }}>
                 <strong>{key}:</strong> {String(value)}
               </Typography>
             ))}
@@ -428,7 +445,9 @@ function NotificationsContent() {
           <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
             Notifications
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Stay updated with your community activities
           </Typography>
         </Box>
@@ -442,7 +461,6 @@ function NotificationsContent() {
           </Button>
         )}
       </Box>
-
       {success && (
         <Alert
           severity="success"
@@ -452,7 +470,6 @@ function NotificationsContent() {
           {success}
         </Alert>
       )}
-
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
         <Tabs
@@ -468,14 +485,20 @@ function NotificationsContent() {
           />
         </Tabs>
       </Paper>
-
       {/* Notifications List */}
       {filteredNotifications.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: "center" }}>
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              color: "text.secondary",
+              mb: 1
+            }}>
             {tab === 1 ? "No unread notifications" : "No notifications yet"}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             {tab === 1
               ? "You're all caught up!"
               : "You'll see notifications here when you receive them"}
@@ -541,13 +564,16 @@ function NotificationsContent() {
 
                     <Typography
                       variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        mb: 1
+                      }}>
                       {notification.message}
                     </Typography>
 
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       {formatDate(notification.createdAt)}
                     </Typography>
                   </Box>
@@ -575,7 +601,6 @@ function NotificationsContent() {
           ))}
         </Stack>
       )}
-
       {/* Detail Dialog */}
       <Dialog
         open={detailDialogOpen}
@@ -614,9 +639,11 @@ function NotificationsContent() {
 
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ mt: 3, display: "block" }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  mt: 3,
+                  display: "block"
+                }}>
                 Received: {formatDate(selectedNotification.createdAt)}
               </Typography>
             </DialogContent>

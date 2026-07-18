@@ -267,13 +267,24 @@ export default function OnboardingPage() {
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
               Choose Your Community
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 4
+              }}>
               Select the community you would like to join. You can only belong
               to one community at a time.
             </Typography>
             <Grid container spacing={3}>
               {communities.map((community) => (
-                <Grid item xs={12} sm={6} md={4} key={community._id}>
+                <Grid
+                  key={community._id}
+                  size={{
+                    xs: 12,
+                    sm: 6,
+                    md: 4
+                  }}>
                   <Card
                     sx={{
                       border: formData.community === community._id ? 2 : 1,
@@ -307,9 +318,10 @@ export default function OnboardingPage() {
                         </Typography>
                         <Typography
                           variant="body2"
-                          color="text.secondary"
-                          sx={{ mb: 2 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            mb: 2
+                          }}>
                           {community.description}
                         </Typography>
                         <Chip
@@ -333,7 +345,7 @@ export default function OnboardingPage() {
             </Typography>
             <Grid container spacing={3}>
               {/* Profile Image Section */}
-              <Grid item xs={12} sx={{ textAlign: "center", mb: 2 }}>
+              <Grid sx={{ textAlign: "center", mb: 2 }} size={12}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
                   Profile Photo
                 </Typography>
@@ -353,10 +365,11 @@ export default function OnboardingPage() {
                 {session?.user?.image && !profileImage && (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    sx={{ mb: 1 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block",
+                      mb: 1
+                    }}>
                     Using your Google account image
                   </Typography>
                 )}
@@ -375,7 +388,11 @@ export default function OnboardingPage() {
                 </Button>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Full Name *"
                   fullWidth
@@ -385,7 +402,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DatePicker
                     label="Date of Birth *"
@@ -401,7 +422,11 @@ export default function OnboardingPage() {
                   />
                 </LocalizationProvider>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Place of Work/Business *"
                   fullWidth
@@ -411,7 +436,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   select
                   label="Marital Status"
@@ -441,7 +470,11 @@ export default function OnboardingPage() {
               Contact Details
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Phone Number *"
                   fullWidth
@@ -451,7 +484,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Street Address"
                   fullWidth
@@ -464,7 +501,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="City *"
                   fullWidth
@@ -477,7 +518,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="State/Province"
                   fullWidth
@@ -490,7 +535,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Country *"
                   fullWidth
@@ -503,7 +552,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Postal Code"
                   fullWidth
@@ -519,12 +572,16 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
                   Social Media (Optional)
                 </Typography>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Facebook Profile URL"
                   fullWidth
@@ -540,7 +597,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Twitter Profile URL"
                   fullWidth
@@ -556,7 +617,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="LinkedIn Profile URL"
                   fullWidth
@@ -572,7 +637,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Instagram Profile URL"
                   fullWidth
@@ -598,11 +667,20 @@ export default function OnboardingPage() {
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
               Next of Kin Information
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 3
+              }}>
               Provide details of your next of kin for emergency purposes.
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Full Name *"
                   fullWidth
@@ -618,7 +696,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Relationship *"
                   fullWidth
@@ -634,7 +716,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Phone Number *"
                   fullWidth
@@ -650,7 +736,11 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <TextField
                   label="Email Address"
                   fullWidth
@@ -667,7 +757,7 @@ export default function OnboardingPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField
                   label="Address"
                   fullWidth
@@ -695,11 +785,15 @@ export default function OnboardingPage() {
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
               Terms & Conditions
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 3
+              }}>
               Please review and accept our terms and conditions and privacy
               policy to continue.
             </Typography>
-
             <Paper
               sx={{
                 p: 3,
@@ -737,7 +831,6 @@ export default function OnboardingPage() {
                 Read Full Terms & Conditions
               </Button>
             </Paper>
-
             <Paper
               sx={{
                 p: 3,
@@ -775,7 +868,6 @@ export default function OnboardingPage() {
                 Read Full Privacy Policy
               </Button>
             </Paper>
-
             <FormControlLabel
               control={
                 <Checkbox
@@ -819,7 +911,9 @@ export default function OnboardingPage() {
           <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
             Welcome to CrowdInvest!
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" sx={{
+            color: "text.secondary"
+          }}>
             Complete your profile to get started
           </Typography>
         </Box>
@@ -849,7 +943,6 @@ export default function OnboardingPage() {
           </Button>
         </Box>
       </Paper>
-
       {/* Terms Dialog */}
       <Dialog
         open={termsOpen}
@@ -859,31 +952,41 @@ export default function OnboardingPage() {
       >
         <DialogTitle>Terms and Conditions</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>1. Acceptance of Terms</strong>
             <br />
             By accessing and using this platform, you accept and agree to be
             bound by the terms and provision of this agreement.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>2. User Obligations</strong>
             <br />
             Users must provide accurate information, maintain account security,
             and comply with all applicable laws and regulations.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>3. Investment Risks</strong>
             <br />
             All investments carry inherent risks. The platform does not
             guarantee returns and users should invest responsibly.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>4. Platform Usage</strong>
             <br />
             Users agree not to misuse the platform, engage in fraudulent
             activities, or violate community standards.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>5. Termination</strong>
             <br />
             The platform reserves the right to suspend or terminate accounts
@@ -894,7 +997,6 @@ export default function OnboardingPage() {
           <Button onClick={() => setTermsOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       {/* Privacy Dialog */}
       <Dialog
         open={privacyOpen}
@@ -904,31 +1006,41 @@ export default function OnboardingPage() {
       >
         <DialogTitle>Privacy Policy</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>1. Data Collection</strong>
             <br />
             We collect personal information necessary for account creation,
             investment management, and service delivery.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>2. Data Usage</strong>
             <br />
             Your data is used to provide services, process transactions,
             communicate updates, and improve user experience.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>3. Data Protection</strong>
             <br />
             We implement industry-standard security measures to protect your
             personal information from unauthorized access.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>4. Data Sharing</strong>
             <br />
             We do not sell your data. Information is only shared with your
             consent or as required by law.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2" sx={{
+            marginBottom: "16px"
+          }}>
             <strong>5. Your Rights</strong>
             <br />
             You have the right to access, update, or delete your personal data
@@ -939,7 +1051,6 @@ export default function OnboardingPage() {
           <Button onClick={() => setPrivacyOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

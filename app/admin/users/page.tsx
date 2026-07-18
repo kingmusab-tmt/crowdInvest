@@ -176,7 +176,9 @@ function UsersPageContent() {
       headerName: "Name",
       flex: 1,
       renderCell: (params) => (
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <Avatar
             src={(params.row as UserRow).image}
             sx={{ width: 28, height: 28 }}
@@ -236,7 +238,9 @@ function UsersPageContent() {
           .map(([k]) => k.replace("canManage", ""))
           .join(", ");
         return (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             {perms.length === 0
               ? "None"
               : `${preview}${perms.length > 2 ? "…" : ""}`}
@@ -344,11 +348,15 @@ function UsersPageContent() {
       <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
         Users & Permissions
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          mb: 3
+        }}>
         General Admins can manage all users. Community Admins are limited to
         their community and functions assigned to them.
       </Typography>
-
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
@@ -363,7 +371,6 @@ function UsersPageContent() {
           {success}
         </Alert>
       )}
-
       {highlightUserId && (
         <Alert
           severity="info"
@@ -379,7 +386,6 @@ function UsersPageContent() {
             highlightUserId}
         </Alert>
       )}
-
       {noMatchUserId && (
         <Alert
           severity="warning"
@@ -393,7 +399,6 @@ function UsersPageContent() {
           No match for user ID: {noMatchUserId}
         </Alert>
       )}
-
       <Paper sx={{ height: 650, width: "100%" }}>
         <DataGrid
           rows={users}
@@ -412,7 +417,6 @@ function UsersPageContent() {
           }}
         />
       </Paper>
-
       <Dialog
         open={Boolean(editUser)}
         onClose={closeEditor}
@@ -422,7 +426,11 @@ function UsersPageContent() {
         <DialogTitle>Edit User Access</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <TextField
                 label="Role"
                 select
@@ -445,7 +453,11 @@ function UsersPageContent() {
                 </MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <TextField
                 label="Status"
                 select
@@ -458,7 +470,11 @@ function UsersPageContent() {
                 <MenuItem value="Restricted">Restricted</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <TextField
                 label="Community"
                 select
@@ -493,7 +509,13 @@ function UsersPageContent() {
               {PERMISSION_OPTIONS.map((opt) => {
                 const disabled = !canTogglePermission(opt.key);
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={opt.key}>
+                  <Grid
+                    key={opt.key}
+                    size={{
+                      xs: 12,
+                      sm: 6,
+                      md: 4
+                    }}>
                     <FormControlLabel
                       control={
                         <Switch

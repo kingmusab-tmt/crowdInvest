@@ -94,7 +94,9 @@ export default function KYCStatusBadge({
             }
           />
           {showDetails && kyc.verificationNotes && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               {kyc.verificationNotes}
             </Typography>
           )}

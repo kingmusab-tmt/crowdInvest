@@ -303,8 +303,10 @@ export default function InvestmentSuggestionForm({
               onChange={handleInputChange}
               fullWidth
               disabled={loading}
-              inputProps={{ step: "0.01", min: "0" }}
               helperText="Total capital needed for this investment"
+              slotProps={{
+                htmlInput: { step: "0.01", min: "0" }
+              }}
             />
 
             <TextField

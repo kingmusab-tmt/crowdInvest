@@ -751,10 +751,9 @@ export default function UserDashboard() {
           )}
         </Box>
       </Box>
-
       <Grid container spacing={3}>
         {/* Community Contribution Overview */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Paper sx={{ p: 3, bgcolor: "primary.dark", color: "white" }}>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
               Monthly Contribution Status
@@ -797,7 +796,7 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Stats Cards Row 1: Contribution Stats */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -806,7 +805,12 @@ export default function UserDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="My Total Contribution"
             value={formatNaira(memberContribution)}
@@ -819,7 +823,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="My Contribution %"
             value={`${contributionPercentage.toFixed(2)}%`}
@@ -828,7 +837,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Community Total"
             value={formatNaira(totalCommunityContributions)}
@@ -837,7 +851,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Box
@@ -866,7 +885,7 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Stats Cards Row 2: Community Insights */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -875,7 +894,12 @@ export default function UserDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Last Month Contributors"
             value={lastMonthContributors}
@@ -884,7 +908,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Box
@@ -920,7 +949,12 @@ export default function UserDashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Member Businesses"
             value={memberBusinessCount}
@@ -933,7 +967,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Active Investments"
             value={investments.length}
@@ -947,7 +986,7 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Stats Cards Row 3: Member Statistics */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -956,7 +995,12 @@ export default function UserDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Total Community Members"
             value={totalCommunityMembers}
@@ -965,7 +1009,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Active Members"
             value={activeMembers}
@@ -974,7 +1023,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Inactive Members"
             value={inactiveMembers}
@@ -983,7 +1037,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="My Total Withdrawal"
             value={formatNaira(myTotalWithdrawal)}
@@ -993,7 +1052,7 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Stats Cards Row 4: Financial Performance */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography
             variant="h6"
             sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
@@ -1002,7 +1061,12 @@ export default function UserDashboard() {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Total Community Spending"
             value={formatNaira(totalSpending)}
@@ -1011,7 +1075,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Total Investment Income"
             value={formatNaira(totalIncome)}
@@ -1020,7 +1089,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="My Profit Share"
             value={formatNaira(memberProfitShare)}
@@ -1033,7 +1107,12 @@ export default function UserDashboard() {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatsCard
             title="Wallet Balance"
             value={formatNaira(userBalance)}
@@ -1047,13 +1126,17 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Financial Summary Card */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
               Financial Summary
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="textSecondary">
                     Available for Investment
@@ -1069,7 +1152,11 @@ export default function UserDashboard() {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="textSecondary">
                     Total Investment Income Ever Achieved
@@ -1088,7 +1175,11 @@ export default function UserDashboard() {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="textSecondary">
                     Total Withdrawn by All Members
@@ -1110,7 +1201,11 @@ export default function UserDashboard() {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="textSecondary">
                     Current Investment Income Balance
@@ -1137,20 +1232,25 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Active Investments */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
             Active Investment Opportunities
           </Typography>
         </Grid>
 
         {investments.map((investment: any, idx: number) => (
-          <Grid item xs={12} md={4} key={idx}>
+          <Grid
+            key={idx}
+            size={{
+              xs: 12,
+              md: 4
+            }}>
             <InvestmentCard investment={investment} />
           </Grid>
         ))}
 
         {/* Recent Transactions */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Paper sx={{ p: 3 }}>
             <Box
               sx={{
@@ -1191,7 +1291,11 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Upcoming Events */}
-        <Grid item xs={12} md={6}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 6
+          }}>
           <Paper sx={{ p: 3 }}>
             <Box
               sx={{
@@ -1239,13 +1343,17 @@ export default function UserDashboard() {
         </Grid>
 
         {/* Quick Actions */}
-        <Grid item xs={12} md={6}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 6
+          }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
               Quick Actions
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Button
                   variant="outlined"
                   fullWidth
@@ -1254,7 +1362,7 @@ export default function UserDashboard() {
                   Deposit Funds
                 </Button>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Button
                   variant="outlined"
                   fullWidth
@@ -1263,7 +1371,7 @@ export default function UserDashboard() {
                   Withdraw
                 </Button>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Button
                   variant="outlined"
                   fullWidth
@@ -1272,7 +1380,7 @@ export default function UserDashboard() {
                   Vote on Proposals
                 </Button>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Button
                   variant="outlined"
                   fullWidth
@@ -1285,7 +1393,6 @@ export default function UserDashboard() {
           </Paper>
         </Grid>
       </Grid>
-
       {/* Submit Event Modal */}
       <Dialog
         open={openEventModal}
@@ -1322,8 +1429,10 @@ export default function UserDashboard() {
             type="date"
             value={eventFormData.date}
             onChange={(e) => handleEventInputChange("date", e.target.value)}
-            InputLabelProps={{ shrink: true }}
             required
+            slotProps={{
+              inputLabel: { shrink: true }
+            }}
           />
           <TextField
             label="Location"
