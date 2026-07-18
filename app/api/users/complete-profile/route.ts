@@ -1,5 +1,6 @@
 import connectDB from "@/utils/connectDB";
 import User from "@/models/User";
+import { getSingletonCommunity } from "@/utils/getCommunity";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -21,7 +22,6 @@ export async function POST(req: NextRequest) {
     }
 
     const {
-      community,
       profileImageUrl,
       name,
       dateOfBirth,
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     // Validate required fields
-    if (!community || !name || !dateOfBirth || !phoneNumber) {
+    if (!name || !dateOfBirth || !phoneNumber) {
       return NextResponse.json(
         { error: "Required fields are missing" },
         { status: 400 }
@@ -50,9 +50,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const community = await getSingletonCommunity();
+
     // Update user profile
     user.name = name;
-    user.community = community;
+    user.community = community._id;
     if (profileImageUrl) {
       user.avatarUrl = profileImageUrl;
     }
@@ -70,10 +72,8 @@ export async function POST(req: NextRequest) {
     await user.save();
 
     // Update community member count
-    const Community = (await import("@/models/Community")).default;
-    await Community.findByIdAndUpdate(community, {
-      $inc: { memberCount: 1 },
-    });
+    community.memberCount = (community.memberCount || 0) + 1;
+    await community.save();
 
     return NextResponse.json({ success: true, user }, { status: 200 });
   } catch (error) {

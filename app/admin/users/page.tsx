@@ -13,13 +13,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   Grid,
   MenuItem,
   Paper,
-  Select,
   Stack,
-  Switch,
   TextField,
   Typography,
   Alert,
@@ -27,23 +24,6 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-
-type PermissionKey =
-  | "canManageUsers"
-  | "canManageCommunities"
-  | "canManageInvestments"
-  | "canManageProposals"
-  | "canManageEvents"
-  | "canManageAssistance"
-  | "canManageKYC"
-  | "canManageWithdrawals"
-  | "canSuspendUsers"
-  | "canAssignCommunityAdmins"
-  | "canModifyCommunityFunctions";
-
-interface Permissions {
-  [key: string]: boolean;
-}
 
 interface UserRow {
   _id: string;
@@ -53,39 +33,15 @@ interface UserRow {
   status: string;
   createdAt: string;
   community?: { _id: string; name: string } | null;
-  permissions?: Permissions;
   image?: string;
 }
-
-interface CommunityOption {
-  _id: string;
-  name: string;
-}
-
-const PERMISSION_OPTIONS: { key: PermissionKey; label: string }[] = [
-  { key: "canManageKYC", label: "KYC Verification" },
-  { key: "canManageInvestments", label: "Investment Approval" },
-  { key: "canManageCommunities", label: "Business/Community Approval" },
-  { key: "canManageWithdrawals", label: "Withdrawal Approval" },
-  { key: "canManageUsers", label: "User Management" },
-  { key: "canAssignCommunityAdmins", label: "Assign Community Admins" },
-  { key: "canManageProposals", label: "Proposals" },
-  { key: "canManageEvents", label: "Events" },
-  { key: "canManageAssistance", label: "Assistance" },
-  { key: "canModifyCommunityFunctions", label: "Community Config" },
-  { key: "canSuspendUsers", label: "Suspend Users" },
-];
 
 function UsersPageContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentRole = session?.user?.role;
-  const currentCommunity = session?.user?.community as string | undefined;
-  const currentPerms = (session?.user as any)?.permissions || {};
 
   const [users, setUsers] = React.useState<UserRow[]>([]);
-  const [communities, setCommunities] = React.useState<CommunityOption[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
@@ -94,8 +50,6 @@ function UsersPageContent() {
   const [form, setForm] = React.useState({
     role: "User",
     status: "Active",
-    community: "",
-    permissions: {} as Permissions,
   });
   const [highlightUserId, setHighlightUserId] = React.useState<string | null>(
     null
@@ -103,16 +57,8 @@ function UsersPageContent() {
   const [noMatchUserId, setNoMatchUserId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    // Only allow General Admins to access this page
-    if (currentRole === "Community Admin") {
-      router.push("/admin/community");
-      return;
-    }
     fetchUsers();
-    if (currentRole === "General Admin") {
-      fetchCommunities();
-    }
-  }, [currentRole]);
+  }, []);
 
   async function fetchUsers() {
     try {
@@ -154,22 +100,6 @@ function UsersPageContent() {
     router.replace("/admin/users");
   };
 
-  async function fetchCommunities() {
-    try {
-      const res = await fetch("/api/communities");
-      if (!res.ok) return;
-      const data = await res.json();
-      setCommunities(data.map((c: any) => ({ _id: c._id, name: c.name })));
-    } catch (err) {
-      console.error("Failed to load communities", err);
-    }
-  }
-
-  const canTogglePermission = (key: PermissionKey) => {
-    if (currentRole === "General Admin") return true;
-    return Boolean(currentPerms?.[key]);
-  };
-
   const columns: GridColDef[] = [
     {
       field: "name",
@@ -189,13 +119,6 @@ function UsersPageContent() {
     },
     { field: "email", headerName: "Email", flex: 1.2 },
     {
-      field: "community",
-      headerName: "Community",
-      width: 160,
-      valueGetter: (params: any) =>
-        (params?.row as UserRow)?.community?.name || "-",
-    },
-    {
       field: "role",
       headerName: "Role",
       width: 150,
@@ -203,13 +126,7 @@ function UsersPageContent() {
         <Chip
           size="small"
           label={value}
-          color={
-            value === "General Admin"
-              ? "primary"
-              : value === "Community Admin"
-              ? "secondary"
-              : "default"
-          }
+          color={value === "Admin" ? "primary" : "default"}
         />
       ),
     },
@@ -224,29 +141,6 @@ function UsersPageContent() {
           color={value === "Active" ? "success" : "warning"}
         />
       ),
-    },
-    {
-      field: "permissions",
-      headerName: "Functions",
-      flex: 1,
-      renderCell: ({ row }) => {
-        const perms = Object.entries(row.permissions || {}).filter(
-          ([, v]) => v
-        );
-        const preview = perms
-          .slice(0, 2)
-          .map(([k]) => k.replace("canManage", ""))
-          .join(", ");
-        return (
-          <Typography variant="caption" sx={{
-            color: "text.secondary"
-          }}>
-            {perms.length === 0
-              ? "None"
-              : `${preview}${perms.length > 2 ? "…" : ""}`}
-          </Typography>
-        );
-      },
     },
     {
       field: "actions",
@@ -270,14 +164,12 @@ function UsersPageContent() {
     setForm({
       role: user.role,
       status: user.status,
-      community: user.community?._id || currentCommunity || "",
-      permissions: { ...(user.permissions || {}) },
     });
   };
 
   const closeEditor = () => {
     setEditUser(null);
-    setForm({ role: "User", status: "Active", community: "", permissions: {} });
+    setForm({ role: "User", status: "Active" });
   };
 
   const handleSave = async () => {
@@ -289,8 +181,6 @@ function UsersPageContent() {
       const payload: any = {
         role: form.role,
         status: form.status,
-        community: form.community,
-        permissions: form.permissions,
       };
       const res = await fetch(`/api/users/${editUser._id}`, {
         method: "PUT",
@@ -333,8 +223,6 @@ function UsersPageContent() {
     }
   };
 
-  const disableGeneralAdminOption = currentRole !== "General Admin";
-
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
@@ -346,7 +234,7 @@ function UsersPageContent() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-        Users & Permissions
+        Users
       </Typography>
       <Typography
         variant="body2"
@@ -354,8 +242,7 @@ function UsersPageContent() {
           color: "text.secondary",
           mb: 3
         }}>
-        General Admins can manage all users. Community Admins are limited to
-        their community and functions assigned to them.
+        Admins can manage all users.
       </Typography>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -421,7 +308,7 @@ function UsersPageContent() {
         open={Boolean(editUser)}
         onClose={closeEditor}
         fullWidth
-        maxWidth="md"
+        maxWidth="sm"
       >
         <DialogTitle>Edit User Access</DialogTitle>
         <DialogContent dividers>
@@ -438,19 +325,9 @@ function UsersPageContent() {
                 size="small"
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
-                disabled={
-                  editUser?.role === "General Admin" &&
-                  currentRole !== "General Admin"
-                }
               >
                 <MenuItem value="User">User</MenuItem>
-                <MenuItem value="Community Admin">Community Admin</MenuItem>
-                <MenuItem
-                  value="General Admin"
-                  disabled={disableGeneralAdminOption}
-                >
-                  General Admin
-                </MenuItem>
+                <MenuItem value="Admin">Admin</MenuItem>
               </TextField>
             </Grid>
             <Grid
@@ -470,91 +347,20 @@ function UsersPageContent() {
                 <MenuItem value="Restricted">Restricted</MenuItem>
               </TextField>
             </Grid>
-            <Grid
-              size={{
-                xs: 12,
-                sm: 6
-              }}>
-              <TextField
-                label="Community"
-                select
-                fullWidth
-                size="small"
-                value={form.community}
-                onChange={(e) =>
-                  setForm({ ...form, community: e.target.value })
-                }
-                disabled={currentRole === "Community Admin"}
-              >
-                {currentRole === "Community Admin" ? (
-                  <MenuItem value={currentCommunity || ""}>
-                    {editUser?.community?.name || "My Community"}
-                  </MenuItem>
-                ) : (
-                  communities.map((c) => (
-                    <MenuItem key={c._id} value={c._id}>
-                      {c.name}
-                    </MenuItem>
-                  ))
-                )}
-              </TextField>
-            </Grid>
           </Grid>
-
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-              Functions this user can perform
-            </Typography>
-            <Grid container spacing={1.5}>
-              {PERMISSION_OPTIONS.map((opt) => {
-                const disabled = !canTogglePermission(opt.key);
-                return (
-                  <Grid
-                    key={opt.key}
-                    size={{
-                      xs: 12,
-                      sm: 6,
-                      md: 4
-                    }}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          size="small"
-                          checked={Boolean(form.permissions?.[opt.key])}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              permissions: {
-                                ...form.permissions,
-                                [opt.key]: e.target.checked,
-                              },
-                            })
-                          }
-                          disabled={disabled || form.role === "User"}
-                        />
-                      }
-                      label={opt.label}
-                    />
-                  </Grid>
-                );
-              })}
-            </Grid>
-          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeEditor} disabled={saving}>
             Cancel
           </Button>
           <Box sx={{ flex: 1 }} />
-          {currentRole === "General Admin" || currentPerms?.canManageUsers ? (
-            <Button
-              color="error"
-              onClick={handleDelete}
-              disabled={saving || editUser?.role === "General Admin"}
-            >
-              Delete
-            </Button>
-          ) : null}
+          <Button
+            color="error"
+            onClick={handleDelete}
+            disabled={saving || editUser?.role === "Admin"}
+          >
+            Delete
+          </Button>
           <Button variant="contained" onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>

@@ -16,10 +16,6 @@ import {
   FormControlLabel,
   Checkbox,
   CircularProgress,
-  Card,
-  CardContent,
-  CardActionArea,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -33,24 +29,13 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import GroupsIcon from "@mui/icons-material/Groups";
 
 const steps = [
-  "Select Community",
   "Personal Information",
   "Contact Details",
   "Emergency Contact",
   "Terms & Conditions",
 ];
-
-interface Community {
-  _id: string;
-  name: string;
-  description: string;
-  memberCount: number;
-  status: string;
-}
 
 export default function OnboardingPage() {
   const { data: session, update: updateSession } = useSession();
@@ -58,7 +43,6 @@ export default function OnboardingPage() {
   const [activeStep, setActiveStep] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [uploadingImage, setUploadingImage] = React.useState(false);
-  const [communities, setCommunities] = React.useState<Community[]>([]);
   const [termsOpen, setTermsOpen] = React.useState(false);
   const [privacyOpen, setPrivacyOpen] = React.useState(false);
   const [profileImage, setProfileImage] = React.useState<string | null>(
@@ -77,7 +61,6 @@ export default function OnboardingPage() {
   void showInfo;
 
   const [formData, setFormData] = React.useState({
-    community: "",
     profileImageUrl: session?.user?.image || "",
     name: session?.user?.name || "",
     dateOfBirth: null as Date | null,
@@ -114,7 +97,6 @@ export default function OnboardingPage() {
       router.push("/dashboard");
       return;
     }
-    fetchCommunities();
   }, [session, router]);
 
   const handleImageUpload = async (
@@ -160,30 +142,14 @@ export default function OnboardingPage() {
     }
   };
 
-  async function fetchCommunities() {
-    try {
-      const response = await fetch("/api/communities");
-      if (response.ok) {
-        const data = await response.json();
-        setCommunities(data.filter((c: Community) => c.status === "Active"));
-      }
-    } catch (err) {
-      console.error("Failed to fetch communities", err);
-    }
-  }
-
   const handleNext = () => {
-    if (activeStep === 0 && !formData.community) {
-      showError("Please select a community to continue");
-      return;
-    }
-    if (activeStep === 1) {
+    if (activeStep === 0) {
       if (!formData.name || !formData.dateOfBirth || !formData.placeOfWork) {
         showError("Please fill in all required fields");
         return;
       }
     }
-    if (activeStep === 2) {
+    if (activeStep === 1) {
       if (
         !formData.phoneNumber ||
         !formData.address.city ||
@@ -193,13 +159,13 @@ export default function OnboardingPage() {
         return;
       }
     }
-    if (activeStep === 3) {
+    if (activeStep === 2) {
       if (!formData.nextOfKin.name || !formData.nextOfKin.phoneNumber) {
         showError("Please provide next of kin details");
         return;
       }
     }
-    if (activeStep === 4) {
+    if (activeStep === 3) {
       if (!formData.termsAccepted || !formData.privacyAccepted) {
         showError(
           "You must accept the terms and conditions and privacy policy"
@@ -262,82 +228,6 @@ export default function OnboardingPage() {
   const getStepContent = (step: number) => {
     switch (step) {
       case 0:
-        return (
-          <Box>
-            <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-              Choose Your Community
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "text.secondary",
-                mb: 4
-              }}>
-              Select the community you would like to join. You can only belong
-              to one community at a time.
-            </Typography>
-            <Grid container spacing={3}>
-              {communities.map((community) => (
-                <Grid
-                  key={community._id}
-                  size={{
-                    xs: 12,
-                    sm: 6,
-                    md: 4
-                  }}>
-                  <Card
-                    sx={{
-                      border: formData.community === community._id ? 2 : 1,
-                      borderColor:
-                        formData.community === community._id
-                          ? "primary.main"
-                          : "divider",
-                      position: "relative",
-                    }}
-                  >
-                    <CardActionArea
-                      onClick={() =>
-                        setFormData({ ...formData, community: community._id })
-                      }
-                    >
-                      <CardContent>
-                        {formData.community === community._id && (
-                          <CheckCircleIcon
-                            color="primary"
-                            sx={{ position: "absolute", top: 8, right: 8 }}
-                          />
-                        )}
-                        <GroupsIcon
-                          sx={{ fontSize: 40, color: "primary.main", mb: 2 }}
-                        />
-                        <Typography
-                          variant="h6"
-                          sx={{ fontWeight: 600, mb: 1 }}
-                        >
-                          {community.name}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "text.secondary",
-                            mb: 2
-                          }}>
-                          {community.description}
-                        </Typography>
-                        <Chip
-                          label={`${community.memberCount} members`}
-                          size="small"
-                        />
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        );
-
-      case 1:
         return (
           <Box>
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
@@ -463,7 +353,7 @@ export default function OnboardingPage() {
           </Box>
         );
 
-      case 2:
+      case 1:
         return (
           <Box>
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
@@ -661,7 +551,7 @@ export default function OnboardingPage() {
           </Box>
         );
 
-      case 3:
+      case 2:
         return (
           <Box>
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
@@ -779,7 +669,7 @@ export default function OnboardingPage() {
           </Box>
         );
 
-      case 4:
+      case 3:
         return (
           <Box>
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>

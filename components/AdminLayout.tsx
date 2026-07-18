@@ -32,7 +32,6 @@ import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import HelpIcon from "@mui/icons-material/Help";
 import SettingsIcon from "@mui/icons-material/Settings";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
-import GroupsIcon from "@mui/icons-material/Groups";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -114,45 +113,9 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   ...theme.mixins.toolbar,
 }));
 
-const generalAdminMenuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, path: null }, // Dynamic path based on role
+const adminMenuItems = [
+  { text: "Dashboard", icon: <DashboardIcon />, path: "/admin" },
   { text: "Users", icon: <PeopleIcon />, path: "/admin/users" },
-  { text: "Communities", icon: <GroupsIcon />, path: "/admin/communities" },
-  { text: "Businesses", icon: <BusinessIcon />, path: "/admin/businesses" },
-  {
-    text: "Investments",
-    icon: <AccountBalanceIcon />,
-    path: "/admin/investments",
-  },
-  { text: "Proposals", icon: <HowToVoteIcon />, path: "/admin/proposals" },
-  {
-    text: "Transactions",
-    icon: <MonetizationOnIcon />,
-    path: "/admin/transactions",
-  },
-  { text: "Events", icon: <EventIcon />, path: "/admin/events" },
-  { text: "KYC Verification", icon: <VerifiedUserIcon />, path: "/admin/kyc" },
-  { text: "Assistance", icon: <HelpIcon />, path: "/admin/assistance" },
-  {
-    text: "Withdrawals",
-    icon: <MonetizationOnIcon />,
-    path: "/admin/withdrawals",
-  },
-  {
-    text: "Manual Deposits",
-    icon: <AccountBalanceIcon />,
-    path: "/admin/deposits",
-  },
-  { text: "Settings", icon: <SettingsIcon />, path: "/admin/settings" },
-];
-
-const communityAdminMenuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, path: null }, // Dynamic path based on role
-  {
-    text: "Community Members",
-    icon: <PeopleIcon />,
-    path: "/admin/community-members",
-  },
   { text: "Businesses", icon: <BusinessIcon />, path: "/admin/businesses" },
   {
     text: "Investments",
@@ -191,24 +154,13 @@ export default function AdminLayout({
   const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [communityName, setCommunityName] = React.useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
-  const currentRole = session?.user?.role;
 
   // Desktop: open = expanded menu, closed = icon-only menu
   // Mobile: open = drawer visible, closed = drawer hidden
   const isDrawerOpen = isMobile ? mobileDrawerOpen : drawerOpen;
-
-  React.useEffect(() => {
-    if (session?.user?.role === "Community Admin" && session?.user?.community) {
-      fetch(`/api/communities/${session.user.community}`)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => data && setCommunityName(data.name))
-        .catch(() => {});
-    }
-  }, [session]);
 
   const handleDrawerToggle = () => {
     if (isMobile) {
@@ -255,9 +207,7 @@ export default function AdminLayout({
             component="div"
             sx={{ flexGrow: 1, fontSize: { xs: "1rem", sm: "1.25rem" } }}
           >
-            {session?.user?.role === "Community Admin" && communityName
-              ? `${communityName} Admin`
-              : "CrowdInvest Admin"}
+            CrowdInvest Admin
           </Typography>
 
           <NotificationBell />
@@ -304,33 +254,16 @@ export default function AdminLayout({
           <DrawerHeader />
           <Divider />
           <List>
-            {(currentRole === "Community Admin"
-              ? communityAdminMenuItems
-              : generalAdminMenuItems
-            ).map((item) => (
+            {adminMenuItems.map((item) => (
               <ListItem
                 key={item.text}
                 disablePadding
                 sx={{ display: "block" }}
               >
                 <ListItemButton
-                  selected={
-                    pathname ===
-                    (item.path ||
-                      (currentRole === "Community Admin"
-                        ? "/admin/community"
-                        : "/admin"))
-                  }
+                  selected={pathname === item.path}
                   onClick={() => {
-                    if (item.text === "Dashboard") {
-                      router.push(
-                        currentRole === "Community Admin"
-                          ? "/admin/community"
-                          : "/admin"
-                      );
-                    } else if (item.path) {
-                      router.push(item.path);
-                    }
+                    router.push(item.path);
                     handleMobileMenuClose();
                   }}
                   sx={{ minHeight: 48, justifyContent: "initial", px: 2.5 }}
@@ -357,10 +290,7 @@ export default function AdminLayout({
           </DrawerHeader>
           <Divider />
           <List>
-            {(currentRole === "Community Admin"
-              ? communityAdminMenuItems
-              : generalAdminMenuItems
-            ).map((item) => (
+            {adminMenuItems.map((item) => (
               <ListItem
                 key={item.text}
                 disablePadding
@@ -368,23 +298,9 @@ export default function AdminLayout({
               >
                 <Tooltip title={!drawerOpen ? item.text : ""} placement="right">
                   <ListItemButton
-                    selected={
-                      pathname ===
-                      (item.path ||
-                        (currentRole === "Community Admin"
-                          ? "/admin/community"
-                          : "/admin"))
-                    }
+                    selected={pathname === item.path}
                     onClick={() => {
-                      if (item.text === "Dashboard") {
-                        router.push(
-                          currentRole === "Community Admin"
-                            ? "/admin/community"
-                            : "/admin"
-                        );
-                      } else if (item.path) {
-                        router.push(item.path);
-                      }
+                      router.push(item.path);
                     }}
                     sx={{
                       minHeight: 48,

@@ -4,77 +4,70 @@ import * as React from "react";
 import {
   Box,
   Container,
-  Grid,
-  Paper,
   Typography,
+  Grid,
   Card,
   CardContent,
-  Chip,
   Button,
-  Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
+  Paper,
+  Chip,
+  Avatar,
   CircularProgress,
-  FormControlLabel,
-  Checkbox,
+  LinearProgress,
+  Divider,
+  Stack,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import AddIcon from "@mui/icons-material/Add";
-import GroupIcon from "@mui/icons-material/Group";
-import LocationCityIcon from "@mui/icons-material/LocationCity";
+import GroupsIcon from "@mui/icons-material/Groups";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import EventIcon from "@mui/icons-material/Event";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import PieChartIcon from "@mui/icons-material/PieChart";
+import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
+import HelpIcon from "@mui/icons-material/Help";
+import PendingIcon from "@mui/icons-material/Pending";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { formatNaira } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
 
-interface StatsData {
-  totalUsers: number;
-  totalCommunities: number;
-  activeCommunityAdmins: number;
-  platformHealth: string;
-}
-
-interface Community {
-  _id: string;
-  name: string;
-  description: string;
-  memberCount: number;
-  communityAdmin?: { name: string; email: string };
-  status: string;
-  enabledFunctions: {
-    investments: boolean;
-    proposals: boolean;
-    events: boolean;
-    assistance: boolean;
-    kyc: boolean;
-    withdrawals: boolean;
-  };
+// Stats Card Component
+function StatsCard({ title, value, icon, color, action }: any) {
+  return (
+    <Card>
+      <CardContent>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 2,
+          }}
+        >
+          <Typography color="textSecondary" variant="body2">
+            {title}
+          </Typography>
+          <Avatar sx={{ bgcolor: color, width: 48, height: 48 }}>{icon}</Avatar>
+        </Box>
+        <Typography variant="h4" sx={{ fontWeight: 600 }}>
+          {value}
+        </Typography>
+        {action && (
+          <Button size="small" onClick={action.onClick} sx={{ mt: 1 }}>
+            {action.label}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [stats, setStats] = React.useState<StatsData | null>(null);
-  const [communities, setCommunities] = React.useState<Community[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [createCommunityOpen, setCreateCommunityOpen] = React.useState(false);
-  const [newCommunity, setNewCommunity] = React.useState({
-    name: "",
-    description: "",
-  });
-  const [enabledFunctions, setEnabledFunctions] = React.useState({
-    investments: true,
-    proposals: true,
-    events: true,
-    assistance: true,
-    kyc: true,
-    withdrawals: true,
-  });
   const {
     snackbar,
     closeSnackbar,
@@ -83,81 +76,258 @@ export default function AdminDashboard() {
     showWarning,
     showInfo,
   } = useSnackbar();
+  const [communityData, setCommunityData] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [stats, setStats] = React.useState({
+    totalMembers: 0,
+    activeInvestments: 0,
+    pendingInvestments: 0,
+    upcomingEvents: 0,
+    pendingProposals: 0,
+    pendingBusinesses: 0,
+    totalContributions: 0,
+    totalSpending: 0,
+    totalInvestmentIncome: 0,
+    communityWithdrawals: 0,
+    remainingIncome: 0,
+    availableForInvestment: 0,
+    pendingWithdrawals: 0,
+    pendingAssistance: 0,
+    kycPending: 0,
+    kycApproved: 0,
+  });
 
   React.useEffect(() => {
-    if (!session?.user?.email || session.user.role !== "General Admin") {
-      router.push("/");
+    // Only allow Admins to access this page
+    if (session && session.user?.role !== "Admin") {
+      router.push("/dashboard");
       return;
     }
-
-    fetchData();
+    fetchCommunityData();
   }, [session, router]);
 
-  async function fetchData() {
+  const fetchCommunityData = async () => {
     try {
-      const [statsRes, communitiesRes] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/communities"),
-      ]);
+      setLoading(true);
 
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats(statsData);
+      const communityRes = await fetch("/api/community");
+      if (!communityRes.ok) {
+        showError("Failed to fetch community data");
+        return;
       }
+      const community = await communityRes.json();
+      const communityId = community._id;
+      setCommunityData(community);
 
-      if (communitiesRes.ok) {
-        const communitiesData = await communitiesRes.json();
-        setCommunities(communitiesData);
-      }
-    } catch (err) {
-      console.error("Failed to load admin data", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+      // Fetch all community members
+      const membersRes = await fetch(`/api/users?communityId=${communityId}`);
+      const members = await membersRes.json();
 
-  const handleCreateCommunity = async () => {
-    if (!newCommunity.name || !newCommunity.description) {
-      const msg = "Please fill in all fields";
-      showError(msg);
-      return;
-    }
+      // Fetch ALL transactions and investments from member's community transactions
+      const transactionsRes = await fetch("/api/transactions");
+      const allTransactions = await transactionsRes.json();
 
-    try {
-      const response = await fetch("/api/communities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newCommunity,
-          enabledFunctions,
-        }),
+      // Filter transactions for this community by checking member emails
+      const memberEmails = new Set(members.map((m: any) => m.email));
+      const communityTransactions = allTransactions.filter((t: any) =>
+        memberEmails.has(t.userEmail)
+      );
+
+      // Fetch investments
+      const investmentsRes = await fetch(
+        `/api/investments?community=${communityId}`
+      );
+      const investments = await investmentsRes.json();
+
+      // Fetch events
+      const eventsRes = await fetch("/api/events");
+      const allEvents = await eventsRes.json();
+
+      // Fetch proposals
+      const proposalsRes = await fetch("/api/proposals");
+      const allProposals = await proposalsRes.json();
+      const communityProposals = allProposals.filter(
+        (p: any) =>
+          (p.community && p.community.toString() === communityId) ||
+          p.community === communityId
+      );
+
+      // Fetch businesses
+      const businessesRes = await fetch("/api/businesses");
+      const allBusinesses = await businessesRes.json();
+      const communityBusinesses = allBusinesses.filter(
+        (b: any) =>
+          (b.community && b.community.toString() === communityId) ||
+          b.community === communityId
+      );
+
+      // Fetch withdrawals
+      const withdrawalsRes = await fetch("/api/withdrawals");
+      const allWithdrawals = await withdrawalsRes.json();
+      const communityWithdrawals = allWithdrawals.filter(
+        (w: any) =>
+          (w.community && w.community.toString() === communityId) ||
+          w.community === communityId
+      );
+
+      // Fetch assistance requests
+      const assistanceRes = await fetch("/api/assistance");
+      const allAssistance = await assistanceRes.json();
+      const communityAssistance = allAssistance.filter(
+        (a: any) =>
+          (a.community && a.community.toString() === communityId) ||
+          a.community === communityId
+      );
+
+      const communityEventsFiltered = allEvents.filter((e: any) => {
+        const eCommunityStr = e.community?.toString?.();
+        return eCommunityStr === communityId || e.community === communityId;
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create community");
-      }
+      // Use the filtered events for all calculations
+      const communityEvents = communityEventsFiltered;
 
-      const msg = "Community created successfully";
-      showSuccess(msg);
-      setNewCommunity({ name: "", description: "" });
-      setCreateCommunityOpen(false);
-      fetchData();
+      // Calculate total contributions (same logic as member dashboard)
+      // Community Deposits: Monthly_Contribution, manual_deposit, refund_deposit
+      const memberDeposits = communityTransactions.filter(
+        (t: any) =>
+          (t.type === "Monthly_Contribution" ||
+            t.type === "manual_deposit" ||
+            t.type === "refund_deposit") &&
+          t.status === "Completed"
+      );
+
+      const totalContributions = memberDeposits.reduce(
+        (sum: number, t: any) => sum + t.amount,
+        0
+      );
+
+      // Calculate total spending (same logic as member dashboard)
+      // Community Withdrawals: Investment, Assistance, Event
+      const spendingTransactions = communityTransactions.filter(
+        (t: any) =>
+          ["Investment", "Assistance", "Event"].includes(t.type) &&
+          t.status === "Completed"
+      );
+
+      const totalSpending = spendingTransactions.reduce(
+        (sum: number, t: any) => sum + t.amount,
+        0
+      );
+
+      // Calculate total investment income (profit_deposit)
+      const profitDepositTransactions = communityTransactions.filter(
+        (t: any) => t.type === "profit_deposit" && t.status === "Completed"
+      );
+
+      const totalInvestmentIncome = profitDepositTransactions.reduce(
+        (sum: number, t: any) => sum + t.amount,
+        0
+      );
+
+      // Calculate community-level withdrawals (all members' Profit Share withdrawals)
+      const allProfitShareTransactions = communityTransactions.filter(
+        (t: any) => t.type === "Profit Share" && t.status === "Completed"
+      );
+
+      const communityTotalWithdrawals = Math.abs(
+        allProfitShareTransactions
+          .filter((t: any) => t.amount < 0)
+          .reduce((sum: number, t: any) => sum + t.amount, 0)
+      );
+
+      const remainingIncome = totalInvestmentIncome - communityTotalWithdrawals;
+      const availableForInvestment = totalContributions - totalSpending;
+
+      // Get active investments
+      const activeInvestments = investments.filter(
+        (i: any) => i.status === "Active"
+      ).length;
+
+      const pendingInvestments = investments.filter(
+        (i: any) => i.status === "Pending"
+      ).length;
+
+      // Get upcoming events using same logic as member dashboard
+      const now = new Date();
+      const upcomingEventsList = communityEvents
+        .filter((e: any) => new Date(e.eventDate) > now)
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+        );
+
+      // Get pending proposals
+      const pendingProposalsList = communityProposals.filter(
+        (p: any) => p.status === "Pending"
+      );
+
+      const pendingBusinessesList = communityBusinesses.filter(
+        (b: any) => b.status === "Pending"
+      );
+
+      const pendingWithdrawalsList = communityWithdrawals.filter(
+        (w: any) => w.status === "Pending"
+      );
+
+      const pendingAssistanceList = communityAssistance.filter(
+        (a: any) => a.status === "Pending"
+      );
+
+      // Calculate KYC stats (using kyc.isVerified instead of kycStatus)
+      const kycApprovedCount = members.filter(
+        (m: any) => m.kyc?.isVerified === true
+      ).length;
+
+      const kycPendingCount = members.filter(
+        (m: any) => !m.kyc?.isVerified
+      ).length;
+
+      setStats({
+        totalMembers: members.length,
+        activeInvestments,
+        pendingInvestments,
+        upcomingEvents: upcomingEventsList.length,
+        pendingProposals: pendingProposalsList.length,
+        pendingBusinesses: pendingBusinessesList.length,
+        totalContributions,
+        totalSpending,
+        totalInvestmentIncome,
+        communityWithdrawals: communityTotalWithdrawals,
+        remainingIncome: totalInvestmentIncome - communityTotalWithdrawals,
+        availableForInvestment: totalContributions - totalSpending,
+        pendingWithdrawals: pendingWithdrawalsList.length,
+        pendingAssistance: pendingAssistanceList.length,
+        kycPending: kycPendingCount,
+        kycApproved: kycApprovedCount,
+      });
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to create community";
-      showError(msg);
+      showError(
+        err instanceof Error ? err.message : "Failed to fetch community data"
+      );
+      console.error("Error fetching community data:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <Container
-        maxWidth="lg"
-        sx={{ py: { xs: 4, sm: 6 }, textAlign: "center" }}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
       >
         <CircularProgress />
-      </Container>
+      </Box>
     );
+  }
+
+  if (session?.user?.role !== "Admin") {
+    return null;
   }
 
   return (
@@ -165,360 +335,643 @@ export default function AdminDashboard() {
       maxWidth="lg"
       sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1.5, sm: 2 } }}
     >
+      {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography
-          variant="h4"
+          variant="h3"
           sx={{
-            fontWeight: 600,
             mb: 1,
-            fontSize: { xs: "1.75rem", sm: "2rem" },
+            fontWeight: 700,
+            fontSize: { xs: "1.75rem", sm: "2rem", md: "2.5rem" },
           }}
         >
-          General Admin Dashboard
+          Admin Dashboard
         </Typography>
-        <Typography variant="body2" sx={{
-          color: "text.secondary"
-        }}>
-          Manage all communities, users, and platform functions
+        <Typography variant="body1" color="textSecondary">
+          Manage your community, members, and activities
         </Typography>
       </Box>
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Box>
-                  <Typography color="textSecondary" variant="body2">
-                    Total Users
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600, mt: 1 }}>
-                    {stats?.totalUsers || 0}
-                  </Typography>
-                </Box>
-                <GroupIcon
-                  sx={{ fontSize: 40, color: "primary.main", opacity: 0.5 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+        <Grid size={12}>
+          <Typography
+            variant="h6"
+            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
+          >
+            Community Overview
+          </Typography>
         </Grid>
+
         <Grid
           size={{
             xs: 12,
             sm: 6,
             md: 3
           }}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Box>
-                  <Typography color="textSecondary" variant="body2">
-                    Communities
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600, mt: 1 }}>
-                    {stats?.totalCommunities || 0}
-                  </Typography>
-                </Box>
-                <LocationCityIcon
-                  sx={{ fontSize: 40, color: "success.main", opacity: 0.5 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="Community Members"
+            value={stats.totalMembers}
+            icon={<GroupsIcon />}
+            color="primary.main"
+            action={{
+              label: "Manage",
+              onClick: () => router.push("/admin/users"),
+            }}
+          />
         </Grid>
+
         <Grid
           size={{
             xs: 12,
             sm: 6,
             md: 3
           }}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Box>
-                  <Typography color="textSecondary" variant="body2">
-                    Community Admins
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600, mt: 1 }}>
-                    {stats?.activeCommunityAdmins || 0}
-                  </Typography>
-                </Box>
-                <AssignmentIcon
-                  sx={{ fontSize: 40, color: "warning.main", opacity: 0.5 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="Active Investments"
+            value={stats.activeInvestments}
+            icon={<TrendingUpIcon />}
+            color="success.main"
+            action={{
+              label: "View All",
+              onClick: () => router.push("/admin/investments"),
+            }}
+          />
         </Grid>
+
         <Grid
           size={{
             xs: 12,
             sm: 6,
             md: 3
           }}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Box>
-                  <Typography color="textSecondary" variant="body2">
-                    Platform Health
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: 600, mt: 1, color: "success.main" }}
-                  >
-                    {stats?.platformHealth || "Good"}
-                  </Typography>
-                </Box>
-                <TrendingUpIcon
-                  sx={{ fontSize: 40, color: "info.main", opacity: 0.5 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="Pending Investments"
+            value={stats.pendingInvestments}
+            icon={<PendingIcon />}
+            color="warning.main"
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/investments"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
+          <StatsCard
+            title="Upcoming Events"
+            value={stats.upcomingEvents}
+            icon={<EventIcon />}
+            color="warning.main"
+            action={{
+              label: "View All",
+              onClick: () => router.push("/admin/events"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
+          <StatsCard
+            title="Pending Proposals"
+            value={stats.pendingProposals}
+            icon={<AssignmentIcon />}
+            color="info.main"
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/proposals"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
+          <StatsCard
+            title="Pending Businesses"
+            value={stats.pendingBusinesses}
+            icon={<LocationCityIcon />}
+            color="warning.main"
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/businesses"),
+            }}
+          />
         </Grid>
       </Grid>
-      {/* Communities Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
-          }}
-        >
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Communities Management
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateCommunityOpen(true)}
+      {/* Financial Stats */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={12}>
+          <Typography
+            variant="h6"
+            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
           >
-            Create Community
-          </Button>
-        </Box>
-
-        {/* Notifications handled via Snackbar */}
-
-        <Grid container spacing={3}>
-          {communities.length === 0 ? (
-            <Grid size={12}>
-              <Paper sx={{ p: 4, textAlign: "center" }}>
-                <Typography variant="body1" sx={{
-                  color: "text.secondary"
-                }}>
-                  No communities yet. Create one to get started.
-                </Typography>
-              </Paper>
-            </Grid>
-          ) : (
-            communities.map((community) => (
-              <Grid
-                key={community._id}
-                size={{
-                  xs: 12,
-                  md: 6
-                }}>
-                <Paper
-                  sx={{ p: 3, borderLeft: 4, borderLeftColor: "primary.main" }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                      mb: 2,
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {community.name}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "text.secondary",
-                          mt: 0.5
-                        }}>
-                        {community.description}
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={community.status}
-                      color={
-                        community.status === "Active" ? "success" : "error"
-                      }
-                      size="small"
-                    />
-                  </Box>
-
-                  <Box sx={{ my: 2 }}>
-                    <Typography variant="caption" sx={{
-                      color: "text.secondary"
-                    }}>
-                      Members: {community.memberCount} | Admin:{" "}
-                      {community.communityAdmin?.name || "Unassigned"}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                      Enabled Functions:
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ flexWrap: "wrap" }}
-                    >
-                      {Object.entries(community.enabledFunctions).map(
-                        ([key, enabled]) => (
-                          <Chip
-                            key={key}
-                            label={key.charAt(0).toUpperCase() + key.slice(1)}
-                            color={enabled ? "primary" : "default"}
-                            variant={enabled ? "filled" : "outlined"}
-                            size="small"
-                          />
-                        )
-                      )}
-                    </Stack>
-                  </Box>
-
-                  <Stack direction="row" spacing={2}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() =>
-                        router.push(`/admin/communities/${community._id}`)
-                      }
-                    >
-                      Manage
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      color="secondary"
-                      onClick={() =>
-                        router.push(
-                          `/admin/communities/${community._id}/permissions`
-                        )
-                      }
-                    >
-                      Permissions
-                    </Button>
-                  </Stack>
-                </Paper>
-              </Grid>
-            ))
-          )}
+            Financial Performance
+          </Typography>
         </Grid>
-      </Box>
-      {/* Create Community Dialog */}
-      <Dialog
-        open={createCommunityOpen}
-        onClose={() => setCreateCommunityOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Create New Community</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Stack spacing={3}>
-            <TextField
-              label="Community Name"
-              fullWidth
-              value={newCommunity.name}
-              onChange={(e) =>
-                setNewCommunity((prev) => ({ ...prev, name: e.target.value }))
-              }
-              placeholder="e.g., Tech Innovators"
-            />
-            <TextField
-              label="Description"
-              fullWidth
-              multiline
-              rows={3}
-              value={newCommunity.description}
-              onChange={(e) =>
-                setNewCommunity((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              placeholder="Describe your community"
-            />
 
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                Enabled Functions
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
+          <StatsCard
+            title="Total Contributions"
+            value={formatNaira(stats.totalContributions)}
+            icon={<AccountBalanceWalletIcon />}
+            color="primary.main"
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
+          <StatsCard
+            title="Total Spending"
+            value={formatNaira(stats.totalSpending)}
+            icon={<MonetizationOnIcon />}
+            color="error.main"
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
+          <StatsCard
+            title="Available for Investment"
+            value={formatNaira(stats.availableForInvestment)}
+            icon={<PieChartIcon />}
+            color="success.main"
+          />
+        </Grid>
+      </Grid>
+      {/* Investment Income Stats */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={12}>
+          <Typography
+            variant="h6"
+            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
+          >
+            Investment Income
+          </Typography>
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
+          <StatsCard
+            title="Total Investment Income"
+            value={formatNaira(stats.totalInvestmentIncome)}
+            icon={<TrendingUpIcon />}
+            color="success.main"
+            action={{
+              label: "Add Deposit",
+              onClick: () => router.push("/admin/deposits"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
+          <StatsCard
+            title="Total Withdrawn by Members"
+            value={formatNaira(stats.communityWithdrawals)}
+            icon={<MonetizationOnIcon />}
+            color="warning.main"
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
+          <StatsCard
+            title="Current Income Balance"
+            value={formatNaira(stats.remainingIncome)}
+            icon={<AccountBalanceWalletIcon />}
+            color="primary.main"
+          />
+        </Grid>
+      </Grid>
+      {/* Pending Actions */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={12}>
+          <Typography
+            variant="h6"
+            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
+          >
+            Pending Actions
+          </Typography>
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
+          <StatsCard
+            title="Pending Withdrawals"
+            value={stats.pendingWithdrawals}
+            icon={<PendingIcon />}
+            color="warning.main"
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/withdrawals"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
+          <StatsCard
+            title="Pending Assistance"
+            value={stats.pendingAssistance}
+            icon={<HelpIcon />}
+            color="info.main"
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/assistance"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
+          <StatsCard
+            title="KYC Pending"
+            value={stats.kycPending}
+            icon={<PendingIcon />}
+            color="warning.main"
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/kyc"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
+          <StatsCard
+            title="KYC Approved"
+            value={stats.kycApproved}
+            icon={<CheckCircleIcon />}
+            color="success.main"
+          />
+        </Grid>
+      </Grid>
+      {/* Community Info */}
+      {communityData && (
+        <Paper sx={{ p: 3, mb: 4 }}>
+          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+            Community Information
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
+              <Typography variant="body2" color="textSecondary">
+                Community Name
               </Typography>
-              <Stack spacing={1}>
-                {Object.entries(enabledFunctions).map(([key, value]) => (
-                  <FormControlLabel
-                    key={key}
-                    control={
-                      <Checkbox
-                        checked={value}
-                        onChange={(e) =>
-                          setEnabledFunctions((prev) => ({
-                            ...prev,
-                            [key]: e.target.checked,
-                          }))
-                        }
-                      />
-                    }
-                    label={key.charAt(0).toUpperCase() + key.slice(1)}
+              <Typography variant="h6">{communityData.name}</Typography>
+            </Grid>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
+              <Typography variant="body2" color="textSecondary">
+                Status
+              </Typography>
+              <Chip
+                label={communityData.status}
+                color={communityData.status === "Active" ? "success" : "error"}
+              />
+            </Grid>
+            <Grid size={12}>
+              <Typography variant="body2" color="textSecondary">
+                Description
+              </Typography>
+              <Typography variant="body1">
+                {communityData.description || "No description"}
+              </Typography>
+            </Grid>
+          </Grid>
+
+          {communityData.enabledFunctions && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                Enabled Features
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {communityData.enabledFunctions.investments && (
+                  <Chip
+                    label="Investments"
+                    size="small"
+                    variant="outlined"
+                    color="success"
                   />
-                ))}
-              </Stack>
+                )}
+                {communityData.enabledFunctions.proposals && (
+                  <Chip
+                    label="Proposals"
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                  />
+                )}
+                {communityData.enabledFunctions.events && (
+                  <Chip
+                    label="Events"
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                  />
+                )}
+                {communityData.enabledFunctions.assistance && (
+                  <Chip
+                    label="Assistance"
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                  />
+                )}
+                {communityData.enabledFunctions.kyc && (
+                  <Chip
+                    label="KYC"
+                    size="small"
+                    variant="outlined"
+                    color="secondary"
+                  />
+                )}
+                {communityData.enabledFunctions.withdrawals && (
+                  <Chip
+                    label="Withdrawals"
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                  />
+                )}
+              </Box>
             </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setCreateCommunityOpen(false)}>Cancel</Button>
-          <Button onClick={handleCreateCommunity} variant="contained">
-            Create Community
-          </Button>
-        </DialogActions>
-      </Dialog>
+          )}
+        </Paper>
+      )}
+      {/* Financial Summary */}
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+          Financial Summary
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="textSecondary">
+                Total Community Contributions
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                {formatNaira(stats.totalContributions)}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                All member deposits and contributions
+              </Typography>
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="textSecondary">
+                Total Community Spending
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 600, color: "error.main" }}
+              >
+                {formatNaira(stats.totalSpending)}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                Investments, events, assistance, etc.
+              </Typography>
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            <Box>
+              <Typography variant="body2" color="textSecondary">
+                Available for Investment
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 600, color: "success.main" }}
+              >
+                {formatNaira(stats.availableForInvestment)}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                Contributions minus spending
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="textSecondary">
+                Total Investment Income Achieved
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 600, color: "success.main" }}
+              >
+                {formatNaira(stats.totalInvestmentIncome)}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                All profit deposits received
+              </Typography>
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="textSecondary">
+                Total Withdrawn by Members
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 600, color: "warning.main" }}
+              >
+                {formatNaira(stats.communityWithdrawals)}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                Member withdrawals and contributions from profit share
+              </Typography>
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            <Box>
+              <Typography variant="body2" color="textSecondary">
+                Current Investment Income Balance
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 600, color: "primary.main" }}
+              >
+                {formatNaira(stats.remainingIncome)}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                Remaining after member withdrawals
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+      {/* Quick Actions */}
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+          Quick Actions
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => router.push("/admin/users")}
+              startIcon={<GroupsIcon />}
+            >
+              Manage Members
+            </Button>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => router.push("/admin/deposits")}
+              startIcon={<MonetizationOnIcon />}
+            >
+              Manual Deposit
+            </Button>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => router.push("/admin/withdrawals")}
+              startIcon={<PendingIcon />}
+            >
+              Review Withdrawals
+            </Button>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => router.push("/admin/investments")}
+              startIcon={<TrendingUpIcon />}
+            >
+              Manage Investments
+            </Button>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => router.push("/admin/events")}
+              startIcon={<EventIcon />}
+            >
+              Manage Events
+            </Button>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => router.push("/admin/kyc")}
+              startIcon={<CheckCircleIcon />}
+            >
+              KYC Verification
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+      {/* Action Buttons */}
+      <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-start" }}>
+        <Button variant="outlined" onClick={() => router.push("/dashboard")}>
+          Back to Dashboard
+        </Button>
+      </Box>
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}
         severity={snackbar.severity}
         onClose={closeSnackbar}
-        autoHideDuration={4000}
-        position={{ vertical: "top", horizontal: "center" }}
       />
     </Container>
   );

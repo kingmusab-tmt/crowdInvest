@@ -7,7 +7,7 @@ export interface ICommunity extends Document {
   memberCount: number;
   totalContributions: number;
   totalSpending: number;
-  generalAdmin: mongoose.Types.ObjectId;
+  generalAdmin?: mongoose.Types.ObjectId;
   communityAdmin?: mongoose.Types.ObjectId;
   status: "Active" | "Suspended";
   enabledFunctions: {
@@ -30,7 +30,7 @@ const CommunitySchema = new Schema<ICommunity>(
     memberCount: { type: Number, default: 0 },
     totalContributions: { type: Number, default: 0 },
     totalSpending: { type: Number, default: 0 },
-    generalAdmin: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    generalAdmin: { type: Schema.Types.ObjectId, ref: "User" },
     communityAdmin: { type: Schema.Types.ObjectId, ref: "User" },
     status: {
       type: String,

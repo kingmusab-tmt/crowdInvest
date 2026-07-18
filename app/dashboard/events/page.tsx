@@ -54,7 +54,7 @@ interface ICurrentUser {
   _id: string;
   name: string;
   email: string;
-  role: "User" | "Community Admin" | "General Admin";
+  role: "User" | "Admin";
   community?: string;
 }
 
@@ -119,7 +119,7 @@ export default function EventsPage() {
   }, [fetchCurrentUser]);
 
   React.useEffect(() => {
-    if (currentUser?.community || currentUser?.role === "General Admin") {
+    if (currentUser?.community || currentUser?.role === "Admin") {
       fetchEvents();
       checkAndSendNotifications();
     }
@@ -329,16 +329,8 @@ export default function EventsPage() {
   const canEdit = (event: IEvent) => {
     if (!currentUser) return false;
 
-    // General Admin can edit any event
-    if (currentUser.role === "General Admin") return true;
-
-    // Community Admin can edit events in their community
-    if (
-      currentUser.role === "Community Admin" &&
-      event.community._id === currentUser.community
-    ) {
-      return true;
-    }
+    // Admin can edit any event
+    if (currentUser.role === "Admin") return true;
 
     // Creator can edit their own event
     return currentUser.email === event.createdBy.email;
@@ -348,16 +340,8 @@ export default function EventsPage() {
   const canDelete = (event: IEvent) => {
     if (!currentUser) return false;
 
-    // General Admin can delete any event
-    if (currentUser.role === "General Admin") return true;
-
-    // Community Admin can delete events in their community
-    if (
-      currentUser.role === "Community Admin" &&
-      event.community._id === currentUser.community
-    ) {
-      return true;
-    }
+    // Admin can delete any event
+    if (currentUser.role === "Admin") return true;
 
     // Creator can delete their own event
     return currentUser.email === event.createdBy.email;
@@ -398,24 +382,15 @@ export default function EventsPage() {
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
               Community Events
             </Typography>
-            {currentUser?.role === "General Admin" && (
-              <Chip
-                label="General Admin - All Communities"
-                color="error"
-                size="small"
-              />
-            )}
-            {currentUser?.role === "Community Admin" && (
-              <Chip label="Community Admin" color="warning" size="small" />
+            {currentUser?.role === "Admin" && (
+              <Chip label="Admin" color="error" size="small" />
             )}
           </Box>
           <Typography variant="body2" sx={{
             color: "text.secondary"
           }}>
-            {currentUser?.role === "General Admin"
-              ? "Manage all community events across the platform."
-              : currentUser?.role === "Community Admin"
-              ? "Create and manage events for your community members."
+            {currentUser?.role === "Admin"
+              ? "Manage all community events."
               : "View, create, and manage your community events."}{" "}
             Reminders will be sent 7, 3, 2, and 1 day before each event.
           </Typography>

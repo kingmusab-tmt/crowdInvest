@@ -4,7 +4,7 @@ import { authOptions } from "@/app/auth";
 import connectDB from "@/utils/connectDB";
 import Transaction from "@/models/Transaction";
 import User from "@/models/User";
-import Community from "@/models/Community";
+import { getSingletonCommunity } from "@/utils/getCommunity";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,10 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is admin
-    if (
-      session.user.role !== "General Admin" &&
-      session.user.role !== "Community Admin"
-    ) {
+    if (session.user.role !== "Admin") {
       return NextResponse.json(
         { error: "Forbidden - Admin access required" },
         { status: 403 }
@@ -28,8 +25,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const body = await request.json();
-    const { transactionType, communityId, memberId, amount, description } =
-      body;
+    const { transactionType, memberId, amount, description } = body;
 
     // Validation
     if (
@@ -48,13 +44,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    if (!communityId) {
-      return NextResponse.json(
-        { error: "Community is required" },
-        { status: 400 }
-      );
-    }
-
     // For manual_deposit and refund_deposit, member is required
     if (
       (transactionType === "manual_deposit" ||
@@ -67,27 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify community admin has access to this community
-    if (session.user.role === "Community Admin") {
-      const adminUser: any = await User.findOne({
-        email: session.user.email,
-      }).lean();
-      if (!adminUser || adminUser.community?.toString() !== communityId) {
-        return NextResponse.json(
-          { error: "Access denied to this community" },
-          { status: 403 }
-        );
-      }
-    }
-
-    // Get community details
-    const community = await Community.findById(communityId);
-    if (!community) {
-      return NextResponse.json(
-        { error: "Community not found" },
-        { status: 404 }
-      );
-    }
+    const communityId = (await getSingletonCommunity())._id;
 
     let transactionData: any = {
       community: communityId,
@@ -114,7 +83,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Verify member belongs to the community
-      if (member.community?.toString() !== communityId) {
+      if (member.community?.toString() !== communityId.toString()) {
         return NextResponse.json(
           { error: "Member does not belong to this community" },
           { status: 400 }

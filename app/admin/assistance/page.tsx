@@ -129,14 +129,9 @@ export default function AssistancePage() {
       setLoading(true);
       setError(null);
 
-      const isGeneralAdmin = session?.user?.role === "General Admin";
-      const queryParams = isGeneralAdmin
-        ? ""
-        : `?community=${session?.user?.community}`;
-
       const [requestsRes, votesRes] = await Promise.all([
-        fetch(`/api/assistance${queryParams}`),
-        fetch(`/api/assistance/votes${queryParams}`),
+        fetch("/api/assistance"),
+        fetch("/api/assistance/votes"),
       ]);
 
       if (requestsRes.ok) {

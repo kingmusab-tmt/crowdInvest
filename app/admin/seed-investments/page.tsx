@@ -31,7 +31,6 @@ import { useRouter } from "next/navigation";
 interface SeedResult {
   message: string;
   data: {
-    communitiesSeeded: number;
     investmentsCreated: number;
     suggestionsCreated: number;
   };
@@ -46,12 +45,12 @@ export default function SeedInvestmentsPage() {
   const [success, setSuccess] = useState<SeedResult | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
-  // Check if user is General Admin
-  if (session && session.user?.role !== "General Admin") {
+  // Check if user is Admin
+  if (session && session.user?.role !== "Admin") {
     return (
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
-          Access Denied: Only General Admin can access this page
+          Access Denied: Only Admins can access this page
         </Alert>
         <Button variant="contained" onClick={() => router.back()}>
           Go Back
@@ -96,7 +95,7 @@ export default function SeedInvestmentsPage() {
           Seed Investment Data
         </Typography>
         <Typography variant="body2" color="textSecondary">
-          Populate all communities with sample investment data
+          Populate sample investment data
         </Typography>
       </Box>
       {/* Info Card */}
@@ -109,8 +108,7 @@ export default function SeedInvestmentsPage() {
                 What does this do?
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                This action will create sample investment data for all active
-                communities. It will:
+                This action will create sample investment data. It will:
               </Typography>
               <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
                 <li>
@@ -120,12 +118,12 @@ export default function SeedInvestmentsPage() {
                 </li>
                 <li>
                   <Typography variant="body2" color="textSecondary">
-                    Create 5 sample member investments per community
+                    Create 5 sample member investments
                   </Typography>
                 </li>
                 <li>
                   <Typography variant="body2" color="textSecondary">
-                    Create 3 sample investment suggestions per community
+                    Create 3 sample investment suggestions
                   </Typography>
                 </li>
                 <li>
@@ -221,8 +219,7 @@ export default function SeedInvestmentsPage() {
         <Divider sx={{ my: 2 }} />
 
         <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-          <strong>Note:</strong> All sample data will be created for each active
-          community. Users and community selection is done automatically.
+          <strong>Note:</strong> Users are selected automatically.
         </Typography>
       </Paper>
       {/* Error Alert */}
@@ -248,10 +245,6 @@ export default function SeedInvestmentsPage() {
                   ✓ Seeding Completed Successfully!
                 </Typography>
                 <Stack spacing={1} sx={{ mb: 2 }}>
-                  <Typography variant="body2">
-                    <strong>{success.data.communitiesSeeded}</strong>{" "}
-                    communities seeded with investment data
-                  </Typography>
                   <Typography variant="body2">
                     <strong>{success.data.investmentsCreated}</strong> member
                     investments created
@@ -322,7 +315,7 @@ export default function SeedInvestmentsPage() {
             </li>
             <li>
               <Typography variant="body2" color="textSecondary">
-                Create new sample investments for all active communities
+                Create new sample investments
               </Typography>
             </li>
             <li>

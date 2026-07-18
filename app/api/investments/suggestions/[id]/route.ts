@@ -117,8 +117,7 @@ export async function DELETE(
 
     // Check if user is the creator or an admin
     const isCreator = suggestion.suggestedBy.toString() === user._id.toString();
-    const isAdmin =
-      user.role === "General Admin" || user.role === "Community Admin";
+    const isAdmin = user.role === "Admin";
 
     if (!isCreator && !isAdmin) {
       return NextResponse.json(

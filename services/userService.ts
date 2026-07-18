@@ -1,6 +1,6 @@
 import { IUser } from "../models/User";
 
-export type UserRole = "User" | "Community Admin" | "General Admin";
+export type UserRole = "User" | "Admin";
 export type UserStatus = "Active" | "Restricted";
 
 export type User = Omit<IUser, "_id"> & { id: string };

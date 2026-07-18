@@ -17,7 +17,6 @@ import AddIcon from "@mui/icons-material/Add";
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Chip from "@mui/material/Chip";
 import Avatar from "@mui/material/Avatar";
 import LinearProgress from "@mui/material/LinearProgress";
@@ -638,65 +637,6 @@ export default function UserDashboard() {
     return <Box sx={{ p: 3 }}>Loading...</Box>;
   }
 
-  const transactionColumns: GridColDef[] = [
-    {
-      field: "type",
-      headerName: "Type",
-      width: 130,
-      renderCell: (params) => (
-        <Chip
-          label={
-            params.value === "Monthly_Contribution"
-              ? "Monthly Contribution"
-              : params.value
-          }
-          size="small"
-          color={
-            params.value === "Monthly_Contribution"
-              ? "success"
-              : params.value === "Investment"
-              ? "primary"
-              : params.value === "Profit Share"
-              ? "secondary"
-              : params.value === "Assistance" || params.value === "Event"
-              ? "warning"
-              : "default"
-          }
-        />
-      ),
-    },
-    {
-      field: "amount",
-      headerName: "Amount",
-      width: 130,
-      valueFormatter: (value: any) => formatNaira(value as number),
-    },
-    {
-      field: "status",
-      headerName: "Status",
-      width: 120,
-      renderCell: (params) => (
-        <Chip
-          label={params.value}
-          size="small"
-          color={
-            params.value === "Completed"
-              ? "success"
-              : params.value === "Pending"
-              ? "warning"
-              : "error"
-          }
-        />
-      ),
-    },
-    {
-      field: "date",
-      headerName: "Date",
-      width: 150,
-      valueFormatter: (value) => new Date(value).toLocaleDateString(),
-    },
-  ];
-
   return (
     <Box>
       <Box
@@ -728,8 +668,8 @@ export default function UserDashboard() {
             {isRefreshing ? "Refreshing..." : "Refresh Data"}
           </Button>
 
-          {/* Admin Dashboard Buttons */}
-          {session?.user?.role === "General Admin" && (
+          {/* Admin Dashboard Button */}
+          {session?.user?.role === "Admin" && (
             <Button
               variant="contained"
               color="error"
@@ -737,16 +677,6 @@ export default function UserDashboard() {
               sx={{ fontWeight: 600 }}
             >
               Go to Admin Dashboard
-            </Button>
-          )}
-          {session?.user?.role === "Community Admin" && (
-            <Button
-              variant="contained"
-              color="warning"
-              onClick={() => router.push("/admin/community")}
-              sx={{ fontWeight: 600 }}
-            >
-              Go to Community Admin Dashboard
             </Button>
           )}
         </Box>
@@ -1248,47 +1178,6 @@ export default function UserDashboard() {
             <InvestmentCard investment={investment} />
           </Grid>
         ))}
-
-        {/* Recent Transactions */}
-        <Grid size={12}>
-          <Paper sx={{ p: 3 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Transaction History
-              </Typography>
-              <Button
-                size="small"
-                onClick={() => router.push("/dashboard/transactions")}
-              >
-                View All
-              </Button>
-            </Box>
-            <DataGrid
-              rows={transactions
-                .filter((t: any) => t.userEmail === session?.user?.email)
-                .map((t: any, idx) => ({
-                  id: t._id || idx,
-                  ...t,
-                }))}
-              columns={transactionColumns}
-              initialState={{
-                pagination: {
-                  paginationModel: { page: 0, pageSize: 10 },
-                },
-              }}
-              pageSizeOptions={[10, 25, 50]}
-              disableRowSelectionOnClick
-              sx={{ border: "none", minHeight: 400 }}
-            />
-          </Paper>
-        </Grid>
 
         {/* Upcoming Events */}
         <Grid

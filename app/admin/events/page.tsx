@@ -56,7 +56,7 @@ interface ICurrentUser {
   _id: string;
   name: string;
   email: string;
-  role: "User" | "Community Admin" | "General Admin";
+  role: "User" | "Admin";
   community?: string;
 }
 
@@ -222,19 +222,7 @@ export default function AdminEventsPage() {
 
   const canManage = (event: IEvent) => {
     if (!currentUser) return false;
-
-    // General Admin can manage all events
-    if (currentUser.role === "General Admin") return true;
-
-    // Community Admin can manage events in their community
-    if (
-      currentUser.role === "Community Admin" &&
-      event.community._id === currentUser.community
-    ) {
-      return true;
-    }
-
-    return false;
+    return currentUser.role === "Admin";
   };
 
   const getDaysRemaining = (eventDate: string) => {
@@ -384,13 +372,7 @@ export default function AdminEventsPage() {
     );
   }
 
-  // Filter events based on role
-  const filteredEvents =
-    currentUser?.role === "General Admin"
-      ? events
-      : events.filter(
-          (event) => event.community._id === currentUser?.community
-        );
+  const filteredEvents = events;
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -408,19 +390,11 @@ export default function AdminEventsPage() {
               <Typography variant="h4" sx={{ fontWeight: 600 }}>
                 Events Management
               </Typography>
-              {currentUser?.role === "General Admin" && (
-                <Chip label="All Communities" color="error" size="small" />
-              )}
-              {currentUser?.role === "Community Admin" && (
-                <Chip label="Your Community" color="warning" size="small" />
-              )}
             </Box>
             <Typography variant="body2" sx={{
               color: "text.secondary"
             }}>
-              {currentUser?.role === "General Admin"
-                ? "Manage all community events across the platform"
-                : "Manage events for your community members"}
+              Manage community events
             </Typography>
           </Box>
           <Button

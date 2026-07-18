@@ -4,8 +4,8 @@ import { authOptions } from "../../../app/auth";
 import dbConnect from "../../../utils/connectDB";
 import Event from "../../../models/Event";
 import User from "../../../models/User";
-import Community from "../../../models/Community";
 import Notification from "../../../models/Notification";
+import { getSingletonCommunity } from "../../../utils/getCommunity";
 
 export async function GET(request: Request) {
   try {
@@ -17,27 +17,12 @@ export async function GET(request: Request) {
 
     const query: any = {};
 
-    // If user is logged in, filter events based on their role
+    // If user is logged in, filter events to their community (Admins see all)
     if (session?.user?.email) {
       const user = await User.findOne({ email: session.user.email });
 
-      if (user) {
-        // General Admin can see all events
-        if (user.role === "General Admin") {
-          // No filter - see all events
-        }
-        // Community Admin can see their community's events
-        else if (user.role === "Community Admin") {
-          if (user.community) {
-            query.community = user.community;
-          }
-        }
-        // Regular users see their community's events
-        else {
-          if (user.community) {
-            query.community = user.community;
-          }
-        }
+      if (user && user.role !== "Admin" && user.community) {
+        query.community = user.community;
       }
     }
 
@@ -77,25 +62,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get user's community from their profile
-    let community = null;
-    if (user.community) {
-      community = await Community.findById(user.community);
-    }
-
-    // If user doesn't have a community set, check if they're an admin of any community
-    if (!community) {
-      community = await Community.findOne({
-        $or: [{ generalAdmin: user._id }, { communityAdmin: user._id }],
-      });
-    }
-
-    if (!community) {
-      return NextResponse.json(
-        { error: "User is not a member of any community" },
-        { status: 400 }
-      );
-    }
+    const community = await getSingletonCommunity();
 
     const newEvent = new Event({
       title: body.title,
@@ -204,17 +171,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Permission check:
-    // 1. General Admin can edit any event
-    // 2. Community Admin can edit events in their community
-    // 3. Event creator can edit their own event
-    const isGeneralAdmin = user.role === "General Admin";
-    const isCommunityAdmin =
-      user.role === "Community Admin" &&
-      event.community._id.toString() === user.community?.toString();
+    // Permission check: Admin can edit any event; creator can edit their own event
+    const isAdmin = user.role === "Admin";
     const isCreator = event.createdBy.toString() === user._id.toString();
 
-    if (!isGeneralAdmin && !isCommunityAdmin && !isCreator) {
+    if (!isAdmin && !isCreator) {
       return NextResponse.json(
         { error: "You don't have permission to edit this event" },
         { status: 403 }
@@ -272,17 +233,11 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Permission check:
-    // 1. General Admin can delete any event
-    // 2. Community Admin can delete events in their community
-    // 3. Event creator can delete their own event
-    const isGeneralAdmin = user.role === "General Admin";
-    const isCommunityAdmin =
-      user.role === "Community Admin" &&
-      event.community._id.toString() === user.community?.toString();
+    // Permission check: Admin can delete any event; creator can delete their own event
+    const isAdmin = user.role === "Admin";
     const isCreator = event.createdBy.toString() === user._id.toString();
 
-    if (!isGeneralAdmin && !isCommunityAdmin && !isCreator) {
+    if (!isAdmin && !isCreator) {
       return NextResponse.json(
         { error: "You don't have permission to delete this event" },
         { status: 403 }

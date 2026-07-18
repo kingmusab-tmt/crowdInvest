@@ -5,6 +5,7 @@ import dbConnect from "@/utils/connectDB";
 import Transaction from "@/models/Transaction";
 import User from "@/models/User";
 import Community from "@/models/Community";
+import { getSingletonCommunity } from "@/utils/getCommunity";
 import { createNotification } from "@/services/notificationService";
 import { formatNaira } from "@/lib/utils";
 
@@ -16,11 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only Community Admin and General Admin can initiate withdrawals
-    if (
-      session.user.role !== "Community Admin" &&
-      session.user.role !== "General Admin"
-    ) {
+    // Only Admins can initiate withdrawals
+    if (session.user.role !== "Admin") {
       return NextResponse.json(
         { error: "Forbidden: Only admins can initiate withdrawals" },
         { status: 403 }
@@ -33,7 +31,6 @@ export async function POST(request: NextRequest) {
       recipientEmail,
       recipientName,
       description,
-      communityId,
       performedBy,
     } = await request.json();
 
@@ -77,6 +74,8 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    const communityId = (await getSingletonCommunity())._id;
 
     // Find recipient user only if recipient email is provided
     let recipientUser: any = null;
@@ -207,10 +206,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (
-      session.user.role !== "Community Admin" &&
-      session.user.role !== "General Admin"
-    ) {
+    if (session.user.role !== "Admin") {
       return NextResponse.json(
         { error: "Forbidden: Only admins can update withdrawals" },
         { status: 403 }
@@ -237,17 +233,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         { error: "Transaction not found" },
         { status: 404 }
-      );
-    }
-
-    // Verify admin belongs to the same community or is General Admin
-    if (
-      session.user.role === "Community Admin" &&
-      transaction.community?.toString() !== session.user.community
-    ) {
-      return NextResponse.json(
-        { error: "Forbidden: Cannot update withdrawal from another community" },
-        { status: 403 }
       );
     }
 
@@ -294,10 +279,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (
-      session.user.role !== "Community Admin" &&
-      session.user.role !== "General Admin"
-    ) {
+    if (session.user.role !== "Admin") {
       return NextResponse.json(
         { error: "Forbidden: Only admins can delete withdrawals" },
         { status: 403 }
@@ -322,17 +304,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: "Transaction not found" },
         { status: 404 }
-      );
-    }
-
-    // Verify admin belongs to the same community or is General Admin
-    if (
-      session.user.role === "Community Admin" &&
-      transaction.community?.toString() !== session.user.community
-    ) {
-      return NextResponse.json(
-        { error: "Forbidden: Cannot delete withdrawal from another community" },
-        { status: 403 }
       );
     }
 

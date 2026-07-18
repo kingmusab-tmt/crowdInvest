@@ -123,7 +123,6 @@ export const authOptions = {
         token.role = user.role;
         token.profileCompleted = user.profileCompleted;
         token.community = user.community;
-        token.permissions = (user as any).permissions;
         token.balance = (user as any).balance;
         token.settings = (user as any).settings;
       } else {
@@ -142,7 +141,6 @@ export const authOptions = {
             token.role = dbUser.role;
             token.profileCompleted = dbUser.profileCompleted;
             token.community = dbUser.community;
-            token.permissions = dbUser.permissions;
             token.balance = dbUser.balance;
             token.settings = dbUser.settings;
           }
@@ -169,7 +167,6 @@ export const authOptions = {
           session.user.role = dbUser.role;
           session.user.profileCompleted = dbUser.profileCompleted;
           session.user.community = dbUser.community?.toString();
-          session.user.permissions = dbUser.permissions;
           session.user.balance = dbUser.balance;
           session.user.settings = dbUser.settings;
         } else {
@@ -181,7 +178,6 @@ export const authOptions = {
           session.user.role = token.role;
           session.user.profileCompleted = token.profileCompleted;
           session.user.community = token.community as string | null | undefined;
-          session.user.permissions = token.permissions as any;
           session.user.balance = token.balance as number;
           session.user.settings = token.settings as any;
         }

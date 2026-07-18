@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import dbConnect from "../../../utils/connectDB";
 import Investment from "../../../models/Investment";
 import MemberInvestment from "../../../models/MemberInvestment";
+import { getSingletonCommunity } from "../../../utils/getCommunity";
 import { Types } from "mongoose";
 
 export async function GET(request: NextRequest) {
@@ -47,8 +48,9 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
+    const community = await getSingletonCommunity();
 
-    const investment = new Investment(body);
+    const investment = new Investment({ ...body, community: community._id });
     await investment.save();
 
     return NextResponse.json(investment, { status: 201 });

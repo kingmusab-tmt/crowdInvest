@@ -26,12 +26,7 @@ export async function POST(req: NextRequest) {
     // For now, we'll just create a notification for admin review
 
     // Create a notification for administrators to review the deletion request
-    const admins = await User.find({
-      $or: [
-        { role: "General Admin" },
-        { role: "Community Admin", community: user.community },
-      ],
-    });
+    const admins = await User.find({ role: "Admin" });
 
     for (const admin of admins) {
       await Notification.create({

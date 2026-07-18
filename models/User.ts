@@ -6,7 +6,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   avatarUrl: string;
-  role: "User" | "Community Admin" | "General Admin";
+  role: "User" | "Admin";
   status: "Active" | "Restricted";
   balance: number;
   isTopUser: boolean;
@@ -57,19 +57,6 @@ export interface IUser extends Document {
   nin?: string;
   termsAccepted?: boolean;
   privacyAccepted?: boolean;
-  permissions?: {
-    canManageUsers: boolean;
-    canManageCommunities: boolean;
-    canManageInvestments: boolean;
-    canManageProposals: boolean;
-    canManageEvents: boolean;
-    canManageAssistance: boolean;
-    canManageKYC: boolean;
-    canManageWithdrawals: boolean;
-    canSuspendUsers: boolean;
-    canAssignCommunityAdmins: boolean;
-    canModifyCommunityFunctions: boolean;
-  };
   verificationInfo?: string;
   kyc?: {
     isVerified: boolean;
@@ -125,7 +112,7 @@ const UserSchema = new Schema<IUser>(
     avatarUrl: String,
     role: {
       type: String,
-      enum: ["User", "Community Admin", "General Admin"],
+      enum: ["User", "Admin"],
       default: "User",
     },
     status: {
@@ -180,19 +167,6 @@ const UserSchema = new Schema<IUser>(
     nin: String,
     termsAccepted: { type: Boolean, default: false },
     privacyAccepted: { type: Boolean, default: false },
-    permissions: {
-      canManageUsers: { type: Boolean, default: false },
-      canManageCommunities: { type: Boolean, default: false },
-      canManageInvestments: { type: Boolean, default: false },
-      canManageProposals: { type: Boolean, default: false },
-      canManageEvents: { type: Boolean, default: false },
-      canManageAssistance: { type: Boolean, default: false },
-      canManageKYC: { type: Boolean, default: false },
-      canManageWithdrawals: { type: Boolean, default: false },
-      canSuspendUsers: { type: Boolean, default: false },
-      canAssignCommunityAdmins: { type: Boolean, default: false },
-      canModifyCommunityFunctions: { type: Boolean, default: false },
-    },
     verificationInfo: String,
     kyc: {
       isVerified: { type: Boolean, default: false },

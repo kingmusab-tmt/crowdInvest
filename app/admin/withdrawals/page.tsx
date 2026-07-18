@@ -63,11 +63,6 @@ interface Transaction {
   createdAt: string;
 }
 
-interface Community {
-  _id: string;
-  name: string;
-}
-
 interface CommunityMember {
   _id: string;
   name: string;
@@ -88,7 +83,6 @@ export default function WithdrawalsPage() {
     WithdrawalRequest[]
   >([]);
   const [withdrawals, setWithdrawals] = React.useState<Transaction[]>([]);
-  const [communities, setCommunities] = React.useState<Community[]>([]);
   const [communityMembers, setCommunityMembers] = React.useState<
     CommunityMember[]
   >([]);
@@ -113,7 +107,6 @@ export default function WithdrawalsPage() {
     recipientEmail: "",
     recipientName: "",
     description: "",
-    communityId: "",
   });
 
   const {
@@ -125,8 +118,6 @@ export default function WithdrawalsPage() {
     showInfo,
   } = useSnackbar();
 
-  const isGeneralAdmin = session?.user?.role === "General Admin";
-
   React.useEffect(() => {
     fetchData();
   }, []);
@@ -134,12 +125,10 @@ export default function WithdrawalsPage() {
   async function fetchData() {
     try {
       setLoading(true);
-      const [withdrawalRequestsRes, withdrawalsRes, communitiesRes] =
-        await Promise.all([
-          fetch("/api/withdrawals"),
-          fetch("/api/transactions?withdrawal=true"),
-          isGeneralAdmin ? fetch("/api/communities") : Promise.resolve(null),
-        ]);
+      const [withdrawalRequestsRes, withdrawalsRes] = await Promise.all([
+        fetch("/api/withdrawals"),
+        fetch("/api/transactions?withdrawal=true"),
+      ]);
 
       if (withdrawalsRes.ok) {
         const data = await withdrawalsRes.json();
@@ -157,11 +146,6 @@ export default function WithdrawalsPage() {
       if (withdrawalRequestsRes.ok) {
         const requestsData = await withdrawalRequestsRes.json();
         setWithdrawalRequests(requestsData);
-      }
-
-      if (isGeneralAdmin && communitiesRes?.ok) {
-        const commData = await communitiesRes.json();
-        setCommunities(commData);
       }
     } catch (err) {
       console.error("Failed to load data", err);
@@ -247,26 +231,22 @@ export default function WithdrawalsPage() {
     }
   };
   const handleOpenCreateDialog = () => {
-    const communityId = isGeneralAdmin ? "" : session?.user?.community || "";
     setFormData({
       type: "Investment",
       amount: "",
       recipientEmail: "",
       recipientName: "",
       description: "",
-      communityId: communityId,
     });
     setCommunityMembers([]);
-    if (communityId) {
-      fetchCommunityMembers(communityId);
-    }
+    fetchCommunityMembers();
     closeSnackbar();
     setCreateDialogOpen(true);
   };
 
-  const fetchCommunityMembers = async (communityId: string) => {
+  const fetchCommunityMembers = async () => {
     try {
-      const res = await fetch(`/api/users?communityId=${communityId}`);
+      const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
         setCommunityMembers(
@@ -292,7 +272,6 @@ export default function WithdrawalsPage() {
       recipientEmail: "",
       recipientName: "",
       description: "",
-      communityId: "",
     });
   };
 
@@ -352,11 +331,6 @@ export default function WithdrawalsPage() {
       return;
     }
 
-    if (isGeneralAdmin && !formData.communityId) {
-      showError("Please select a community");
-      return;
-    }
-
     setSubmitting(true);
     closeSnackbar();
 
@@ -370,7 +344,6 @@ export default function WithdrawalsPage() {
           recipientEmail: formData.recipientEmail,
           recipientName: formData.recipientName,
           description: formData.description,
-          communityId: formData.communityId || session?.user?.community,
           performedBy: session?.user?.name,
         }),
       });
@@ -668,29 +641,6 @@ export default function WithdrawalsPage() {
               <MenuItem value="Assistance">Assistance Payment</MenuItem>
               <MenuItem value="Event">Event Expense</MenuItem>
             </TextField>
-
-            {isGeneralAdmin && (
-              <TextField
-                select
-                label="Community"
-                value={formData.communityId}
-                onChange={(e) => {
-                  const newCommunityId = e.target.value;
-                  setFormData({ ...formData, communityId: newCommunityId });
-                  if (newCommunityId) {
-                    fetchCommunityMembers(newCommunityId);
-                  }
-                }}
-                fullWidth
-                required
-              >
-                {communities.map((community) => (
-                  <MenuItem key={community._id} value={community._id}>
-                    {community.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
 
             {(formData.type === "Profit Share" ||
               formData.type === "Assistance") && (

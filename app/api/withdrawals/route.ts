@@ -22,21 +22,10 @@ export async function GET(request: NextRequest) {
     let query: any = {};
 
     // For regular users, only show their own withdrawals
-    if (
-      session.user.role !== "General Admin" &&
-      session.user.role !== "Community Admin"
-    ) {
+    if (session.user.role !== "Admin") {
       query.userEmail = session.user.email;
-    } else if (session.user.role === "Community Admin") {
-      // Community admin sees withdrawals from their community
-      const adminUser: any = await User.findOne({
-        email: session.user.email,
-      }).lean();
-      if (adminUser && adminUser.community) {
-        query.community = adminUser.community;
-      }
     }
-    // General Admin sees all withdrawals
+    // Admin sees all withdrawals
 
     if (status) {
       query.status = status;
@@ -138,10 +127,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Check if user is admin
-    if (
-      session.user.role !== "General Admin" &&
-      session.user.role !== "Community Admin"
-    ) {
+    if (session.user.role !== "Admin") {
       return NextResponse.json(
         { error: "Forbidden - Admin access required" },
         { status: 403 }
@@ -170,22 +156,6 @@ export async function PATCH(request: NextRequest) {
         { error: "Withdrawal request not found" },
         { status: 404 }
       );
-    }
-
-    // Verify community admin has access
-    if (session.user.role === "Community Admin") {
-      const adminUser: any = await User.findOne({
-        email: session.user.email,
-      }).lean();
-      if (
-        !adminUser ||
-        adminUser.community?.toString() !== withdrawal.community.toString()
-      ) {
-        return NextResponse.json(
-          { error: "Access denied to this withdrawal" },
-          { status: 403 }
-        );
-      }
     }
 
     if (withdrawal.status !== "Pending") {

@@ -117,9 +117,6 @@ export default function InvestmentsPage() {
   );
   const [investments, setInvestments] = React.useState<Investment[]>([]);
   const [votes, setVotes] = React.useState<VoteData[]>([]);
-  const [communities, setCommunities] = React.useState<
-    Array<{ _id: string; name: string }>
-  >([]);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
 
@@ -144,49 +141,23 @@ export default function InvestmentsPage() {
     quantity: 0,
     totalInvested: 0,
     dividendReceived: 0,
-    selectedCommunity: "",
   });
 
   React.useEffect(() => {
     if (session?.user?.role) {
       loadData();
-      // Fetch communities for general admin dropdown
-      if (session.user.role === "General Admin") {
-        fetchCommunities();
-      }
     }
   }, [session?.user?.role, session?.user?.community]);
-
-  const fetchCommunities = async () => {
-    try {
-      const res = await fetch("/api/communities");
-      if (res.ok) {
-        const data = await res.json();
-        setCommunities(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch communities", err);
-    }
-  };
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const isGeneralAdmin = session?.user?.role === "General Admin";
-      const queryParams = isGeneralAdmin
-        ? ""
-        : `?community=${session?.user?.community}`;
-
-      console.log("Loading investments with params:", queryParams);
-      console.log("User role:", session?.user?.role);
-      console.log("User community:", session?.user?.community);
-
       const [suggestionsRes, investmentsRes, votesRes] = await Promise.all([
-        fetch(`/api/investments/suggestions${queryParams}`),
-        fetch(`/api/investments${queryParams}`),
-        fetch(`/api/investments/votes${queryParams}`),
+        fetch("/api/investments/suggestions"),
+        fetch("/api/investments"),
+        fetch("/api/investments/votes"),
       ]);
 
       if (suggestionsRes.ok) {
@@ -274,7 +245,6 @@ export default function InvestmentsPage() {
       quantity: investment.quantity,
       totalInvested: investment.totalInvested,
       dividendReceived: investment.dividendReceived,
-      selectedCommunity: "",
     });
     setEditInvestmentDialog(true);
   };
@@ -301,27 +271,10 @@ export default function InvestmentsPage() {
 
   const handleCreateInvestment = async () => {
     try {
-      // Determine which community to use
-      const isGeneralAdmin = session?.user?.role === "General Admin";
-      const communityId = isGeneralAdmin
-        ? investmentForm.selectedCommunity
-        : session?.user?.community;
-
-      // Validate community selection for general admin
-      if (isGeneralAdmin && !communityId) {
-        setError("Please select a community for this investment");
-        return;
-      }
-
-      const { selectedCommunity, ...investmentData } = investmentForm;
-
       const res = await fetch("/api/investments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...investmentData,
-          community: communityId,
-        }),
+        body: JSON.stringify(investmentForm),
       });
       if (res.ok) {
         setSuccess("Investment created successfully");
@@ -334,7 +287,6 @@ export default function InvestmentsPage() {
           quantity: 0,
           totalInvested: 0,
           dividendReceived: 0,
-          selectedCommunity: "",
         });
         loadData();
       } else {
@@ -368,8 +320,6 @@ export default function InvestmentsPage() {
     );
   };
 
-  const isGeneralAdmin = session?.user?.role === "General Admin";
-
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
@@ -402,9 +352,7 @@ export default function InvestmentsPage() {
           Investments Management
         </Typography>
         <Typography variant="body2" color="textSecondary">
-          {isGeneralAdmin
-            ? "Manage all community investments and suggestions"
-            : "Manage your community investments and suggestions"}
+          Manage community investments and suggestions
         </Typography>
       </Box>
       {error && (
@@ -603,7 +551,6 @@ export default function InvestmentsPage() {
                   quantity: 0,
                   totalInvested: 0,
                   dividendReceived: 0,
-                  selectedCommunity: "",
                 });
                 setCreateInvestmentDialog(true);
               }}
@@ -958,33 +905,6 @@ export default function InvestmentsPage() {
         <DialogTitle>Add New Investment</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
-            {isGeneralAdmin && (
-              <TextField
-                select
-                label="Community"
-                value={investmentForm.selectedCommunity}
-                onChange={(e) =>
-                  setInvestmentForm({
-                    ...investmentForm,
-                    selectedCommunity: e.target.value,
-                  })
-                }
-                fullWidth
-                required
-                slotProps={{
-                  select: {
-                    native: true,
-                  }
-                }}
-              >
-                <option value="">Select a community</option>
-                {communities.map((community) => (
-                  <option key={community._id} value={community._id}>
-                    {community.name}
-                  </option>
-                ))}
-              </TextField>
-            )}
             <TextField
               label="Title"
               value={investmentForm.title}

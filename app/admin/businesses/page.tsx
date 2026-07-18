@@ -160,19 +160,7 @@ export default function BusinessesPage() {
     try {
       setLoading(true);
 
-      const isGeneralAdmin = session?.user?.role === "General Admin";
-      const query = isGeneralAdmin
-        ? ""
-        : `?community=${session?.user?.community}`;
-
-      console.log("[Admin Businesses] Fetching with:", {
-        role: session?.user?.role,
-        community: session?.user?.community,
-        query,
-        url: `/api/businesses${query}`,
-      });
-
-      const res = await fetch(`/api/businesses${query}`);
+      const res = await fetch("/api/businesses");
       if (!res.ok) throw new Error("Failed to load businesses");
       const data = await res.json();
 

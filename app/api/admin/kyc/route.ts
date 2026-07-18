@@ -14,11 +14,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only Community Admin and General Admin can view KYC
-    if (
-      session.user.role !== "Community Admin" &&
-      session.user.role !== "General Admin"
-    ) {
+    // Only Admins can view KYC
+    if (session.user.role !== "Admin") {
       return NextResponse.json(
         { error: "Forbidden: Only admins can view KYC requests" },
         { status: 403 }
@@ -27,24 +24,10 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    // Get current user with community info
-    const currentUser = await User.findById(session.user.id).populate(
-      "community"
-    );
-    if (!currentUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Build query based on admin type
+    // Get all users with KYC info
     const query: any = {
       profileCompleted: true,
     };
-
-    // Community Admin only sees KYC from their own community
-    if (session.user.role === "Community Admin") {
-      query.community = currentUser.community?._id;
-    }
-    // General Admin sees all communities
 
     // Get all users matching the query with KYC info
     const users = await User.find(query)
@@ -107,10 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only admins can verify KYC
-    if (
-      session.user.role !== "Community Admin" &&
-      session.user.role !== "General Admin"
-    ) {
+    if (session.user.role !== "Admin") {
       return NextResponse.json(
         { error: "Forbidden: Only admins can verify KYC" },
         { status: 403 }
@@ -142,26 +122,6 @@ export async function POST(request: NextRequest) {
 
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Get current admin
-    const currentUser = await User.findById(session.user.id).populate(
-      "community"
-    );
-
-    // Community Admin can only verify users from their own community
-    if (
-      session.user.role === "Community Admin" &&
-      currentUser?.community?._id.toString() !==
-        targetUser.community?._id.toString()
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Forbidden: Community admin can only verify users from their own community",
-        },
-        { status: 403 }
-      );
     }
 
     // Build KYC update payload explicitly and persist with $set to avoid any partial save issues

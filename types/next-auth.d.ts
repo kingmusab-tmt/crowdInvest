@@ -12,7 +12,6 @@ declare module "next-auth" {
       id: string | null;
       profileCompleted: boolean | null;
       community?: string | null;
-      permissions?: any;
       balance?: number;
       settings?: {
         theme?: "light" | "dark" | "system";
@@ -51,7 +50,6 @@ declare module "next-auth/jwt" {
     isActive: boolean | null;
     profileCompleted: boolean | null;
     community?: string | null;
-    permissions?: any;
     balance?: number;
     settings?: {
       theme?: "light" | "dark" | "system";

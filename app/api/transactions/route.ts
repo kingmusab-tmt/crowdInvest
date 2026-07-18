@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // General Admin can view all transactions
-    if (session.user.role === "General Admin") {
+    // Admin can view all transactions
+    if (session.user.role === "Admin") {
       const adminTransactions = await Transaction.find(query)
         .select("-__v")
         .sort({ date: -1 });

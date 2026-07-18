@@ -132,14 +132,9 @@ export default function ProposalsPage() {
     try {
       setLoading(true);
 
-      const isGeneralAdmin = session?.user?.role === "General Admin";
-      const queryParams = isGeneralAdmin
-        ? ""
-        : `?community=${session?.user?.community}`;
-
       const [proposalsRes, votesRes] = await Promise.all([
-        fetch(`/api/proposals${queryParams}`),
-        fetch(`/api/proposals/votes${queryParams}`),
+        fetch("/api/proposals"),
+        fetch("/api/proposals/votes"),
       ]);
 
       if (proposalsRes.ok) {

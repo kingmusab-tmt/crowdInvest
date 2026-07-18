@@ -27,22 +27,15 @@ interface CommunityMember {
   email: string;
 }
 
-interface Community {
-  _id: string;
-  name: string;
-}
-
 export default function ManualDepositPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [communities, setCommunities] = useState<Community[]>([]);
   const [members, setMembers] = useState<CommunityMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
   const [formData, setFormData] = useState({
     transactionType: "",
-    selectedCommunity: "",
     selectedMember: "",
     amount: "",
     description: "",
@@ -57,43 +50,14 @@ export default function ManualDepositPage() {
     showInfo,
   } = useSnackbar();
 
-  const isGeneralAdmin = session?.user?.role === "General Admin";
-
   useEffect(() => {
-    if (isGeneralAdmin) {
-      fetchCommunities();
-    } else if (session?.user?.community) {
-      // Community admin - fetch their community members directly
-      fetchMembers(session.user.community);
-      setFormData((prev) => ({
-        ...prev,
-        selectedCommunity: session.user.community || "",
-      }));
-    }
-  }, [session]);
+    fetchMembers();
+  }, []);
 
-  useEffect(() => {
-    if (formData.selectedCommunity) {
-      fetchMembers(formData.selectedCommunity);
-    }
-  }, [formData.selectedCommunity]);
-
-  const fetchCommunities = async () => {
-    try {
-      const res = await fetch("/api/communities");
-      if (res.ok) {
-        const data = await res.json();
-        setCommunities(data);
-      }
-    } catch (error) {
-      console.error("Error fetching communities:", error);
-    }
-  };
-
-  const fetchMembers = async (communityId: string) => {
+  const fetchMembers = async () => {
     setLoadingMembers(true);
     try {
-      const res = await fetch(`/api/users?communityId=${communityId}`);
+      const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
         setMembers(data);
@@ -137,12 +101,6 @@ export default function ManualDepositPage() {
       return;
     }
 
-    if (!formData.selectedCommunity) {
-      showError("Please select a community");
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await fetch("/api/admin/deposits", {
         method: "POST",
@@ -151,7 +109,6 @@ export default function ManualDepositPage() {
         },
         body: JSON.stringify({
           transactionType: formData.transactionType,
-          communityId: formData.selectedCommunity,
           memberId: formData.selectedMember || null,
           amount: parseFloat(formData.amount),
           description: formData.description,
@@ -173,7 +130,6 @@ export default function ManualDepositPage() {
       // Reset form
       setFormData({
         transactionType: "",
-        selectedCommunity: isGeneralAdmin ? "" : session?.user?.community || "",
         selectedMember: "",
         amount: "",
         description: "",
@@ -221,10 +177,7 @@ export default function ManualDepositPage() {
     );
   }
 
-  if (
-    session.user.role !== "General Admin" &&
-    session.user.role !== "Community Admin"
-  ) {
+  if (session.user.role !== "Admin") {
     router.push("/dashboard");
     return null;
   }
@@ -281,28 +234,6 @@ export default function ManualDepositPage() {
               )}
             </Grid>
 
-            {/* Community Selection (General Admin only) */}
-            {isGeneralAdmin && (
-              <Grid size={12}>
-                <FormControl fullWidth required>
-                  <InputLabel>Community</InputLabel>
-                  <Select
-                    value={formData.selectedCommunity}
-                    onChange={(e) =>
-                      handleInputChange("selectedCommunity", e.target.value)
-                    }
-                    label="Community"
-                  >
-                    {communities.map((community) => (
-                      <MenuItem key={community._id} value={community._id}>
-                        {community.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            )}
-
             {/* Member Selection (for manual_deposit and refund_deposit) */}
             {(formData.transactionType === "manual_deposit" ||
               formData.transactionType === "refund_deposit") && (
@@ -315,7 +246,7 @@ export default function ManualDepositPage() {
                       handleInputChange("selectedMember", e.target.value)
                     }
                     label="Member"
-                    disabled={loadingMembers || !formData.selectedCommunity}
+                    disabled={loadingMembers}
                   >
                     {loadingMembers ? (
                       <MenuItem disabled>Loading members...</MenuItem>
