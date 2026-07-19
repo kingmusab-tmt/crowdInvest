@@ -13,6 +13,9 @@ export interface IAssistance extends Document {
     | "other";
   status: "Pending" | "Approved" | "Rejected" | "Voting";
   rejectionReason?: string;
+  approvedBy?: mongoose.Types.ObjectId;
+  approvalDate?: Date;
+  votingDeadline?: Date;
   votes?: Array<{
     userId: mongoose.Types.ObjectId;
     vote: "assist" | "not-assist";
@@ -47,6 +50,12 @@ const AssistanceSchema = new Schema<IAssistance>(
       default: "Pending",
     },
     rejectionReason: String,
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    approvalDate: Date,
+    votingDeadline: Date,
     votes: [
       {
         userId: {
@@ -69,3 +78,8 @@ const AssistanceSchema = new Schema<IAssistance>(
 
 export default mongoose.models.Assistance ||
   mongoose.model<IAssistance>("Assistance", AssistanceSchema);
+
+// Clear the model from cache on hot reload to ensure schema updates
+if (process.env.NODE_ENV === "development") {
+  delete mongoose.models.Assistance;
+}

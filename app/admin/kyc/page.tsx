@@ -494,7 +494,7 @@ export default function KYCPage() {
         fullWidth
       >
         <DialogTitle>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
             Review Profile: {selectedUser?.name}
           </Typography>
           <Typography variant="caption" sx={{
@@ -723,7 +723,7 @@ export default function KYCPage() {
         fullWidth
       >
         <DialogTitle>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
             Reject KYC Verification
           </Typography>
           <Typography variant="caption" sx={{

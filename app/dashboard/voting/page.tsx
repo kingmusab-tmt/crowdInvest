@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   Box,
   Button,
-  Container,
   Typography,
   Paper,
   Grid,
@@ -48,13 +47,15 @@ interface VotingItem {
     | "Pending"
     | "Approved"
     | "Rejected"
-    | "Voting";
+    | "Voting"
+    | "Approved for Investing";
   votes?: Array<{ userId: string; vote: string; votedAt: string }>;
   createdAt: string;
   updatedAt: string;
   itemType: "proposal" | "investment" | "assistance";
   assistanceType?: string;
   investmentType?: string;
+  votingDeadline?: string;
   amountRequired?: number;
   riskLevel?: string;
 }
@@ -178,7 +179,8 @@ export default function VotingProposalsPage() {
   const normalizeStatus = (status: VotingItem["status"]) => {
     const s = (status || "pending").toString();
     if (/^voting$/i.test(s)) return "Active";
-    if (/^approved$/i.test(s)) return "Passed";
+    if (/^approved$/i.test(s) || /^approved for investing$/i.test(s))
+      return "Passed";
     if (/^rejected$/i.test(s)) return "Failed";
     return "Pending";
   };
@@ -234,9 +236,9 @@ export default function VotingProposalsPage() {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
+      <Box sx={{ py: 6, textAlign: "center" }}>
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
@@ -264,10 +266,7 @@ export default function VotingProposalsPage() {
   const currentItems = getCurrentTabItems();
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
-    >
+    <Box>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
           Voting & Proposals
@@ -779,6 +778,6 @@ export default function VotingProposalsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 }

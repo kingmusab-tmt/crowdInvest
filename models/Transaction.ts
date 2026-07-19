@@ -11,8 +11,7 @@ export interface ITransaction extends Document {
     | "Assistance"
     | "Event"
     | "profit_deposit"
-    | "manual_deposit"
-    | "refund_deposit";
+    | "manual_deposit";
   status: "Completed" | "Pending" | "Failed";
   amount: number;
   date: Date;
@@ -36,7 +35,6 @@ const TransactionSchema = new Schema<ITransaction>(
         "Assistance",
         "Event",
         "profit_deposit",
-        "refund_deposit",
         "manual_deposit",
       ],
       required: true,

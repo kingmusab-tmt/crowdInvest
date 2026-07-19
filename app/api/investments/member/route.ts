@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     if (communityId) {
       query.community = communityId;
     } else if (userId) {
-      query.createdBy = userId;
+      query.user = userId;
     }
 
     const investments = await MemberInvestment.find(query)

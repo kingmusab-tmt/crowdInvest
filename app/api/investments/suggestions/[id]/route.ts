@@ -4,20 +4,83 @@ import { authOptions } from "../../../../auth";
 import dbConnect from "@/utils/connectDB";
 import InvestmentSuggestion from "@/models/InvestmentSuggestion";
 import User from "@/models/User";
+import {
+  getVotingDeadline,
+  notifyMembersVotingOpen,
+  notifySuggesterOfDecision,
+} from "@/services/investmentSuggestionService";
+
+// A creator may only edit/withdraw their own suggestion while it's still
+// awaiting a decision. Once an admin has approved it (moved it to voting)
+// or it has been finalized by vote, only an admin can touch it.
+const CREATOR_EDITABLE_STATUSES = ["Pending", "Rejected"];
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await dbConnect();
     const { id } = await params;
     const body = await request.json();
 
+    const existing = await InvestmentSuggestion.findById(id);
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Suggestion not found" },
+        { status: 404 }
+      );
+    }
+
+    const currentUser = await User.findOne({ email: session.user.email });
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const isAdmin = currentUser.role === "Admin";
+    const isCreator =
+      existing.suggestedBy.toString() === currentUser._id.toString();
+
+    if (!isAdmin && !isCreator) {
+      return NextResponse.json(
+        { error: "You don't have permission to edit this suggestion" },
+        { status: 403 }
+      );
+    }
+
+    // Approving/rejecting (deciding the suggestion) is an admin-only action
+    const isDecision = body.status === "Approved" || body.status === "Rejected";
+    if (isDecision && !isAdmin) {
+      return NextResponse.json(
+        { error: "Only an admin can approve or reject a suggestion" },
+        { status: 403 }
+      );
+    }
+
+    // A non-admin creator editing their own suggestion may only do so
+    // before it has been decided on
+    if (
+      !isAdmin &&
+      isCreator &&
+      !CREATOR_EDITABLE_STATUSES.includes(existing.status)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This suggestion can no longer be edited — it has already been approved.",
+        },
+        { status: 403 }
+      );
+    }
+
     // Prepare update data
-    const updateData: any = {
-      status: body.status,
-    };
+    const updateData: any = {};
+    if (body.status) updateData.status = body.status;
 
     // If updating full suggestion (edit & resubmit)
     if (body.title) updateData.title = body.title;
@@ -32,6 +95,17 @@ export async function PUT(
     if (body.rejectionReason !== undefined)
       updateData.rejectionReason = body.rejectionReason;
 
+    // Admin approval sends the suggestion straight into a 3-day voting
+    // window rather than a separate "Approved" holding state.
+    let justApproved = false;
+    if (isDecision && body.status === "Approved") {
+      updateData.status = "Voting";
+      updateData.approvedBy = currentUser._id;
+      updateData.approvalDate = new Date();
+      updateData.votingDeadline = getVotingDeadline();
+      justApproved = true;
+    }
+
     const suggestion = await InvestmentSuggestion.findByIdAndUpdate(
       id,
       updateData,
@@ -45,6 +119,17 @@ export async function PUT(
         { error: "Suggestion not found" },
         { status: 404 }
       );
+    }
+
+    if (isDecision) {
+      await notifySuggesterOfDecision(
+        suggestion,
+        justApproved,
+        body.rejectionReason
+      );
+      if (justApproved) {
+        await notifyMembersVotingOpen(suggestion);
+      }
     }
 
     return NextResponse.json(suggestion, { status: 200 });
@@ -122,6 +207,22 @@ export async function DELETE(
     if (!isCreator && !isAdmin) {
       return NextResponse.json(
         { error: "You don't have permission to delete this suggestion" },
+        { status: 403 }
+      );
+    }
+
+    // A non-admin creator may only delete their suggestion before it has
+    // been decided on — once approved, only an admin can remove it.
+    if (
+      !isAdmin &&
+      isCreator &&
+      !CREATOR_EDITABLE_STATUSES.includes(suggestion.status)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This suggestion can no longer be deleted — it has already been approved.",
+        },
         { status: 403 }
       );
     }

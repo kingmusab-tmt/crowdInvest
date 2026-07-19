@@ -1,9 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { INVESTMENT_TYPE_VALUES, InvestmentType } from "@/lib/investmentTypes";
 
 export interface IMemberInvestment extends Document {
   user: mongoose.Types.ObjectId;
   community: mongoose.Types.ObjectId;
-  investmentType: "stock" | "business" | "crypto" | "real-estate";
+  investmentType: InvestmentType;
   title: string;
   description: string;
   basePrice: number;
@@ -14,7 +15,7 @@ export interface IMemberInvestment extends Document {
   profitOrLoss: number;
   profitOrLossPercentage: number;
   dividendReceived: number;
-  status: "Active" | "Completed" | "Sold";
+  status: "Active" | "Completed" | "Sold" | "Cancelled";
   purchaseDate: Date;
   expectedMaturityDate?: Date;
   notes?: string;
@@ -36,7 +37,7 @@ const MemberInvestmentSchema = new Schema<IMemberInvestment>(
     },
     investmentType: {
       type: String,
-      enum: ["stock", "business", "crypto", "real-estate"],
+      enum: INVESTMENT_TYPE_VALUES,
       required: true,
     },
     title: { type: String, required: true },
@@ -51,7 +52,7 @@ const MemberInvestmentSchema = new Schema<IMemberInvestment>(
     dividendReceived: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["Active", "Completed", "Sold"],
+      enum: ["Active", "Completed", "Sold", "Cancelled"],
       default: "Active",
     },
     purchaseDate: { type: Date, required: true },

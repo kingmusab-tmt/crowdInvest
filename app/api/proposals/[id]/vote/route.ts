@@ -3,6 +3,10 @@ import dbConnect from "../../../../../utils/connectDB";
 import Proposal from "../../../../../models/Proposal";
 import User from "../../../../../models/User";
 import { Types } from "mongoose";
+import {
+  notifyAllMembersOfProposalResult,
+  resolveProposalVotingOutcome,
+} from "../../../../../services/proposalVotingService";
 
 export async function POST(
   request: NextRequest,
@@ -19,7 +23,15 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid or missing request body" },
+        { status: 400 }
+      );
+    }
     const { vote, userId } = body;
 
     if (!vote || !["yes", "no"].includes(vote)) {
@@ -35,6 +47,30 @@ export async function POST(
       return NextResponse.json(
         { error: "Proposal not found" },
         { status: 404 }
+      );
+    }
+
+    if (proposal.status !== "voting") {
+      return NextResponse.json(
+        { error: "This proposal is not open for voting" },
+        { status: 400 }
+      );
+    }
+
+    // Safety net: if the 3-day voting window has already passed but this
+    // proposal hasn't been swept yet (no one has loaded a list page since
+    // it expired), resolve it now and reject the vote rather than
+    // accepting one after the window closed.
+    if (
+      proposal.votingDeadline &&
+      proposal.votingDeadline.getTime() <= Date.now()
+    ) {
+      const result = await resolveProposalVotingOutcome(proposal);
+      await notifyAllMembersOfProposalResult([result]);
+
+      return NextResponse.json(
+        { error: "Voting has closed for this proposal" },
+        { status: 400 }
       );
     }
 

@@ -21,6 +21,7 @@ import {
 import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
 import { suggestInvestment } from "@/services/investmentService";
+import { INVESTMENT_TYPE_OPTIONS } from "@/lib/investmentTypes";
 
 interface InvestmentSuggestionFormProps {
   open: boolean;
@@ -249,10 +250,11 @@ export default function InvestmentSuggestionForm({
                 label="Investment Type *"
                 disabled={loading}
               >
-                <MenuItem value="stock">Stock</MenuItem>
-                <MenuItem value="business">Business</MenuItem>
-                <MenuItem value="crypto">Cryptocurrency</MenuItem>
-                <MenuItem value="real-estate">Real Estate</MenuItem>
+                {INVESTMENT_TYPE_OPTIONS.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
               </Select>
               <FormHelperText>Select the type of investment</FormHelperText>
             </FormControl>

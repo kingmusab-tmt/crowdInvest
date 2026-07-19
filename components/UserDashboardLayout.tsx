@@ -37,7 +37,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import NotificationBell from "./NotificationBell";
-import { formatNaira } from "@/lib/utils";
+import { CONTRIBUTION_MODAL_SESSION_KEY } from "@/lib/dashboardConstants";
 
 const drawerWidth = 260;
 const drawerCollapsedWidth = 65;
@@ -170,7 +170,12 @@ export default function UserDashboardLayout({
   children: React.ReactNode;
 }) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"), { noSsr: true });
+  // noSsr intentionally omitted: it forces the real matchMedia result on the
+  // very first client render, which differs from the server's window-less
+  // "false" render on mobile devices and causes a hydration mismatch. The
+  // default (SSR-safe) behavior renders "false" on both server and the
+  // initial client pass, then corrects via effect right after mount.
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -205,6 +210,8 @@ export default function UserDashboardLayout({
   };
 
   const handleLogout = async () => {
+    // Clear so the "Monthly Contribution Status" modal shows again on next login
+    sessionStorage.removeItem(CONTRIBUTION_MODAL_SESSION_KEY);
     await signOut({ callbackUrl: "/login" });
   };
 
@@ -228,17 +235,6 @@ export default function UserDashboardLayout({
             sx={{ flexGrow: 1, fontSize: { xs: "1rem", sm: "1.25rem" } }}
           >
             CrowdInvest
-          </Typography>
-
-          <Typography
-            variant="body2"
-            sx={{
-              mr: 2,
-              display: { xs: "none", md: "block" },
-              fontSize: { sm: "0.75rem", md: "0.875rem" },
-            }}
-          >
-            Balance: {formatNaira((session?.user as any)?.balance || 0)}
           </Typography>
 
           <NotificationBell />

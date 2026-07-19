@@ -21,6 +21,7 @@ import {
   DialogContent,
   DialogActions,
   Avatar,
+  Autocomplete,
 } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -29,12 +30,31 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
+import { Country, ICountry } from "country-state-city";
+import NigeriaStates from "naija-state-local-government";
 
 const steps = [
   "Personal Information",
   "Contact Details",
   "Emergency Contact",
   "Terms & Conditions",
+];
+
+const ALL_COUNTRIES = Country.getAllCountries();
+const NIGERIA_STATES = NigeriaStates.states();
+const PHONE_REGEX = /^(0\d{10}|\+234\d{10})$/;
+const RELATIONSHIP_OPTIONS = [
+  "Father",
+  "Mother",
+  "Spouse",
+  "Son",
+  "Daughter",
+  "Brother",
+  "Sister",
+  "Guardian",
+  "Relative",
+  "Friend",
+  "Other",
 ];
 
 export default function OnboardingPage() {
@@ -69,7 +89,7 @@ export default function OnboardingPage() {
       street: "",
       city: "",
       state: "",
-      country: "",
+      country: "Nigeria",
       postalCode: "",
     },
     phoneNumber: "",
@@ -98,6 +118,29 @@ export default function OnboardingPage() {
       return;
     }
   }, [session, router]);
+
+  React.useEffect(() => {
+    // Google sign-in resolves the session asynchronously, so backfill the
+    // name/avatar once it becomes available instead of only at first render.
+    if (!session?.user) return;
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || session.user!.name || "",
+      profileImageUrl: prev.profileImageUrl || session.user!.image || "",
+    }));
+  }, [session]);
+
+  const selectedCountry = React.useMemo(
+    () =>
+      ALL_COUNTRIES.find((c) => c.name === formData.address.country) || null,
+    [formData.address.country]
+  );
+  const isNigeria = formData.address.country === "Nigeria";
+  const lgaOptions = React.useMemo(() => {
+    if (!isNigeria || !formData.address.state) return [];
+    const result = NigeriaStates.lgas(formData.address.state);
+    return "lgas" in result ? result.lgas : [];
+  }, [isNigeria, formData.address.state]);
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -150,10 +193,16 @@ export default function OnboardingPage() {
       }
     }
     if (activeStep === 1) {
+      if (!formData.phoneNumber || !PHONE_REGEX.test(formData.phoneNumber)) {
+        showError(
+          "Please enter a valid phone number (e.g. 08198765432 or +2348198765432)"
+        );
+        return;
+      }
       if (
-        !formData.phoneNumber ||
-        !formData.address.city ||
-        !formData.address.country
+        !formData.address.country ||
+        !formData.address.state ||
+        !formData.address.city
       ) {
         showError("Please fill in all required fields");
         return;
@@ -372,6 +421,11 @@ export default function OnboardingPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, phoneNumber: e.target.value })
                   }
+                  error={
+                    formData.phoneNumber !== "" &&
+                    !PHONE_REGEX.test(formData.phoneNumber)
+                  }
+                  helperText="e.g. 08198765432 or +2348198765432"
                 />
               </Grid>
               <Grid
@@ -396,16 +450,27 @@ export default function OnboardingPage() {
                   xs: 12,
                   md: 6
                 }}>
-                <TextField
-                  label="City *"
-                  fullWidth
-                  value={formData.address.city}
-                  onChange={(e) =>
+                <Autocomplete
+                  options={ALL_COUNTRIES}
+                  getOptionLabel={(option: ICountry) => option.name}
+                  isOptionEqualToValue={(option, value) =>
+                    option.isoCode === value.isoCode
+                  }
+                  value={selectedCountry}
+                  onChange={(_, newValue) =>
                     setFormData({
                       ...formData,
-                      address: { ...formData.address, city: e.target.value },
+                      address: {
+                        ...formData.address,
+                        country: newValue?.name || "",
+                        state: "",
+                        city: "",
+                      },
                     })
                   }
+                  renderInput={(params) => (
+                    <TextField {...params} label="Country *" fullWidth />
+                  )}
                 />
               </Grid>
               <Grid
@@ -413,34 +478,81 @@ export default function OnboardingPage() {
                   xs: 12,
                   md: 6
                 }}>
-                <TextField
-                  label="State/Province"
-                  fullWidth
-                  value={formData.address.state}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      address: { ...formData.address, state: e.target.value },
-                    })
-                  }
-                />
+                {isNigeria ? (
+                  <TextField
+                    select
+                    label="State *"
+                    fullWidth
+                    value={formData.address.state}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: {
+                          ...formData.address,
+                          state: e.target.value,
+                          city: "",
+                        },
+                      })
+                    }
+                  >
+                    {NIGERIA_STATES.map((state) => (
+                      <MenuItem key={state} value={state}>
+                        {state}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                ) : (
+                  <TextField
+                    label="State/Province"
+                    fullWidth
+                    value={formData.address.state}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: { ...formData.address, state: e.target.value },
+                      })
+                    }
+                  />
+                )}
               </Grid>
               <Grid
                 size={{
                   xs: 12,
                   md: 6
                 }}>
-                <TextField
-                  label="Country *"
-                  fullWidth
-                  value={formData.address.country}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      address: { ...formData.address, country: e.target.value },
-                    })
-                  }
-                />
+                {isNigeria ? (
+                  <TextField
+                    select
+                    label="LGA *"
+                    fullWidth
+                    disabled={!formData.address.state}
+                    value={formData.address.city}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: { ...formData.address, city: e.target.value },
+                      })
+                    }
+                  >
+                    {lgaOptions.map((lga) => (
+                      <MenuItem key={lga} value={lga}>
+                        {lga}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                ) : (
+                  <TextField
+                    label="City *"
+                    fullWidth
+                    value={formData.address.city}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: { ...formData.address, city: e.target.value },
+                      })
+                    }
+                  />
+                )}
               </Grid>
               <Grid
                 size={{
@@ -475,6 +587,7 @@ export default function OnboardingPage() {
                 <TextField
                   label="Facebook Profile URL"
                   fullWidth
+                  placeholder="https://facebook.com/yourusername"
                   value={formData.socialMedia.facebook}
                   onChange={(e) =>
                     setFormData({
@@ -493,8 +606,9 @@ export default function OnboardingPage() {
                   md: 6
                 }}>
                 <TextField
-                  label="Twitter Profile URL"
+                  label="X (Twitter) Profile URL"
                   fullWidth
+                  placeholder="https://x.com/yourusername"
                   value={formData.socialMedia.twitter}
                   onChange={(e) =>
                     setFormData({
@@ -515,6 +629,7 @@ export default function OnboardingPage() {
                 <TextField
                   label="LinkedIn Profile URL"
                   fullWidth
+                  placeholder="https://linkedin.com/in/yourusername"
                   value={formData.socialMedia.linkedin}
                   onChange={(e) =>
                     setFormData({
@@ -535,6 +650,7 @@ export default function OnboardingPage() {
                 <TextField
                   label="Instagram Profile URL"
                   fullWidth
+                  placeholder="https://instagram.com/yourusername"
                   value={formData.socialMedia.instagram}
                   onChange={(e) =>
                     setFormData({
@@ -592,6 +708,7 @@ export default function OnboardingPage() {
                   md: 6
                 }}>
                 <TextField
+                  select
                   label="Relationship *"
                   fullWidth
                   value={formData.nextOfKin.relationship}
@@ -604,7 +721,13 @@ export default function OnboardingPage() {
                       },
                     })
                   }
-                />
+                >
+                  {RELATIONSHIP_OPTIONS.map((relationship) => (
+                    <MenuItem key={relationship} value={relationship}>
+                      {relationship}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid
                 size={{
@@ -684,107 +807,108 @@ export default function OnboardingPage() {
               Please review and accept our terms and conditions and privacy
               policy to continue.
             </Typography>
-            <Paper
-              sx={{
-                p: 3,
-                mb: 3,
-                bgcolor: "background.paper",
-                border: 1,
-                borderColor: "divider",
-              }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                Terms and Conditions Summary
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                By using this platform, you agree to:
-              </Typography>
-              <Box component="ul" sx={{ pl: 2 }}>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Provide accurate and truthful information
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Comply with all platform rules and community guidelines
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Not engage in fraudulent activities or misuse of funds
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Accept that investment carries risks and there are no
-                  guaranteed returns
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Allow the platform to process your data for service delivery
-                </Typography>
-              </Box>
-              <Button onClick={() => setTermsOpen(true)} sx={{ mt: 2 }}>
-                Read Full Terms & Conditions
-              </Button>
-            </Paper>
-            <Paper
-              sx={{
-                p: 3,
-                mb: 3,
-                bgcolor: "background.paper",
-                border: 1,
-                borderColor: "divider",
-              }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                Privacy Policy Summary
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                We are committed to protecting your privacy:
-              </Typography>
-              <Box component="ul" sx={{ pl: 2 }}>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Your personal data is encrypted and securely stored
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  We will not share your information with third parties without
-                  consent
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  You have the right to access, modify, or delete your data
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  We use cookies and analytics to improve user experience
-                </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Communication preferences can be managed in your settings
-                </Typography>
-              </Box>
-              <Button onClick={() => setPrivacyOpen(true)} sx={{ mt: 2 }}>
-                Read Full Privacy Policy
-              </Button>
-            </Paper>
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    height: "100%",
+                    bgcolor: "background.paper",
+                    border: 1,
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, mb: 2 }}
+                  >
+                    Terms and Conditions Summary
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    By using this platform, you agree to:
+                  </Typography>
+                  <Box component="ul" sx={{ pl: 2 }}>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      Provide accurate and truthful information
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      Comply with all platform rules and community guidelines
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      Not engage in fraudulent activities or misuse of funds
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      Accept that investment carries risks and there are no
+                      guaranteed returns
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      Allow the platform to process your data for service
+                      delivery
+                    </Typography>
+                  </Box>
+                  <Button onClick={() => setTermsOpen(true)} sx={{ mt: 2 }}>
+                    Read Full Terms & Conditions
+                  </Button>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    height: "100%",
+                    bgcolor: "background.paper",
+                    border: 1,
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, mb: 2 }}
+                  >
+                    Privacy Policy Summary
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    We are committed to protecting your privacy:
+                  </Typography>
+                  <Box component="ul" sx={{ pl: 2 }}>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      Your personal data is encrypted and securely stored
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      We will not share your information with third parties
+                      without consent
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      You have the right to access, modify, or delete your data
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      We use cookies and analytics to improve user experience
+                    </Typography>
+                    <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                      Communication preferences can be managed in your
+                      settings
+                    </Typography>
+                  </Box>
+                  <Button onClick={() => setPrivacyOpen(true)} sx={{ mt: 2 }}>
+                    Read Full Privacy Policy
+                  </Button>
+                </Paper>
+              </Grid>
+            </Grid>
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.termsAccepted}
+                  checked={formData.termsAccepted && formData.privacyAccepted}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       termsAccepted: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label="I have read and agree to the Terms and Conditions *"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.privacyAccepted}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
                       privacyAccepted: e.target.checked,
                     })
                   }
                 />
               }
-              label="I have read and agree to the Privacy Policy *"
+              label="I have read and agree to the Terms and Conditions and Privacy Policy *"
             />
           </Box>
         );

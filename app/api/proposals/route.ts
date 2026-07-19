@@ -3,10 +3,23 @@ import dbConnect from "../../../utils/connectDB";
 import Proposal from "../../../models/Proposal";
 import User from "../../../models/User";
 import { Types } from "mongoose";
+import {
+  closeExpiredProposalVoting,
+  notifyAdminsOfNewProposal,
+  notifyAllMembersOfProposalResult,
+} from "../../../services/proposalVotingService";
 
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+
+    // Lazily resolve any proposal whose 3-day voting window has passed
+    // before returning the list, since this app has no cron infrastructure.
+    const closed = await closeExpiredProposalVoting();
+    if (closed.length > 0) {
+      await notifyAllMembersOfProposalResult(closed);
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const community = searchParams.get("community");
 
@@ -65,6 +78,12 @@ export async function POST(request: NextRequest) {
 
     await proposal.save();
     await proposal.populate("proposedBy", "name email");
+
+    // Notify all admins so they know to review it
+    await notifyAdminsOfNewProposal(
+      proposal,
+      (proposal.proposedBy as any)?.name || "A member"
+    );
 
     return NextResponse.json(proposal, { status: 201 });
   } catch (error) {

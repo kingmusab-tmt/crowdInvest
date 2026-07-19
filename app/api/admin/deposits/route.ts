@@ -30,9 +30,7 @@ export async function POST(request: NextRequest) {
     // Validation
     if (
       !transactionType ||
-      !["profit_deposit", "manual_deposit", "refund_deposit"].includes(
-        transactionType
-      )
+      !["profit_deposit", "manual_deposit"].includes(transactionType)
     ) {
       return NextResponse.json(
         { error: "Invalid transaction type" },
@@ -44,12 +42,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    // For manual_deposit and refund_deposit, member is required
-    if (
-      (transactionType === "manual_deposit" ||
-        transactionType === "refund_deposit") &&
-      !memberId
-    ) {
+    // For manual_deposit, member is required
+    if (transactionType === "manual_deposit" && !memberId) {
       return NextResponse.json(
         { error: "Member is required for this transaction type" },
         { status: 400 }
@@ -69,10 +63,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Handle different transaction types
-    if (
-      transactionType === "manual_deposit" ||
-      transactionType === "refund_deposit"
-    ) {
+    if (transactionType === "manual_deposit") {
       // Get member details
       const member = await User.findById(memberId);
       if (!member) {
@@ -92,22 +83,12 @@ export async function POST(request: NextRequest) {
 
       transactionData.userName = member.name;
       transactionData.userEmail = member.email;
+      transactionData.description =
+        description || `Manual deposit on behalf of ${member.name}`;
 
-      if (transactionType === "manual_deposit") {
-        transactionData.description =
-          description || `Manual deposit on behalf of ${member.name}`;
-
-        // Update member's balance
-        member.balance = (member.balance || 0) + amount;
-        await member.save();
-      } else if (transactionType === "refund_deposit") {
-        transactionData.description =
-          description || `Refund deposit for ${member.name}`;
-
-        // Update member's balance
-        member.balance = (member.balance || 0) + amount;
-        await member.save();
-      }
+      // Update member's balance
+      member.balance = (member.balance || 0) + amount;
+      await member.save();
     } else if (transactionType === "profit_deposit") {
       // For profit deposit, use admin's name but mark it as community-wide
       transactionData.userName = session.user.name || "Admin";

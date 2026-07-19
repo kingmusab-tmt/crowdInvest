@@ -9,7 +9,6 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   Box,
   Button,
-  Container,
   Typography,
   Paper,
   Grid,
@@ -20,11 +19,33 @@ import {
   Chip,
   Divider,
   Alert,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
+import { alpha, Theme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import HowToVoteIcon from "@mui/icons-material/HowToVote";
+import PaidIcon from "@mui/icons-material/Paid";
+import ShowChartIcon from "@mui/icons-material/ShowChart";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import PercentIcon from "@mui/icons-material/Percent";
+import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import ThumbDownIcon from "@mui/icons-material/ThumbDown";
+import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
+import ScheduleIcon from "@mui/icons-material/Schedule";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import PersonIcon from "@mui/icons-material/Person";
+import SecurityIcon from "@mui/icons-material/Security";
 import { useSession } from "next-auth/react";
 import MemberInvestmentCard from "@/components/MemberInvestmentCard";
 import InvestmentSuggestionForm from "@/components/InvestmentSuggestionForm";
@@ -32,6 +53,8 @@ import {
   getCommunityInvestments,
   getCommunityInvestmentSuggestions,
 } from "@/services/investmentService";
+
+type StatColor = "primary" | "success" | "error" | "warning" | "info";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -67,7 +90,7 @@ interface CommunityInvestment {
   profitOrLoss: number;
   profitOrLossPercentage: number;
   dividendReceived: number;
-  status: "Active" | "Completed" | "Sold";
+  status: "Active" | "Completed" | "Sold" | "Cancelled";
   purchaseDate: string | Date;
 }
 
@@ -80,8 +103,14 @@ interface InvestmentSuggestion {
   amountRequired: number;
   timeframe: string;
   riskLevel: "Low" | "Medium" | "High";
-  status: "Pending" | "Approved" | "Rejected" | "Voting";
+  status:
+    | "Pending"
+    | "Approved"
+    | "Rejected"
+    | "Voting"
+    | "Approved for Investing";
   rejectionReason?: string;
+  votingDeadline?: string;
   votes?: Array<{
     userId: string | { _id: string; name?: string; email?: string };
     vote: "yes" | "no";
@@ -90,6 +119,275 @@ interface InvestmentSuggestion {
   suggestedBy: { name?: string; email?: string } | any;
   createdAt: string;
 }
+
+function getSuggestionStatusMeta(status: InvestmentSuggestion["status"]) {
+  switch (status) {
+    case "Approved for Investing":
+      return { color: "success" as StatColor, icon: <CheckCircleIcon fontSize="small" /> };
+    case "Voting":
+      return { color: "primary" as StatColor, icon: <HowToVoteIcon fontSize="small" /> };
+    case "Pending":
+      return { color: "info" as StatColor, icon: <HourglassEmptyIcon fontSize="small" /> };
+    case "Rejected":
+      return { color: "error" as StatColor, icon: <CancelIcon fontSize="small" /> };
+    default:
+      return { color: "info" as StatColor, icon: undefined };
+  }
+}
+
+function formatInvestmentType(type: string): string {
+  return type
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function getRiskColor(risk: string): StatColor {
+  if (risk === "High") return "error";
+  if (risk === "Medium") return "warning";
+  return "success";
+}
+
+function getDaysRemainingLabel(votingDeadline?: string): string | null {
+  if (!votingDeadline) return null;
+  const days = Math.ceil(
+    (new Date(votingDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  );
+  if (days <= 0) return "Voting closes today";
+  if (days === 1) return "1 day left to vote";
+  return `${days} days left to vote`;
+}
+
+// --- Small presentational helpers -----------------------------------------
+
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: StatColor;
+}) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 2, sm: 2.5 },
+        borderRadius: 3,
+        height: "100%",
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{ alignItems: "center", mb: 1.5 }}
+      >
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: (theme: Theme) => alpha(theme.palette[color].main, 0.12),
+            color: `${color}.main`,
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </Box>
+        <Typography
+          variant="body2"
+          sx={{ color: "text.secondary", fontWeight: 500 }}
+        >
+          {label}
+        </Typography>
+      </Stack>
+      <Typography
+        variant="h5"
+        sx={{ fontWeight: 700, color: `${color}.main`, lineHeight: 1.2 }}
+      >
+        {value}
+      </Typography>
+    </Paper>
+  );
+}
+
+function StatusChip({
+  status,
+}: {
+  status: InvestmentSuggestion["status"];
+}) {
+  const meta = getSuggestionStatusMeta(status);
+  return (
+    <Chip
+      label={status}
+      size="small"
+      icon={meta.icon as any}
+      sx={{
+        fontWeight: 600,
+        bgcolor: (theme: Theme) => alpha(theme.palette[meta.color].main, 0.12),
+        color: `${meta.color}.main`,
+        "& .MuiChip-icon": { color: `${meta.color}.main` },
+      }}
+    />
+  );
+}
+
+function MetaItem({
+  icon,
+  label,
+  value,
+  valueColor,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  valueColor?: string;
+}) {
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{ alignItems: "center", color: "text.secondary", mb: 0.25 }}
+      >
+        <Box sx={{ display: "flex", fontSize: 16 }}>{icon}</Box>
+        <Typography variant="caption" sx={{ fontWeight: 500 }}>
+          {label}
+        </Typography>
+      </Stack>
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 600, color: valueColor || "text.primary" }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+function ReasonBox({ reason }: { reason: string }) {
+  return (
+    <Box
+      sx={{
+        mb: 2,
+        p: 1.75,
+        bgcolor: (theme: Theme) => alpha(theme.palette.primary.main, 0.06),
+        borderLeft: (theme: Theme) => `3px solid ${theme.palette.primary.main}`,
+        borderRadius: 1,
+      }}
+    >
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
+        <FormatQuoteIcon sx={{ fontSize: 18, color: "primary.main" }} />
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          Why this is genuine &amp; profitable
+        </Typography>
+      </Stack>
+      <Typography variant="body2" color="text.secondary">
+        {reason}
+      </Typography>
+    </Box>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <Box sx={{ textAlign: "center", py: 7, px: 2 }}>
+      <Box
+        sx={{
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          bgcolor: "action.hover",
+          color: "text.disabled",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          mx: "auto",
+          mb: 2,
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: description ? 0.5 : 0 }}>
+        {title}
+      </Typography>
+      {description && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mb: action ? 3 : 0, maxWidth: 360, mx: "auto" }}
+        >
+          {description}
+        </Typography>
+      )}
+      {action}
+    </Box>
+  );
+}
+
+function ViewToggle({
+  value,
+  onChange,
+  currentCount,
+  pastCount,
+}: {
+  value: "current" | "past";
+  onChange: (v: "current" | "past") => void;
+  currentCount: number;
+  pastCount: number;
+}) {
+  return (
+    <ToggleButtonGroup
+      value={value}
+      exclusive
+      size="small"
+      onChange={(_, v) => v && onChange(v)}
+      sx={{
+        mb: 3,
+        bgcolor: "action.hover",
+        borderRadius: 999,
+        p: 0.5,
+        "& .MuiToggleButton-root": {
+          border: "none",
+          borderRadius: 999,
+          px: 2,
+          fontWeight: 600,
+          textTransform: "none",
+          color: "text.secondary",
+          "&.Mui-selected": {
+            bgcolor: "background.paper",
+            color: "primary.main",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+          },
+          "&.Mui-selected:hover": {
+            bgcolor: "background.paper",
+          },
+        },
+      }}
+    >
+      <ToggleButton value="current">Current ({currentCount})</ToggleButton>
+      <ToggleButton value="past">Past ({pastCount})</ToggleButton>
+    </ToggleButtonGroup>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 export default function InvestmentsPage() {
   const { data: session } = useSession();
@@ -110,13 +408,26 @@ export default function InvestmentsPage() {
   const [suggestions, setSuggestions] = React.useState<InvestmentSuggestion[]>(
     []
   );
-  const [allCommunityVotingSuggestions, setAllCommunityVotingSuggestions] =
-    React.useState<InvestmentSuggestion[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [suggestionFormOpen, setSuggestionFormOpen] = React.useState(false);
   const [editingSuggestion, setEditingSuggestion] =
     React.useState<InvestmentSuggestion | null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
+
+  // Current vs Past view toggles, one per tab
+  const [investmentsView, setInvestmentsView] = React.useState<
+    "current" | "past"
+  >("current");
+  const [suggestionsView, setSuggestionsView] = React.useState<
+    "current" | "past"
+  >("current");
+  const [votingView, setVotingView] = React.useState<"current" | "past">(
+    "current"
+  );
+  const [votingInFlight, setVotingInFlight] = React.useState<{
+    id: string;
+    vote: "yes" | "no";
+  } | null>(null);
 
   const loadInvestments = React.useCallback(async () => {
     try {
@@ -125,16 +436,7 @@ export default function InvestmentsPage() {
         getCommunityInvestmentSuggestions(session?.user?.community || ""),
       ]);
       setCommunityInvestments(investments as unknown as CommunityInvestment[]);
-
-      // Filter suggestions - all suggestions for display
-      const allSuggestions = suggestions as unknown as InvestmentSuggestion[];
-      setSuggestions(allSuggestions);
-
-      // Filter only voting suggestions for the voting tab
-      const votingSuggestions = allSuggestions.filter(
-        (s) => s.status === "Voting" || s.status === "Approved"
-      );
-      setAllCommunityVotingSuggestions(votingSuggestions);
+      setSuggestions(suggestions as unknown as InvestmentSuggestion[]);
     } catch (err) {
       console.error("Failed to load investments", err);
       showError("Failed to load investments");
@@ -194,6 +496,7 @@ export default function InvestmentsPage() {
   };
 
   const handleVote = async (suggestionId: string, vote: "yes" | "no") => {
+    setVotingInFlight({ id: suggestionId, vote });
     try {
       const res = await fetch(
         `/api/investments/suggestions/${suggestionId}/vote`,
@@ -218,6 +521,8 @@ export default function InvestmentsPage() {
           ? error.message
           : "Failed to record vote. Please try again."
       );
+    } finally {
+      setVotingInFlight(null);
     }
   };
 
@@ -284,47 +589,104 @@ export default function InvestmentsPage() {
       s.suggestedBy?.name === session?.user?.name
   );
 
+  // Community Investments: current = still ongoing (Active), past = no
+  // longer active (Completed or Cancelled — also covers legacy "Sold")
+  const currentInvestments = communityInvestments.filter(
+    (inv) => inv.status === "Active"
+  );
+  const pastInvestments = communityInvestments.filter(
+    (inv) =>
+      inv.status === "Completed" ||
+      inv.status === "Cancelled" ||
+      inv.status === "Sold"
+  );
+  const displayedInvestments =
+    investmentsView === "current" ? currentInvestments : pastInvestments;
+
+  // Your Suggestions: current = still awaiting an admin decision (Pending
+  // only); past = admin has decided one way or another — sent to voting,
+  // approved for investing, or rejected. Already sorted recent-to-past by
+  // the API (createdAt descending).
+  const currentUserSuggestions = userSuggestions.filter(
+    (s) => s.status === "Pending"
+  );
+  const pastUserSuggestions = userSuggestions.filter(
+    (s) =>
+      s.status === "Voting" ||
+      s.status === "Rejected" ||
+      s.status === "Approved for Investing"
+  );
+  const displayedUserSuggestions =
+    suggestionsView === "current" ? currentUserSuggestions : pastUserSuggestions;
+
+  // Investment Voting: only suggestions that actually went through voting
+  // (i.e. have a votingDeadline) — current = still voting, past = resolved
+  const votingSuggestions = suggestions.filter((s) => s.votingDeadline);
+  const currentVotingSuggestions = votingSuggestions.filter(
+    (s) => s.status === "Voting"
+  );
+  const pastVotingSuggestions = votingSuggestions.filter(
+    (s) => s.status === "Approved for Investing" || s.status === "Rejected"
+  );
+  const displayedVotingSuggestions =
+    votingView === "current" ? currentVotingSuggestions : pastVotingSuggestions;
+
   const stats = calculateTotalStats();
   const totalReturn = stats.totalProfitLoss + stats.totalDividends;
   const overallROI =
     stats.totalInvested > 0 ? (totalReturn / stats.totalInvested) * 100 : 0;
+  const profitLossColor: StatColor =
+    stats.totalProfitLoss >= 0 ? "success" : "error";
+  const roiColor: StatColor = overallROI >= 0 ? "success" : "error";
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
+      <Box sx={{ py: 6, textAlign: "center" }}>
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
-    >
+    <Box>
       {/* Header */}
-      <Box
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
         sx={{
           mb: 4,
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "start",
-          gap: { xs: 2, sm: 0 },
+          alignItems: { xs: "flex-start", sm: "center" },
         }}
       >
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-            Investments
-          </Typography>
-          <Typography variant="body2" sx={{
-            color: "text.secondary"
-          }}>
-            View your portfolio and explore investment opportunities
-          </Typography>
-        </Box>
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+              color: "primary.main",
+              flexShrink: 0,
+            }}
+          >
+            <AccountBalanceWalletIcon />
+          </Box>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              Investments
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              View your portfolio and explore investment opportunities
+            </Typography>
+          </Box>
+        </Stack>
+        <Stack direction="row" spacing={1}>
           <Button
+            variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={handleRefresh}
             disabled={refreshing}
@@ -333,639 +695,712 @@ export default function InvestmentsPage() {
           </Button>
           <Button
             variant="contained"
+            disableElevation
             startIcon={<AddIcon />}
             onClick={() => setSuggestionFormOpen(true)}
           >
             Suggest Investment
           </Button>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
+
       {/* Overall Stats */}
       {communityInvestments.length > 0 && (
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          <Grid
-            size={{
-              xs: 12,
-              sm: 6,
-              md: 3
-            }}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="caption" color="textSecondary">
-                Total Invested
-              </Typography>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 700, color: "#1976d2" }}
-              >
-                {formatNaira(stats.totalInvested, { maximumFractionDigits: 2 })}
-              </Typography>
-            </Paper>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              icon={<PaidIcon fontSize="small" />}
+              label="Total Invested"
+              value={formatNaira(stats.totalInvested, {
+                maximumFractionDigits: 2,
+              })}
+              color="primary"
+            />
           </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              sm: 6,
-              md: 3
-            }}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="caption" color="textSecondary">
-                Current Value
-              </Typography>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 700, color: "#2e7d32" }}
-              >
-                {formatNaira(stats.totalCurrentValue, {
-                  maximumFractionDigits: 2,
-                })}
-              </Typography>
-            </Paper>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              icon={<ShowChartIcon fontSize="small" />}
+              label="Current Value"
+              value={formatNaira(stats.totalCurrentValue, {
+                maximumFractionDigits: 2,
+              })}
+              color="success"
+            />
           </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              sm: 6,
-              md: 3
-            }}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="caption" color="textSecondary">
-                Profit/Loss
-              </Typography>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  color: stats.totalProfitLoss >= 0 ? "#4caf50" : "#f44336",
-                }}
-              >
-                {formatNaira(stats.totalProfitLoss, {
-                  maximumFractionDigits: 2,
-                })}
-              </Typography>
-            </Paper>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              icon={
+                stats.totalProfitLoss >= 0 ? (
+                  <TrendingUpIcon fontSize="small" />
+                ) : (
+                  <TrendingDownIcon fontSize="small" />
+                )
+              }
+              label="Profit/Loss"
+              value={formatNaira(stats.totalProfitLoss, {
+                maximumFractionDigits: 2,
+              })}
+              color={profitLossColor}
+            />
           </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              sm: 6,
-              md: 3
-            }}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="caption" color="textSecondary">
-                Overall ROI
-              </Typography>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  color: overallROI >= 0 ? "#4caf50" : "#f44336",
-                }}
-              >
-                {overallROI >= 0 ? "+" : ""}
-                {overallROI.toFixed(2)}%
-              </Typography>
-            </Paper>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              icon={<PercentIcon fontSize="small" />}
+              label="Overall ROI"
+              value={`${overallROI >= 0 ? "+" : ""}${overallROI.toFixed(2)}%`}
+              color={roiColor}
+            />
           </Grid>
         </Grid>
       )}
+
       {/* Tabs */}
-      <Paper sx={{ mb: 3 }}>
+      <Paper variant="outlined" sx={{ mb: 3, borderRadius: 3, overflow: "hidden" }}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
           aria-label="Investment tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{
             borderBottom: 1,
             borderColor: "divider",
             bgcolor: "background.paper",
+            px: 1,
+            "& .MuiTab-root": {
+              minWidth: { xs: 150, sm: 180 },
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              fontWeight: 600,
+              textTransform: "none",
+            },
           }}
         >
           <Tab
+            icon={<AccountBalanceWalletIcon fontSize="small" />}
+            iconPosition="start"
             label={`Community Investments (${communityInvestments.length})`}
             id="investment-tab-0"
             aria-controls="investment-tabpanel-0"
           />
           <Tab
+            icon={<LightbulbIcon fontSize="small" />}
+            iconPosition="start"
             label={`Your Suggestions (${userSuggestions.length})`}
             id="investment-tab-1"
             aria-controls="investment-tabpanel-1"
           />
           <Tab
-            label={`Investment Voting (${allCommunityVotingSuggestions.length})`}
+            icon={<HowToVoteIcon fontSize="small" />}
+            iconPosition="start"
+            label={`Investment Voting (${votingSuggestions.length})`}
             id="investment-tab-2"
             aria-controls="investment-tabpanel-2"
           />
         </Tabs>
 
-        {/* Tab 1: Community Investments */}
-        <TabPanel value={tabValue} index={0}>
-          {communityInvestments.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 6 }}>
-              <Typography variant="h6" color="textSecondary" gutterBottom>
-                No community investments yet
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                Start by suggesting an investment opportunity for your community
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setSuggestionFormOpen(true)}
-              >
-                Suggest Investment
-              </Button>
-            </Box>
-          ) : (
-            <Grid container spacing={3}>
-              {communityInvestments.map((investment) => (
-                <Grid
-                  key={investment.id}
-                  size={{
-                    xs: 12,
-                    md: 6,
-                    lg: 4
-                  }}>
-                  <MemberInvestmentCard {...investment} />
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </TabPanel>
-
-        {/* Tab 2: Your Investment Suggestions */}
-        <TabPanel value={tabValue} index={1}>
-          {userSuggestions.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 6 }}>
-              <Typography variant="h6" color="textSecondary" gutterBottom>
-                No investment suggestions yet
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                Be the first to suggest an investment opportunity
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setSuggestionFormOpen(true)}
-              >
-                Suggest Investment
-              </Button>
-            </Box>
-          ) : (
-            <Stack spacing={2}>
-              {userSuggestions.map((suggestion) => (
-                <Paper key={suggestion.id} sx={{ p: 2 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                      mb: 1,
+        <Box sx={{ px: { xs: 1.5, sm: 3 }, pb: 3 }}>
+          {/* Tab 1: Community Investments */}
+          <TabPanel value={tabValue} index={0}>
+            {communityInvestments.length > 0 && (
+              <ViewToggle
+                value={investmentsView}
+                onChange={setInvestmentsView}
+                currentCount={currentInvestments.length}
+                pastCount={pastInvestments.length}
+              />
+            )}
+            {communityInvestments.length === 0 ? (
+              <EmptyState
+                icon={<AccountBalanceWalletIcon />}
+                title="No community investments yet"
+                description="Start by suggesting an investment opportunity for your community"
+                action={
+                  <Button
+                    variant="contained"
+                    disableElevation
+                    startIcon={<AddIcon />}
+                    onClick={() => setSuggestionFormOpen(true)}
+                  >
+                    Suggest Investment
+                  </Button>
+                }
+              />
+            ) : displayedInvestments.length === 0 ? (
+              <EmptyState
+                icon={<Inventory2Icon />}
+                title={
+                  investmentsView === "current"
+                    ? "No current investments"
+                    : "No past investments yet"
+                }
+              />
+            ) : (
+              <Grid container spacing={{ xs: 1.5, sm: 3 }}>
+                {displayedInvestments.map((investment) => (
+                  <Grid
+                    key={investment.id}
+                    size={{
+                      xs: 6,
+                      md: 6,
+                      lg: 4,
                     }}
                   >
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {suggestion.title}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Your Suggestion
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1}>
-                      <Chip
-                        label={suggestion.investmentType}
-                        size="small"
-                        variant="outlined"
-                      />
-                      <Chip
-                        label={suggestion.status}
-                        size="small"
-                        color={
-                          suggestion.status === "Voting"
-                            ? "success"
-                            : suggestion.status === "Approved"
-                            ? "warning"
-                            : suggestion.status === "Pending"
-                            ? "info"
-                            : "default"
-                        }
-                      />
-                    </Stack>
-                  </Box>
-
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mb: 2 }}
-                  >
-                    {suggestion.description}
-                  </Typography>
-
-                  <Box
-                    sx={{ mb: 2, p: 1.5, bgcolor: "#f5f5f5", borderRadius: 1 }}
-                  >
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                      Why this is genuine & profitable:
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {suggestion.reason}
-                    </Typography>
-                  </Box>
-
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Amount Required
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {formatNaira(suggestion.amountRequired, {
-                            maximumFractionDigits: 2,
-                          })}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Timeframe
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {suggestion.timeframe}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Risk Level
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            color:
-                              suggestion.riskLevel === "High"
-                                ? "#f44336"
-                                : suggestion.riskLevel === "Medium"
-                                ? "#ff9800"
-                                : "#4caf50",
-                          }}
-                        >
-                          {suggestion.riskLevel}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Suggested On
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {new Date(suggestion.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    </Grid>
+                    <MemberInvestmentCard {...investment} />
                   </Grid>
+                ))}
+              </Grid>
+            )}
+          </TabPanel>
 
-                  <Divider />
-
-                  <Box sx={{ mt: 2, pt: 2 }}>
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{ display: "block", mb: 1 }}
-                    >
-                      Status Updates:
-                    </Typography>
-                    {suggestion.status === "Pending" && (
-                      <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
-                        ⏳ Awaiting review by community admin
-                      </Alert>
-                    )}
-                    {suggestion.status === "Approved" && (
-                      <Alert severity="success" sx={{ fontSize: "0.875rem" }}>
-                        ✓ Approved! Moving to voting phase
-                      </Alert>
-                    )}
-                    {suggestion.status === "Voting" && (
-                      <Alert severity="warning" sx={{ fontSize: "0.875rem" }}>
-                        🗳️ Your suggestion is now in voting phase. Community
-                        members are reviewing it
-                      </Alert>
-                    )}
-                    {suggestion.status === "Rejected" && (
-                      <Alert severity="error" sx={{ fontSize: "0.875rem" }}>
-                        ✗ This suggestion was not approved
-                        {suggestion.rejectionReason && (
-                          <Box
-                            sx={{
-                              mt: 1,
-                              pt: 1,
-                              borderTop: "1px solid rgba(211, 47, 47, 0.2)",
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                fontWeight: 600,
-                                display: "block",
-                                mb: 0.5,
-                              }}
-                            >
-                              Reason for rejection:
-                            </Typography>
-                            <Typography variant="caption">
-                              {suggestion.rejectionReason}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Alert>
-                    )}
-                  </Box>
-
-                  {/* Action Buttons for Rejected Suggestions */}
-                  {suggestion.status === "Rejected" && (
-                    <Box
+          {/* Tab 2: Your Investment Suggestions */}
+          <TabPanel value={tabValue} index={1}>
+            {userSuggestions.length > 0 && (
+              <ViewToggle
+                value={suggestionsView}
+                onChange={setSuggestionsView}
+                currentCount={currentUserSuggestions.length}
+                pastCount={pastUserSuggestions.length}
+              />
+            )}
+            {userSuggestions.length === 0 ? (
+              <EmptyState
+                icon={<LightbulbIcon />}
+                title="No investment suggestions yet"
+                description="Be the first to suggest an investment opportunity"
+                action={
+                  <Button
+                    variant="contained"
+                    disableElevation
+                    startIcon={<AddIcon />}
+                    onClick={() => setSuggestionFormOpen(true)}
+                  >
+                    Suggest Investment
+                  </Button>
+                }
+              />
+            ) : displayedUserSuggestions.length === 0 ? (
+              <EmptyState
+                icon={<Inventory2Icon />}
+                title={
+                  suggestionsView === "current"
+                    ? "No suggestions awaiting a decision"
+                    : "No past suggestions yet"
+                }
+              />
+            ) : (
+              <Grid container spacing={2}>
+                {displayedUserSuggestions.map((suggestion) => (
+                  <Grid key={suggestion.id} size={{ xs: 12, lg: 6 }}>
+                    <Paper
+                      variant="outlined"
                       sx={{
-                        mt: 2,
-                        display: "flex",
-                        gap: 1,
-                        justifyContent: "flex-end",
+                        p: 2.5,
+                        borderRadius: 3,
+                        height: "100%",
+                        borderLeft: (theme) =>
+                          `4px solid ${
+                            theme.palette[getSuggestionStatusMeta(suggestion.status).color]
+                              .main
+                          }`,
                       }}
                     >
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<EditIcon />}
-                        onClick={() => handleEditSuggestion(suggestion)}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "start",
+                          mb: 1,
+                          gap: 1,
+                        }}
                       >
-                        Edit & Resubmit
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="error"
-                        startIcon={<DeleteIcon />}
-                        onClick={() => handleDeleteSuggestion(suggestion.id)}
-                      >
-                        Delete
-                      </Button>
-                    </Box>
-                  )}
-                </Paper>
-              ))}
-            </Stack>
-          )}
-        </TabPanel>
-
-        {/* Tab 3: Investment Voting */}
-        <TabPanel value={tabValue} index={2}>
-          {allCommunityVotingSuggestions.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 6 }}>
-              <Typography variant="h6" color="textSecondary" gutterBottom>
-                No investments available for voting
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                Check back later when community members submit investment
-                suggestions
-              </Typography>
-            </Box>
-          ) : (
-            <Stack spacing={2}>
-              {allCommunityVotingSuggestions.map((suggestion) => (
-                <Paper
-                  key={suggestion.id}
-                  sx={{ p: 2, border: "2px solid #1976d2" }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                      mb: 1,
-                    }}
-                  >
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {suggestion.title}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Suggested by:{" "}
-                        {suggestion.suggestedBy?.name || "Community Member"}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1}>
-                      <Chip
-                        label={suggestion.investmentType}
-                        size="small"
-                        variant="outlined"
-                      />
-                      <Chip
-                        label={suggestion.status}
-                        size="small"
-                        color={
-                          suggestion.status === "Voting"
-                            ? "success"
-                            : suggestion.status === "Approved"
-                            ? "warning"
-                            : "default"
-                        }
-                      />
-                    </Stack>
-                  </Box>
-
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mb: 2 }}
-                  >
-                    {suggestion.description}
-                  </Typography>
-
-                  <Box
-                    sx={{ mb: 2, p: 1.5, bgcolor: "#f5f5f5", borderRadius: 1 }}
-                  >
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                      Why this is genuine & profitable:
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {suggestion.reason}
-                    </Typography>
-                  </Box>
-
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Amount Required
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {formatNaira(suggestion.amountRequired, {
-                            maximumFractionDigits: 2,
-                          })}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Timeframe
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {suggestion.timeframe}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Risk Level
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            color:
-                              suggestion.riskLevel === "High"
-                                ? "#f44336"
-                                : suggestion.riskLevel === "Medium"
-                                ? "#ff9800"
-                                : "#4caf50",
-                          }}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: "1.05rem",
+                              textDecoration:
+                                suggestion.status === "Approved for Investing"
+                                  ? "line-through"
+                                  : "none",
+                            }}
+                          >
+                            {suggestion.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Your Suggestion
+                          </Typography>
+                        </Box>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{ flexWrap: "wrap", justifyContent: "flex-end" }}
                         >
-                          {suggestion.riskLevel}
-                        </Typography>
+                          <Chip
+                            label={formatInvestmentType(suggestion.investmentType)}
+                            size="small"
+                            variant="outlined"
+                          />
+                          <StatusChip status={suggestion.status} />
+                        </Stack>
                       </Box>
-                    </Grid>
-                    <Grid
-                      size={{
-                        xs: 6,
-                        sm: 3
-                      }}>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        {suggestion.description}
+                      </Typography>
+
+                      <ReasonBox reason={suggestion.reason} />
+
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<PaidIcon fontSize="inherit" />}
+                            label="Amount"
+                            value={formatNaira(suggestion.amountRequired, {
+                              maximumFractionDigits: 2,
+                            })}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<ScheduleIcon fontSize="inherit" />}
+                            label="Timeframe"
+                            value={suggestion.timeframe}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<SecurityIcon fontSize="inherit" />}
+                            label="Risk Level"
+                            value={suggestion.riskLevel}
+                            valueColor={`${getRiskColor(suggestion.riskLevel)}.main`}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<CalendarTodayIcon fontSize="inherit" />}
+                            label="Suggested On"
+                            value={new Date(
+                              suggestion.createdAt
+                            ).toLocaleDateString()}
+                          />
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ mb: 2 }} />
+
                       <Box>
-                        <Typography variant="caption" color="textSecondary">
-                          Suggested On
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mb: 1, fontWeight: 600 }}
+                        >
+                          Status Updates
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {new Date(suggestion.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-
-                  <Divider />
-
-                  <Box sx={{ mt: 2, pt: 2 }}>
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{ display: "block", mb: 2, fontWeight: 600 }}
-                    >
-                      Vote on this investment proposal:
-                    </Typography>
-
-                    {/* Vote counts */}
-                    {(() => {
-                      const voteCounts = getVoteCount(suggestion);
-                      const userVote = getUserVote(suggestion);
-
-                      return (
-                        <>
-                          {voteCounts.total > 0 && (
-                            <Box sx={{ mb: 2 }}>
+                        {suggestion.status === "Pending" && (
+                          <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
+                            ⏳ Awaiting review by community admin
+                          </Alert>
+                        )}
+                        {suggestion.status === "Voting" && (
+                          <Alert severity="warning" sx={{ fontSize: "0.875rem" }}>
+                            🗳️ Approved! Your suggestion is now open for
+                            community voting
+                            {getDaysRemainingLabel(suggestion.votingDeadline) && (
+                              <>
+                                {" "}
+                                — {getDaysRemainingLabel(suggestion.votingDeadline)}
+                              </>
+                            )}
+                          </Alert>
+                        )}
+                        {suggestion.status === "Approved for Investing" && (
+                          <Alert severity="success" sx={{ fontSize: "0.875rem" }}>
+                            🎉 Voting closed — the community approved this for
+                            investing!
+                          </Alert>
+                        )}
+                        {suggestion.status === "Rejected" && (
+                          <Alert severity="error" sx={{ fontSize: "0.875rem" }}>
+                            ✗ This suggestion was not approved
+                            {suggestion.rejectionReason && (
                               <Box
                                 sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  mb: 1,
+                                  mt: 1,
+                                  pt: 1,
+                                  borderTop: "1px solid rgba(211, 47, 47, 0.2)",
                                 }}
                               >
                                 <Typography
                                   variant="caption"
                                   sx={{
-                                    color: "text.secondary"
+                                    fontWeight: 600,
+                                    display: "block",
+                                    mb: 0.5,
                                   }}
                                 >
-                                  Yes: {voteCounts.yes} | No: {voteCounts.no} |
-                                  Total: {voteCounts.total}
+                                  Reason for rejection:
+                                </Typography>
+                                <Typography variant="caption">
+                                  {suggestion.rejectionReason}
                                 </Typography>
                               </Box>
-                            </Box>
-                          )}
-                          <Stack direction="row" spacing={2}>
-                            <Button
-                              variant={
-                                userVote === "yes" ? "contained" : "outlined"
-                              }
-                              color="success"
-                              sx={{ flex: 1 }}
-                              onClick={() => handleVote(suggestion.id, "yes")}
-                            >
-                              👍 Vote Yes
-                            </Button>
-                            <Button
-                              variant={
-                                userVote === "no" ? "contained" : "outlined"
-                              }
-                              color="error"
-                              sx={{ flex: 1 }}
-                              onClick={() => handleVote(suggestion.id, "no")}
-                            >
-                              👎 Vote No
-                            </Button>
+                            )}
+                          </Alert>
+                        )}
+                      </Box>
+
+                      {/* Action Buttons: creator can only edit/delete before it's approved */}
+                      {(suggestion.status === "Pending" ||
+                        suggestion.status === "Rejected") && (
+                        <Box
+                          sx={{
+                            mt: 2,
+                            display: "flex",
+                            gap: 1,
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<EditIcon />}
+                            onClick={() => handleEditSuggestion(suggestion)}
+                          >
+                            {suggestion.status === "Rejected"
+                              ? "Edit & Resubmit"
+                              : "Edit"}
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleDeleteSuggestion(suggestion.id)}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
+                      )}
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </TabPanel>
+
+          {/* Tab 3: Investment Voting */}
+          <TabPanel value={tabValue} index={2}>
+            {votingSuggestions.length > 0 && (
+              <ViewToggle
+                value={votingView}
+                onChange={setVotingView}
+                currentCount={currentVotingSuggestions.length}
+                pastCount={pastVotingSuggestions.length}
+              />
+            )}
+            {votingSuggestions.length === 0 ? (
+              <EmptyState
+                icon={<HowToVoteIcon />}
+                title="No investments available for voting"
+                description="Check back later when community members submit investment suggestions"
+              />
+            ) : displayedVotingSuggestions.length === 0 ? (
+              <EmptyState
+                icon={<Inventory2Icon />}
+                title={
+                  votingView === "current"
+                    ? "No investments currently open for voting"
+                    : "No past voting results yet"
+                }
+              />
+            ) : (
+              <Grid container spacing={2}>
+                {displayedVotingSuggestions.map((suggestion) => (
+                  <Grid key={suggestion.id} size={{ xs: 12, lg: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 3,
+                        height: "100%",
+                        borderLeft: (theme) =>
+                          `4px solid ${
+                            theme.palette[getSuggestionStatusMeta(suggestion.status).color]
+                              .main
+                          }`,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "start",
+                          mb: 1,
+                          gap: 1,
+                        }}
+                      >
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 700, fontSize: "1.05rem" }}
+                          >
+                            {suggestion.title}
+                          </Typography>
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            sx={{ alignItems: "center", color: "text.secondary" }}
+                          >
+                            <PersonIcon sx={{ fontSize: 14 }} />
+                            <Typography variant="caption">
+                              {suggestion.suggestedBy?.name || "Community Member"}
+                            </Typography>
                           </Stack>
-                          {userVote && (
+                        </Box>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{ flexWrap: "wrap", justifyContent: "flex-end" }}
+                        >
+                          <Chip
+                            label={formatInvestmentType(suggestion.investmentType)}
+                            size="small"
+                            variant="outlined"
+                          />
+                          <StatusChip status={suggestion.status} />
+                          {getDaysRemainingLabel(suggestion.votingDeadline) && (
+                            <Chip
+                              label={getDaysRemainingLabel(
+                                suggestion.votingDeadline
+                              )}
+                              size="small"
+                              variant="outlined"
+                              color="warning"
+                            />
+                          )}
+                        </Stack>
+                      </Box>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        {suggestion.description}
+                      </Typography>
+
+                      <ReasonBox reason={suggestion.reason} />
+
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<PaidIcon fontSize="inherit" />}
+                            label="Amount"
+                            value={formatNaira(suggestion.amountRequired, {
+                              maximumFractionDigits: 2,
+                            })}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<ScheduleIcon fontSize="inherit" />}
+                            label="Timeframe"
+                            value={suggestion.timeframe}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<SecurityIcon fontSize="inherit" />}
+                            label="Risk Level"
+                            value={suggestion.riskLevel}
+                            valueColor={`${getRiskColor(suggestion.riskLevel)}.main`}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <MetaItem
+                            icon={<CalendarTodayIcon fontSize="inherit" />}
+                            label="Suggested On"
+                            value={new Date(
+                              suggestion.createdAt
+                            ).toLocaleDateString()}
+                          />
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ mb: 2 }} />
+
+                      {/* Vote counts */}
+                      {(() => {
+                        const voteCounts = getVoteCount(suggestion);
+                        const userVote = getUserVote(suggestion);
+                        const isOpen = suggestion.status === "Voting";
+
+                        return (
+                          <>
                             <Typography
                               variant="caption"
-                              color="primary"
-                              sx={{
-                                display: "block",
-                                mt: 1,
-                                textAlign: "center",
-                              }}
+                              color="text.secondary"
+                              sx={{ display: "block", mb: 1.5, fontWeight: 600 }}
                             >
-                              You voted:{" "}
-                              {userVote === "yes" ? "Yes 👍" : "No 👎"}
+                              {isOpen
+                                ? "Vote on this investment proposal:"
+                                : "Final result:"}
                             </Typography>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </Box>
-                </Paper>
-              ))}
-            </Stack>
-          )}
-        </TabPanel>
+
+                            {voteCounts.total > 0 && (
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                sx={{ mb: 2, alignItems: "center" }}
+                              >
+                                <Box
+                                  sx={{
+                                    flex: voteCounts.yes || 0.05,
+                                    height: 8,
+                                    borderRadius: 999,
+                                    bgcolor: "success.main",
+                                  }}
+                                />
+                                <Box
+                                  sx={{
+                                    flex: voteCounts.no || 0.05,
+                                    height: 8,
+                                    borderRadius: 999,
+                                    bgcolor: "error.main",
+                                  }}
+                                />
+                              </Stack>
+                            )}
+                            {voteCounts.total > 0 && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block", mb: 2 }}
+                              >
+                                Yes: {voteCounts.yes} | No: {voteCounts.no} |
+                                Total: {voteCounts.total}
+                              </Typography>
+                            )}
+
+                            {isOpen ? (
+                              <>
+                                {(() => {
+                                  const isVotingThis =
+                                    votingInFlight?.id === suggestion.id;
+                                  const yesLoading =
+                                    isVotingThis &&
+                                    votingInFlight?.vote === "yes";
+                                  const noLoading =
+                                    isVotingThis &&
+                                    votingInFlight?.vote === "no";
+
+                                  return (
+                                    <Stack direction="row" spacing={2}>
+                                      <Button
+                                        variant={
+                                          userVote === "yes"
+                                            ? "contained"
+                                            : "outlined"
+                                        }
+                                        disableElevation
+                                        color="success"
+                                        sx={{ flex: 1 }}
+                                        disabled={
+                                          isVotingThis || userVote === "yes"
+                                        }
+                                        startIcon={
+                                          yesLoading ? (
+                                            <CircularProgress
+                                              size={16}
+                                              color="inherit"
+                                            />
+                                          ) : (
+                                            <ThumbUpIcon fontSize="small" />
+                                          )
+                                        }
+                                        onClick={() =>
+                                          handleVote(suggestion.id, "yes")
+                                        }
+                                      >
+                                        {yesLoading ? "Voting..." : "Vote Yes"}
+                                      </Button>
+                                      <Button
+                                        variant={
+                                          userVote === "no"
+                                            ? "contained"
+                                            : "outlined"
+                                        }
+                                        disableElevation
+                                        color="error"
+                                        sx={{ flex: 1 }}
+                                        disabled={
+                                          isVotingThis || userVote === "no"
+                                        }
+                                        startIcon={
+                                          noLoading ? (
+                                            <CircularProgress
+                                              size={16}
+                                              color="inherit"
+                                            />
+                                          ) : (
+                                            <ThumbDownIcon fontSize="small" />
+                                          )
+                                        }
+                                        onClick={() =>
+                                          handleVote(suggestion.id, "no")
+                                        }
+                                      >
+                                        {noLoading ? "Voting..." : "Vote No"}
+                                      </Button>
+                                    </Stack>
+                                  );
+                                })()}
+                                {userVote && (
+                                  <Typography
+                                    variant="caption"
+                                    color="primary"
+                                    sx={{
+                                      display: "block",
+                                      mt: 1,
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    You voted:{" "}
+                                    {userVote === "yes" ? "Yes 👍" : "No 👎"}
+                                  </Typography>
+                                )}
+                              </>
+                            ) : (
+                              <Alert
+                                severity={
+                                  suggestion.status === "Approved for Investing"
+                                    ? "success"
+                                    : "error"
+                                }
+                              >
+                                {suggestion.status === "Approved for Investing"
+                                  ? "🎉 The community approved this for investing."
+                                  : "✗ The community did not approve this investment."}
+                              </Alert>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </TabPanel>
+        </Box>
       </Paper>
+
       {/* Investment Suggestion Form Modal */}
       <InvestmentSuggestionForm
         open={suggestionFormOpen}
@@ -991,6 +1426,6 @@ export default function InvestmentsPage() {
         confirmButtonText="Delete"
         isDangerous
       />
-    </Container>
+    </Box>
   );
 }

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  Container,
   Typography,
   Box,
   TextField,
@@ -100,19 +99,14 @@ export default function MembersDirectoryPage() {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-          <CircularProgress />
-        </Box>
-      </Container>
+      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}
-    >
+    <Box>
       <Typography
         variant="h4"
         sx={{ mb: 1, fontWeight: 600, fontSize: { xs: "1.5rem", sm: "2rem" } }}
@@ -369,6 +363,6 @@ export default function MembersDirectoryPage() {
           </Grid>
         ))}
       </Grid>
-    </Container>
+    </Box>
   );
 }

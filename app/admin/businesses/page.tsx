@@ -5,7 +5,6 @@ import {
   Box,
   Container,
   Typography,
-  Paper,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -24,8 +23,14 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Chip,
+  Card,
+  CardContent,
+  CardMedia,
+  Grid,
+  Avatar,
+  Divider,
+  Alert,
 } from "@mui/material";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -34,6 +39,15 @@ import SearchIcon from "@mui/icons-material/Search";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import CancelIcon from "@mui/icons-material/Cancel";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import PlaceIcon from "@mui/icons-material/Place";
+import PersonIcon from "@mui/icons-material/Person";
+import CloseIcon from "@mui/icons-material/Close";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import LanguageIcon from "@mui/icons-material/Language";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import HomeWorkIcon from "@mui/icons-material/HomeWork";
 import { useSession } from "next-auth/react";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
@@ -113,6 +127,34 @@ interface Business {
   rejectionReason?: string;
   createdAt: string;
   fullAddress?: string;
+  imageUrl?: string;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-NG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function statusChipProps(status: string) {
+  if (status === "Approved") {
+    return {
+      color: "success" as const,
+      icon: <CheckCircleIcon fontSize="small" />,
+    };
+  }
+  if (status === "Rejected") {
+    return { color: "error" as const, icon: <CancelIcon fontSize="small" /> };
+  }
+  return {
+    color: "warning" as const,
+    icon: <HourglassTopIcon fontSize="small" />,
+  };
 }
 
 export default function BusinessesPage() {
@@ -227,7 +269,7 @@ export default function BusinessesPage() {
         } catch (err) {
           showError("Failed to delete business");
         }
-      }
+      },
     );
   };
 
@@ -278,62 +320,6 @@ export default function BusinessesPage() {
     }
   };
 
-  const columns: GridColDef[] = [
-    { field: "name", headerName: "Business Name", width: 220 },
-    { field: "type", headerName: "Category", width: 140 },
-    { field: "ownerName", headerName: "Owner", width: 180 },
-    {
-      field: "status",
-      headerName: "Status",
-      width: 140,
-      renderCell: (params) => {
-        const status = params.row.status;
-        if (status === "Approved") {
-          return (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <CheckCircleIcon sx={{ fontSize: 18, color: "success.main" }} />
-              <Typography variant="body2">{status}</Typography>
-            </Box>
-          );
-        } else if (status === "Pending") {
-          return (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <HourglassTopIcon sx={{ fontSize: 18, color: "warning.main" }} />
-              <Typography variant="body2">{status}</Typography>
-            </Box>
-          );
-        } else if (status === "Rejected") {
-          return (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <CancelIcon sx={{ fontSize: 18, color: "error.main" }} />
-              <Typography variant="body2">{status}</Typography>
-            </Box>
-          );
-        }
-        return <Typography variant="body2">{status}</Typography>;
-      },
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      sortable: false,
-      width: 140,
-      renderCell: (params) => (
-        <>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              setSelected(params.row as Business);
-              setMenuAnchor(e.currentTarget);
-            }}
-          >
-            <MoreVertIcon fontSize="small" />
-          </IconButton>
-        </>
-      ),
-    },
-  ];
-
   const filteredRows = businesses.filter((b) => {
     const matchesSearch = [
       b.name,
@@ -344,7 +330,7 @@ export default function BusinessesPage() {
     ]
       .filter(Boolean)
       .some(
-        (field) => field && field.toLowerCase().includes(search.toLowerCase())
+        (field) => field && field.toLowerCase().includes(search.toLowerCase()),
       );
 
     const matchesStatus =
@@ -381,7 +367,7 @@ export default function BusinessesPage() {
                   <SearchIcon fontSize="small" />
                 </InputAdornment>
               ),
-            }
+            },
           }}
         />
         <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -398,17 +384,151 @@ export default function BusinessesPage() {
           </Select>
         </FormControl>
       </Stack>
-      <Paper sx={{ height: 600, width: "100%" }}>
-        <DataGrid
-          rows={filteredRows}
-          columns={columns}
-          pageSizeOptions={[5, 10, 25]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          getRowId={(row: Business) => row._id}
-        />
-      </Paper>
+      <Grid container spacing={2}>
+        {filteredRows.map((business) => {
+          const { color, icon } = statusChipProps(business.status);
+          return (
+            <Grid key={business._id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Card
+                sx={{
+                  position: "relative",
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {business.imageUrl ? (
+                  <CardMedia
+                    component="img"
+                    image={business.imageUrl}
+                    alt={business.name}
+                    sx={{ height: 120, objectFit: "contain" }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      height: 120,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: "action.hover",
+                    }}
+                  >
+                    <Avatar
+                      sx={{ width: 48, height: 48, bgcolor: "primary.main" }}
+                    >
+                      <StorefrontIcon />
+                    </Avatar>
+                  </Box>
+                )}
+
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    setSelected(business);
+                    setMenuAnchor(e.currentTarget);
+                  }}
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    bgcolor: "background.paper",
+                    "&:hover": { bgcolor: "background.paper" },
+                  }}
+                >
+                  <MoreVertIcon fontSize="small" />
+                </IconButton>
+
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      mb: 0.5,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600 }}
+                      noWrap
+                      title={business.name}
+                    >
+                      {business.name}
+                    </Typography>
+                  </Stack>
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    sx={{ flexWrap: "wrap", mb: 1 }}
+                  >
+                    <Chip
+                      size="small"
+                      label={business.type}
+                      variant="outlined"
+                    />
+                    <Chip
+                      size="small"
+                      label={business.status}
+                      color={color}
+                      icon={icon}
+                    />
+                  </Stack>
+                  <Stack spacing={0.5}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <PersonIcon
+                        fontSize="small"
+                        sx={{ color: "text.secondary" }}
+                      />
+                      <Typography variant="caption" noWrap>
+                        {business.ownerName}
+                      </Typography>
+                    </Stack>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <PlaceIcon
+                        fontSize="small"
+                        sx={{ color: "text.secondary" }}
+                      />
+                      <Typography variant="caption" noWrap>
+                        {business.location}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{
+                      mt: 1,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {business.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      {filteredRows.length === 0 && (
+        <Box sx={{ py: 8, textAlign: "center" }}>
+          <Typography color="textSecondary">No businesses found.</Typography>
+        </Box>
+      )}
+
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
@@ -576,56 +696,226 @@ export default function BusinessesPage() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Business Details</DialogTitle>
-        <DialogContent sx={{ pt: 2, display: "grid", gap: 1 }}>
-          <Typography variant="subtitle2">Name</Typography>
-          <Typography variant="body2">{selected?.name}</Typography>
-
-          <Typography variant="subtitle2">Category</Typography>
-          <Typography variant="body2">{selected?.type}</Typography>
-
-          <Typography variant="subtitle2">Owner</Typography>
-          <Typography variant="body2">{selected?.ownerName}</Typography>
-
-          <Typography variant="subtitle2">Description</Typography>
-          <Typography variant="body2">{selected?.description}</Typography>
-
-          <Typography variant="subtitle2">Location</Typography>
-          <Typography variant="body2">{selected?.location}</Typography>
-
-          {selected?.fullAddress && (
+        <DialogTitle sx={{ pr: 6 }}>
+          Business Details
+          <IconButton
+            onClick={() => setViewOpen(false)}
+            sx={{ position: "absolute", right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          {selected && (
             <>
-              <Typography variant="subtitle2">Full Address</Typography>
-              <Typography variant="body2">{selected?.fullAddress}</Typography>
-            </>
-          )}
+              {selected.imageUrl ? (
+                <CardMedia
+                  component="img"
+                  image={selected.imageUrl}
+                  alt={selected.name}
+                  sx={{ height: 160, objectFit: "cover" }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    height: 100,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: "action.hover",
+                  }}
+                >
+                  <Avatar
+                    sx={{ width: 56, height: 56, bgcolor: "primary.main" }}
+                  >
+                    <StorefrontIcon />
+                  </Avatar>
+                </Box>
+              )}
 
-          <Typography variant="subtitle2">Contact Email</Typography>
-          <Typography variant="body2">{selected?.contactEmail}</Typography>
+              <Box sx={{ p: 3, pb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  {selected.name}
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
+                  <Chip size="small" label={selected.type} variant="outlined" />
+                  {(() => {
+                    const { color, icon } = statusChipProps(selected.status);
+                    return (
+                      <Chip
+                        size="small"
+                        label={selected.status}
+                        color={color}
+                        icon={icon}
+                      />
+                    );
+                  })()}
+                </Stack>
+              </Box>
 
-          <Typography variant="subtitle2">Contact Phone</Typography>
-          <Typography variant="body2">{selected?.contactPhone}</Typography>
+              <Divider />
 
-          {selected?.website && (
-            <>
-              <Typography variant="subtitle2">Website</Typography>
-              <Typography variant="body2">{selected?.website}</Typography>
-            </>
-          )}
+              <Box sx={{ p: 3 }}>
+                {selected.status === "Rejected" && selected.rejectionReason && (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    <strong>Rejection reason:</strong>{" "}
+                    {selected.rejectionReason}
+                  </Alert>
+                )}
 
-          <Typography variant="subtitle2">Status</Typography>
-          <Typography variant="body2">{selected?.status}</Typography>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 600, mb: 1 }}
+                >
+                  Description
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                  {selected.description}
+                </Typography>
 
-          {selected?.rejectionReason && (
-            <>
-              <Typography variant="subtitle2">Rejection Reason</Typography>
-              <Typography variant="body2" sx={{ color: "error.main" }}>
-                {selected?.rejectionReason}
-              </Typography>
+                <Grid container spacing={2.5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+                      <PersonIcon fontSize="small" sx={{ color: "text.secondary", mt: 0.25 }} />
+                      <Box>
+                        <Typography variant="caption" color="textSecondary" sx={{ display: "block" }}>
+                          Owner
+                        </Typography>
+                        <Typography variant="body2">{selected.ownerName}</Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+                      <PlaceIcon fontSize="small" sx={{ color: "text.secondary", mt: 0.25 }} />
+                      <Box>
+                        <Typography variant="caption" color="textSecondary" sx={{ display: "block" }}>
+                          Location
+                        </Typography>
+                        <Typography variant="body2">{selected.location}</Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+
+                  {selected.fullAddress && (
+                    <Grid size={12}>
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+                        <HomeWorkIcon fontSize="small" sx={{ color: "text.secondary", mt: 0.25 }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary" sx={{ display: "block" }}>
+                            Full Address
+                          </Typography>
+                          <Typography variant="body2">{selected.fullAddress}</Typography>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                  )}
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+                      <EmailIcon fontSize="small" sx={{ color: "text.secondary", mt: 0.25 }} />
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="caption" color="textSecondary" sx={{ display: "block" }}>
+                          Contact Email
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          component="a"
+                          href={`mailto:${selected.contactEmail}`}
+                          sx={{ color: "primary.main", textDecoration: "none", wordBreak: "break-all" }}
+                        >
+                          {selected.contactEmail}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+                      <PhoneIcon fontSize="small" sx={{ color: "text.secondary", mt: 0.25 }} />
+                      <Box>
+                        <Typography variant="caption" color="textSecondary" sx={{ display: "block" }}>
+                          Contact Phone
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          component="a"
+                          href={`tel:${selected.contactPhone}`}
+                          sx={{ color: "primary.main", textDecoration: "none" }}
+                        >
+                          {selected.contactPhone}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+
+                  {selected.website && (
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+                        <LanguageIcon fontSize="small" sx={{ color: "text.secondary", mt: 0.25 }} />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="caption" color="textSecondary" sx={{ display: "block" }}>
+                            Website
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            component="a"
+                            href={selected.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ color: "primary.main", textDecoration: "none", wordBreak: "break-all" }}
+                          >
+                            {selected.website}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                  )}
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+                      <CalendarTodayIcon fontSize="small" sx={{ color: "text.secondary", mt: 0.25 }} />
+                      <Box>
+                        <Typography variant="caption" color="textSecondary" sx={{ display: "block" }}>
+                          Submitted
+                        </Typography>
+                        <Typography variant="body2">{formatDate(selected.createdAt)}</Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Box>
             </>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          {selected?.status === "Pending" && (
+            <>
+              <Button
+                color="error"
+                startIcon={<CancelIcon />}
+                onClick={() => {
+                  if (selected) handleRejectClick(selected);
+                  setViewOpen(false);
+                }}
+              >
+                Reject
+              </Button>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<CheckCircleIcon />}
+                onClick={() => {
+                  if (selected) handleApprove(selected._id);
+                  setViewOpen(false);
+                }}
+              >
+                Approve
+              </Button>
+            </>
+          )}
+          <Box sx={{ flex: 1 }} />
           <Button onClick={() => setViewOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>

@@ -11,6 +11,7 @@ export interface IUser extends Document {
   balance: number;
   isTopUser: boolean;
   dateJoined: Date;
+  lastLogin?: Date;
   community?: mongoose.Types.ObjectId;
   profileCompleted: boolean;
   dateOfBirth?: Date;
@@ -123,6 +124,7 @@ const UserSchema = new Schema<IUser>(
     balance: { type: Number, default: 0 },
     isTopUser: { type: Boolean, default: false },
     dateJoined: { type: Date, default: () => new Date() },
+    lastLogin: Date,
     community: { type: Schema.Types.ObjectId, ref: "Community" },
     profileCompleted: { type: Boolean, default: false },
     dateOfBirth: Date,

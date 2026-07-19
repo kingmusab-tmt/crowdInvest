@@ -94,54 +94,6 @@ export async function getCommunityInvestmentSuggestions(
   }
 }
 
-export async function approveSuggestion(
-  suggestionId: string
-): Promise<InvestmentSuggestion> {
-  try {
-    const response = await fetch(
-      `/api/investments/suggestions/${suggestionId}/approve`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    if (!response.ok) throw new Error("Failed to approve suggestion");
-    const suggestion = await response.json();
-    return {
-      ...suggestion,
-      id: suggestion._id,
-    };
-  } catch (error) {
-    console.error("Error approving suggestion:", error);
-    throw error;
-  }
-}
-
-export async function rejectSuggestion(
-  suggestionId: string,
-  reason: string
-): Promise<InvestmentSuggestion> {
-  try {
-    const response = await fetch(
-      `/api/investments/suggestions/${suggestionId}/reject`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      }
-    );
-    if (!response.ok) throw new Error("Failed to reject suggestion");
-    const suggestion = await response.json();
-    return {
-      ...suggestion,
-      id: suggestion._id,
-    };
-  } catch (error) {
-    console.error("Error rejecting suggestion:", error);
-    throw error;
-  }
-}
-
 export async function getInvestments(): Promise<Investment[]> {
   try {
     const response = await fetch("/api/investments");

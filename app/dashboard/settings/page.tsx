@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  Container,
   Tabs,
   Tab,
   Box,
@@ -451,17 +450,14 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 6, textAlign: "center" }}>
+      <Box sx={{ py: 6, textAlign: "center" }}>
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container
-      maxWidth="md"
-      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1.5, sm: 2 } }}
-    >
+    <Box>
       <Typography
         variant="h4"
         sx={{ fontWeight: 600, mb: 2, fontSize: { xs: "1.5rem", sm: "2rem" } }}
@@ -2064,6 +2060,6 @@ export default function SettingsPage() {
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-    </Container>
+    </Box>
   );
 }

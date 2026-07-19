@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import dbConnect from "../../../../utils/connectDB";
 import Business from "../../../../models/Business";
+import User from "../../../../models/User";
+import { createNotification } from "../../../../services/notificationService";
 import { Types } from "mongoose";
 
 export async function GET(
@@ -53,6 +55,17 @@ export async function PUT(
     }
 
     const body = await request.json();
+
+    const existingBusiness = await Business.findById(id).select(
+      "status ownerId ownerEmail name"
+    );
+    if (!existingBusiness) {
+      return NextResponse.json(
+        { error: "Business not found" },
+        { status: 404 }
+      );
+    }
+    const previousStatus = existingBusiness.status;
 
     // Normalize status to allowed enum values
     const normalizedStatus = (() => {
@@ -114,6 +127,54 @@ export async function PUT(
       name: business.name,
       status: business.status,
     });
+
+    // Notify the owner when the business is newly approved or rejected.
+    if (
+      normalizedStatus &&
+      normalizedStatus !== previousStatus &&
+      (normalizedStatus === "Approved" || normalizedStatus === "Rejected")
+    ) {
+      try {
+        let ownerId = business.ownerId?.toString();
+        if (!ownerId && business.ownerEmail) {
+          const owner = await User.findOne({
+            email: business.ownerEmail,
+          }).select("_id");
+          ownerId = owner?._id?.toString();
+        }
+
+        if (ownerId) {
+          if (normalizedStatus === "Approved") {
+            await createNotification({
+              userId: ownerId,
+              type: "business_approved",
+              title: "Business Approved",
+              message: `Your business "${business.name}" has been approved and is now visible to the community.`,
+              actionUrl: "/dashboard/member-businesses",
+            });
+          } else {
+            await createNotification({
+              userId: ownerId,
+              type: "business_rejected",
+              title: "Business Rejected",
+              message: `Your business "${business.name}" was rejected. Reason: ${business.rejectionReason || "No reason provided"}.`,
+              relatedData: { rejectionReason: business.rejectionReason },
+              actionUrl: "/dashboard/member-businesses",
+            });
+          }
+        } else {
+          console.error(
+            "[Business Update] Could not resolve owner to notify:",
+            business._id
+          );
+        }
+      } catch (notifyError) {
+        console.error(
+          "[Business Update] Failed to send owner notification:",
+          notifyError
+        );
+      }
+    }
 
     return NextResponse.json(business, { status: 200 });
   } catch (error) {

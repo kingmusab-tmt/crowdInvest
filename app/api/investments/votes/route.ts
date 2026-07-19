@@ -2,10 +2,22 @@ import { NextResponse, NextRequest } from "next/server";
 import dbConnect from "@/utils/connectDB";
 import InvestmentSuggestion from "@/models/InvestmentSuggestion";
 import { Types } from "mongoose";
+import {
+  closeExpiredVoting,
+  notifyVotingClosedResults,
+} from "@/services/investmentSuggestionService";
 
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+
+    // Lazily resolve any suggestion whose 3-day voting window has passed
+    // before returning the tally, since this app has no cron infrastructure.
+    const closed = await closeExpiredVoting();
+    if (closed.length > 0) {
+      await notifyVotingClosedResults(closed);
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const community = searchParams.get("community");
 
@@ -38,6 +50,7 @@ export async function GET(request: NextRequest) {
         totalVoters: votes.length,
         status: suggestion.status,
         community: suggestion.community,
+        votingDeadline: suggestion.votingDeadline,
       };
     });
 

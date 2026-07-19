@@ -3,10 +3,24 @@ import dbConnect from "../../../utils/connectDB";
 import Assistance from "../../../models/Assistance";
 import User from "../../../models/User";
 import { Types } from "mongoose";
+import {
+  closeExpiredAssistanceVoting,
+  notifyAdminsOfNewAssistanceRequest,
+  notifyAllMembersOfAssistanceResult,
+} from "../../../services/assistanceVotingService";
 
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+
+    // Lazily resolve any assistance request whose 3-day voting window has
+    // passed before returning the list, since this app has no cron
+    // infrastructure.
+    const closed = await closeExpiredAssistanceVoting();
+    if (closed.length > 0) {
+      await notifyAllMembersOfAssistanceResult(closed);
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const community = searchParams.get("community");
 
@@ -70,6 +84,12 @@ export async function POST(request: NextRequest) {
 
     await assistance.save();
     await assistance.populate("requestedBy", "name email");
+
+    // Notify all admins so they know to review it
+    await notifyAdminsOfNewAssistanceRequest(
+      assistance,
+      (assistance.requestedBy as any)?.name || "A member"
+    );
 
     return NextResponse.json(assistance, { status: 201 });
   } catch (error) {

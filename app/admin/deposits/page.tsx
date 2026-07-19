@@ -92,8 +92,7 @@ export default function ManualDepositPage() {
     }
 
     if (
-      (formData.transactionType === "manual_deposit" ||
-        formData.transactionType === "refund_deposit") &&
+      formData.transactionType === "manual_deposit" &&
       !formData.selectedMember
     ) {
       showError("Please select a member for this deposit type");
@@ -149,8 +148,6 @@ export default function ManualDepositPage() {
         return "Profit Deposit (Investment Income)";
       case "manual_deposit":
         return "Manual Deposit (Member Payment)";
-      case "refund_deposit":
-        return "Refund Deposit";
       default:
         return type;
     }
@@ -162,8 +159,6 @@ export default function ManualDepositPage() {
         return "Record profit from investments. This will be distributed to members based on their contribution percentage.";
       case "manual_deposit":
         return "Record payment made directly by a member to admin. Select the member who made the payment.";
-      case "refund_deposit":
-        return "Record a refund to the community. Select the member this refund is for.";
       default:
         return "";
     }
@@ -216,9 +211,6 @@ export default function ManualDepositPage() {
                   <MenuItem value="manual_deposit">
                     {getTransactionTypeLabel("manual_deposit")}
                   </MenuItem>
-                  <MenuItem value="refund_deposit">
-                    {getTransactionTypeLabel("refund_deposit")}
-                  </MenuItem>
                 </Select>
               </FormControl>
               {formData.transactionType && (
@@ -234,9 +226,8 @@ export default function ManualDepositPage() {
               )}
             </Grid>
 
-            {/* Member Selection (for manual_deposit and refund_deposit) */}
-            {(formData.transactionType === "manual_deposit" ||
-              formData.transactionType === "refund_deposit") && (
+            {/* Member Selection (for manual_deposit) */}
+            {formData.transactionType === "manual_deposit" && (
               <Grid size={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Member</InputLabel>
@@ -317,13 +308,9 @@ export default function ManualDepositPage() {
             will be shared among all members based on their contribution
             percentage.
           </Typography>
-          <Typography variant="body2" sx={{ mb: 1 }}>
+          <Typography variant="body2">
             • <strong>Manual Deposit:</strong> Records a member's payment made
             directly to admin (cash, bank transfer, etc.).
-          </Typography>
-          <Typography variant="body2">
-            • <strong>Refund Deposit:</strong> Records a refund being added back
-            to community funds.
           </Typography>
         </Box>
 

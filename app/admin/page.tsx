@@ -10,11 +10,9 @@ import {
   CardContent,
   Button,
   Paper,
-  Chip,
   Avatar,
   CircularProgress,
   LinearProgress,
-  Divider,
   Stack,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
@@ -35,7 +33,7 @@ import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
 
 // Stats Card Component
-function StatsCard({ title, value, icon, color, action }: any) {
+function StatsCard({ title, value, icon, color, action, plainIcon }: any) {
   return (
     <Card>
       <CardContent>
@@ -50,7 +48,22 @@ function StatsCard({ title, value, icon, color, action }: any) {
           <Typography color="textSecondary" variant="body2">
             {title}
           </Typography>
-          <Avatar sx={{ bgcolor: color, width: 48, height: 48 }}>{icon}</Avatar>
+          {plainIcon ? (
+            <Box
+              sx={{
+                color,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {React.cloneElement(icon, { sx: { fontSize: 32 } })}
+            </Box>
+          ) : (
+            <Avatar sx={{ bgcolor: color, width: 48, height: 48 }}>
+              {icon}
+            </Avatar>
+          )}
         </Box>
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           {value}
@@ -76,7 +89,6 @@ export default function AdminDashboard() {
     showWarning,
     showInfo,
   } = useSnackbar();
-  const [communityData, setCommunityData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [stats, setStats] = React.useState({
     totalMembers: 0,
@@ -117,7 +129,6 @@ export default function AdminDashboard() {
       }
       const community = await communityRes.json();
       const communityId = community._id;
-      setCommunityData(community);
 
       // Fetch all community members
       const membersRes = await fetch(`/api/users?communityId=${communityId}`);
@@ -130,12 +141,12 @@ export default function AdminDashboard() {
       // Filter transactions for this community by checking member emails
       const memberEmails = new Set(members.map((m: any) => m.email));
       const communityTransactions = allTransactions.filter((t: any) =>
-        memberEmails.has(t.userEmail)
+        memberEmails.has(t.userEmail),
       );
 
       // Fetch investments
       const investmentsRes = await fetch(
-        `/api/investments?community=${communityId}`
+        `/api/investments?community=${communityId}`,
       );
       const investments = await investmentsRes.json();
 
@@ -149,16 +160,26 @@ export default function AdminDashboard() {
       const communityProposals = allProposals.filter(
         (p: any) =>
           (p.community && p.community.toString() === communityId) ||
-          p.community === communityId
+          p.community === communityId,
       );
+
+      // `community` comes back populated (as {_id, name}) from /api/businesses
+      // and /api/events, but as a raw ObjectId string from the other list
+      // endpoints below — handle both shapes so the comparison actually matches.
+      const matchesCommunity = (communityField: any) => {
+        if (!communityField) return false;
+        const idStr =
+          typeof communityField === "object"
+            ? communityField._id?.toString()
+            : communityField.toString();
+        return idStr === communityId;
+      };
 
       // Fetch businesses
       const businessesRes = await fetch("/api/businesses");
       const allBusinesses = await businessesRes.json();
-      const communityBusinesses = allBusinesses.filter(
-        (b: any) =>
-          (b.community && b.community.toString() === communityId) ||
-          b.community === communityId
+      const communityBusinesses = allBusinesses.filter((b: any) =>
+        matchesCommunity(b.community),
       );
 
       // Fetch withdrawals
@@ -167,7 +188,7 @@ export default function AdminDashboard() {
       const communityWithdrawals = allWithdrawals.filter(
         (w: any) =>
           (w.community && w.community.toString() === communityId) ||
-          w.community === communityId
+          w.community === communityId,
       );
 
       // Fetch assistance requests
@@ -176,30 +197,28 @@ export default function AdminDashboard() {
       const communityAssistance = allAssistance.filter(
         (a: any) =>
           (a.community && a.community.toString() === communityId) ||
-          a.community === communityId
+          a.community === communityId,
       );
 
-      const communityEventsFiltered = allEvents.filter((e: any) => {
-        const eCommunityStr = e.community?.toString?.();
-        return eCommunityStr === communityId || e.community === communityId;
-      });
+      const communityEventsFiltered = allEvents.filter((e: any) =>
+        matchesCommunity(e.community),
+      );
 
       // Use the filtered events for all calculations
       const communityEvents = communityEventsFiltered;
 
       // Calculate total contributions (same logic as member dashboard)
-      // Community Deposits: Monthly_Contribution, manual_deposit, refund_deposit
+      // Community Deposits: Monthly_Contribution, manual_deposit
       const memberDeposits = communityTransactions.filter(
         (t: any) =>
           (t.type === "Monthly_Contribution" ||
-            t.type === "manual_deposit" ||
-            t.type === "refund_deposit") &&
-          t.status === "Completed"
+            t.type === "manual_deposit") &&
+          t.status === "Completed",
       );
 
       const totalContributions = memberDeposits.reduce(
         (sum: number, t: any) => sum + t.amount,
-        0
+        0,
       );
 
       // Calculate total spending (same logic as member dashboard)
@@ -207,33 +226,33 @@ export default function AdminDashboard() {
       const spendingTransactions = communityTransactions.filter(
         (t: any) =>
           ["Investment", "Assistance", "Event"].includes(t.type) &&
-          t.status === "Completed"
+          t.status === "Completed",
       );
 
       const totalSpending = spendingTransactions.reduce(
         (sum: number, t: any) => sum + t.amount,
-        0
+        0,
       );
 
       // Calculate total investment income (profit_deposit)
       const profitDepositTransactions = communityTransactions.filter(
-        (t: any) => t.type === "profit_deposit" && t.status === "Completed"
+        (t: any) => t.type === "profit_deposit" && t.status === "Completed",
       );
 
       const totalInvestmentIncome = profitDepositTransactions.reduce(
         (sum: number, t: any) => sum + t.amount,
-        0
+        0,
       );
 
       // Calculate community-level withdrawals (all members' Profit Share withdrawals)
       const allProfitShareTransactions = communityTransactions.filter(
-        (t: any) => t.type === "Profit Share" && t.status === "Completed"
+        (t: any) => t.type === "Profit Share" && t.status === "Completed",
       );
 
       const communityTotalWithdrawals = Math.abs(
         allProfitShareTransactions
           .filter((t: any) => t.amount < 0)
-          .reduce((sum: number, t: any) => sum + t.amount, 0)
+          .reduce((sum: number, t: any) => sum + t.amount, 0),
       );
 
       const remainingIncome = totalInvestmentIncome - communityTotalWithdrawals;
@@ -241,11 +260,11 @@ export default function AdminDashboard() {
 
       // Get active investments
       const activeInvestments = investments.filter(
-        (i: any) => i.status === "Active"
+        (i: any) => i.status === "Active",
       ).length;
 
       const pendingInvestments = investments.filter(
-        (i: any) => i.status === "Pending"
+        (i: any) => i.status === "Pending",
       ).length;
 
       // Get upcoming events using same logic as member dashboard
@@ -254,33 +273,33 @@ export default function AdminDashboard() {
         .filter((e: any) => new Date(e.eventDate) > now)
         .sort(
           (a: any, b: any) =>
-            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime(),
         );
 
       // Get pending proposals
       const pendingProposalsList = communityProposals.filter(
-        (p: any) => p.status === "Pending"
+        (p: any) => p.status === "Pending",
       );
 
       const pendingBusinessesList = communityBusinesses.filter(
-        (b: any) => b.status === "Pending"
+        (b: any) => b.status === "Pending",
       );
 
       const pendingWithdrawalsList = communityWithdrawals.filter(
-        (w: any) => w.status === "Pending"
+        (w: any) => w.status === "Pending",
       );
 
       const pendingAssistanceList = communityAssistance.filter(
-        (a: any) => a.status === "Pending"
+        (a: any) => a.status === "Pending",
       );
 
       // Calculate KYC stats (using kyc.isVerified instead of kycStatus)
       const kycApprovedCount = members.filter(
-        (m: any) => m.kyc?.isVerified === true
+        (m: any) => m.kyc?.isVerified === true,
       ).length;
 
       const kycPendingCount = members.filter(
-        (m: any) => !m.kyc?.isVerified
+        (m: any) => !m.kyc?.isVerified,
       ).length;
 
       setStats({
@@ -303,7 +322,7 @@ export default function AdminDashboard() {
       });
     } catch (err) {
       showError(
-        err instanceof Error ? err.message : "Failed to fetch community data"
+        err instanceof Error ? err.message : "Failed to fetch community data",
       );
       console.error("Error fetching community data:", err);
     } finally {
@@ -333,10 +352,14 @@ export default function AdminDashboard() {
   return (
     <Container
       maxWidth="lg"
-      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1.5, sm: 2 } }}
+      sx={{
+        pt: { xs: 1, sm: 1.5, md: 2 },
+        pb: { xs: 2, sm: 4, md: 6 },
+        px: { xs: 1.5, sm: 2 },
+      }}
     >
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
+      {/* <Box sx={{ mb: 4 }}>
         <Typography
           variant="h3"
           sx={{
@@ -350,29 +373,48 @@ export default function AdminDashboard() {
         <Typography variant="body1" color="textSecondary">
           Manage your community, members, and activities
         </Typography>
-      </Box>
+      </Box> */}
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={12}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 1,
+              mb: 2,
+            }}
           >
-            Community Overview
-          </Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 600, color: "text.secondary" }}
+            >
+              Community Overview
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to Dashboard
+            </Button>
+          </Box>
         </Grid>
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
           <StatsCard
             title="Community Members"
             value={stats.totalMembers}
             icon={<GroupsIcon />}
             color="primary.main"
+            plainIcon
             action={{
               label: "Manage",
               onClick: () => router.push("/admin/users"),
@@ -382,15 +424,16 @@ export default function AdminDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
           <StatsCard
             title="Active Investments"
             value={stats.activeInvestments}
             icon={<TrendingUpIcon />}
             color="success.main"
+            plainIcon
             action={{
               label: "View All",
               onClick: () => router.push("/admin/investments"),
@@ -400,15 +443,16 @@ export default function AdminDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
           <StatsCard
             title="Pending Investments"
             value={stats.pendingInvestments}
             icon={<PendingIcon />}
             color="warning.main"
+            plainIcon
             action={{
               label: "Review",
               onClick: () => router.push("/admin/investments"),
@@ -418,15 +462,16 @@ export default function AdminDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
           <StatsCard
             title="Upcoming Events"
             value={stats.upcomingEvents}
             icon={<EventIcon />}
             color="warning.main"
+            plainIcon
             action={{
               label: "View All",
               onClick: () => router.push("/admin/events"),
@@ -436,15 +481,16 @@ export default function AdminDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
           <StatsCard
             title="Pending Proposals"
             value={stats.pendingProposals}
             icon={<AssignmentIcon />}
             color="info.main"
+            plainIcon
             action={{
               label: "Review",
               onClick: () => router.push("/admin/proposals"),
@@ -454,18 +500,95 @@ export default function AdminDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
           <StatsCard
             title="Pending Businesses"
             value={stats.pendingBusinesses}
             icon={<LocationCityIcon />}
             color="warning.main"
+            plainIcon
             action={{
               label: "Review",
               onClick: () => router.push("/admin/businesses"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
+          <StatsCard
+            title="Pending Withdrawals"
+            value={stats.pendingWithdrawals}
+            icon={<PendingIcon />}
+            color="warning.main"
+            plainIcon
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/withdrawals"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
+          <StatsCard
+            title="Pending Assistance"
+            value={stats.pendingAssistance}
+            icon={<HelpIcon />}
+            color="info.main"
+            plainIcon
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/assistance"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
+          <StatsCard
+            title="KYC Pending"
+            value={stats.kycPending}
+            icon={<PendingIcon />}
+            color="warning.main"
+            plainIcon
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/kyc"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 6,
+            lg: 2.4,
+          }}
+        >
+          <StatsCard
+            title="KYC Approved"
+            value={stats.kycApproved}
+            icon={<CheckCircleIcon />}
+            color="success.main"
+            plainIcon
+            action={{
+              label: "Review",
+              onClick: () => router.push("/admin/kyc"),
             }}
           />
         </Grid>
@@ -483,386 +606,94 @@ export default function AdminDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 4
-          }}>
+            xs: 6,
+            lg: 2,
+          }}
+        >
           <StatsCard
             title="Total Contributions"
             value={formatNaira(stats.totalContributions)}
             icon={<AccountBalanceWalletIcon />}
             color="primary.main"
+            plainIcon
           />
         </Grid>
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 4
-          }}>
+            xs: 6,
+            lg: 2,
+          }}
+        >
           <StatsCard
             title="Total Spending"
             value={formatNaira(stats.totalSpending)}
             icon={<MonetizationOnIcon />}
             color="error.main"
+            plainIcon
           />
         </Grid>
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 4
-          }}>
+            xs: 6,
+            lg: 2,
+          }}
+        >
           <StatsCard
             title="Available for Investment"
             value={formatNaira(stats.availableForInvestment)}
             icon={<PieChartIcon />}
             color="success.main"
+            plainIcon
           />
-        </Grid>
-      </Grid>
-      {/* Investment Income Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={12}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
-          >
-            Investment Income
-          </Typography>
         </Grid>
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 4
-          }}>
+            xs: 6,
+            lg: 2,
+          }}
+        >
           <StatsCard
             title="Total Investment Income"
             value={formatNaira(stats.totalInvestmentIncome)}
             icon={<TrendingUpIcon />}
             color="success.main"
-            action={{
-              label: "Add Deposit",
-              onClick: () => router.push("/admin/deposits"),
-            }}
+            plainIcon
           />
         </Grid>
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 4
-          }}>
+            xs: 6,
+            lg: 2,
+          }}
+        >
           <StatsCard
             title="Total Withdrawn by Members"
             value={formatNaira(stats.communityWithdrawals)}
             icon={<MonetizationOnIcon />}
             color="warning.main"
+            plainIcon
           />
         </Grid>
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 4
-          }}>
+            xs: 6,
+            lg: 2,
+          }}
+        >
           <StatsCard
             title="Current Income Balance"
             value={formatNaira(stats.remainingIncome)}
             icon={<AccountBalanceWalletIcon />}
             color="primary.main"
+            plainIcon
           />
         </Grid>
       </Grid>
-      {/* Pending Actions */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={12}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
-          >
-            Pending Actions
-          </Typography>
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="Pending Withdrawals"
-            value={stats.pendingWithdrawals}
-            icon={<PendingIcon />}
-            color="warning.main"
-            action={{
-              label: "Review",
-              onClick: () => router.push("/admin/withdrawals"),
-            }}
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="Pending Assistance"
-            value={stats.pendingAssistance}
-            icon={<HelpIcon />}
-            color="info.main"
-            action={{
-              label: "Review",
-              onClick: () => router.push("/admin/assistance"),
-            }}
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="KYC Pending"
-            value={stats.kycPending}
-            icon={<PendingIcon />}
-            color="warning.main"
-            action={{
-              label: "Review",
-              onClick: () => router.push("/admin/kyc"),
-            }}
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="KYC Approved"
-            value={stats.kycApproved}
-            icon={<CheckCircleIcon />}
-            color="success.main"
-          />
-        </Grid>
-      </Grid>
-      {/* Community Info */}
-      {communityData && (
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-            Community Information
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid
-              size={{
-                xs: 12,
-                sm: 6
-              }}>
-              <Typography variant="body2" color="textSecondary">
-                Community Name
-              </Typography>
-              <Typography variant="h6">{communityData.name}</Typography>
-            </Grid>
-            <Grid
-              size={{
-                xs: 12,
-                sm: 6
-              }}>
-              <Typography variant="body2" color="textSecondary">
-                Status
-              </Typography>
-              <Chip
-                label={communityData.status}
-                color={communityData.status === "Active" ? "success" : "error"}
-              />
-            </Grid>
-            <Grid size={12}>
-              <Typography variant="body2" color="textSecondary">
-                Description
-              </Typography>
-              <Typography variant="body1">
-                {communityData.description || "No description"}
-              </Typography>
-            </Grid>
-          </Grid>
-
-          {communityData.enabledFunctions && (
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                Enabled Features
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                {communityData.enabledFunctions.investments && (
-                  <Chip
-                    label="Investments"
-                    size="small"
-                    variant="outlined"
-                    color="success"
-                  />
-                )}
-                {communityData.enabledFunctions.proposals && (
-                  <Chip
-                    label="Proposals"
-                    size="small"
-                    variant="outlined"
-                    color="info"
-                  />
-                )}
-                {communityData.enabledFunctions.events && (
-                  <Chip
-                    label="Events"
-                    size="small"
-                    variant="outlined"
-                    color="warning"
-                  />
-                )}
-                {communityData.enabledFunctions.assistance && (
-                  <Chip
-                    label="Assistance"
-                    size="small"
-                    variant="outlined"
-                    color="primary"
-                  />
-                )}
-                {communityData.enabledFunctions.kyc && (
-                  <Chip
-                    label="KYC"
-                    size="small"
-                    variant="outlined"
-                    color="secondary"
-                  />
-                )}
-                {communityData.enabledFunctions.withdrawals && (
-                  <Chip
-                    label="Withdrawals"
-                    size="small"
-                    variant="outlined"
-                    color="error"
-                  />
-                )}
-              </Box>
-            </Box>
-          )}
-        </Paper>
-      )}
-      {/* Financial Summary */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-          Financial Summary
-        </Typography>
-        <Grid container spacing={3}>
-          <Grid
-            size={{
-              xs: 12,
-              md: 6
-            }}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="textSecondary">
-                Total Community Contributions
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                {formatNaira(stats.totalContributions)}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                All member deposits and contributions
-              </Typography>
-            </Box>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="textSecondary">
-                Total Community Spending
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 600, color: "error.main" }}
-              >
-                {formatNaira(stats.totalSpending)}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                Investments, events, assistance, etc.
-              </Typography>
-            </Box>
-            <Divider sx={{ my: 2 }} />
-            <Box>
-              <Typography variant="body2" color="textSecondary">
-                Available for Investment
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 600, color: "success.main" }}
-              >
-                {formatNaira(stats.availableForInvestment)}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                Contributions minus spending
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              md: 6
-            }}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="textSecondary">
-                Total Investment Income Achieved
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 600, color: "success.main" }}
-              >
-                {formatNaira(stats.totalInvestmentIncome)}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                All profit deposits received
-              </Typography>
-            </Box>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="textSecondary">
-                Total Withdrawn by Members
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 600, color: "warning.main" }}
-              >
-                {formatNaira(stats.communityWithdrawals)}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                Member withdrawals and contributions from profit share
-              </Typography>
-            </Box>
-            <Divider sx={{ my: 2 }} />
-            <Box>
-              <Typography variant="body2" color="textSecondary">
-                Current Investment Income Balance
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 600, color: "primary.main" }}
-              >
-                {formatNaira(stats.remainingIncome)}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                Remaining after member withdrawals
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
       {/* Quick Actions */}
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
@@ -873,8 +704,9 @@ export default function AdminDashboard() {
             size={{
               xs: 12,
               sm: 6,
-              md: 4
-            }}>
+              md: 4,
+            }}
+          >
             <Button
               variant="outlined"
               fullWidth
@@ -888,8 +720,9 @@ export default function AdminDashboard() {
             size={{
               xs: 12,
               sm: 6,
-              md: 4
-            }}>
+              md: 4,
+            }}
+          >
             <Button
               variant="outlined"
               fullWidth
@@ -903,8 +736,9 @@ export default function AdminDashboard() {
             size={{
               xs: 12,
               sm: 6,
-              md: 4
-            }}>
+              md: 4,
+            }}
+          >
             <Button
               variant="outlined"
               fullWidth
@@ -918,8 +752,9 @@ export default function AdminDashboard() {
             size={{
               xs: 12,
               sm: 6,
-              md: 4
-            }}>
+              md: 4,
+            }}
+          >
             <Button
               variant="outlined"
               fullWidth
@@ -933,8 +768,9 @@ export default function AdminDashboard() {
             size={{
               xs: 12,
               sm: 6,
-              md: 4
-            }}>
+              md: 4,
+            }}
+          >
             <Button
               variant="outlined"
               fullWidth
@@ -948,8 +784,9 @@ export default function AdminDashboard() {
             size={{
               xs: 12,
               sm: 6,
-              md: 4
-            }}>
+              md: 4,
+            }}
+          >
             <Button
               variant="outlined"
               fullWidth
@@ -961,12 +798,6 @@ export default function AdminDashboard() {
           </Grid>
         </Grid>
       </Paper>
-      {/* Action Buttons */}
-      <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-start" }}>
-        <Button variant="outlined" onClick={() => router.push("/dashboard")}>
-          Back to Dashboard
-        </Button>
-      </Box>
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

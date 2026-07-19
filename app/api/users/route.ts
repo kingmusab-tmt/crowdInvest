@@ -116,7 +116,7 @@ export async function GET(request: Request) {
 
     const users = await User.find({})
       .select(
-        "name email role status createdAt community profileCompleted isTopUser balance kyc"
+        "name email role status createdAt dateJoined lastLogin community profileCompleted isTopUser balance kyc avatarUrl phoneNumber address"
       )
       .populate("community", "name");
     const enriched = await attachContribution(users);

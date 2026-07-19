@@ -111,6 +111,19 @@ export const authOptions = {
         }
         // Mark that we've logged this token to avoid duplicate logs
         token.loggedAt = new Date().getTime();
+
+        // Record last login time on the persisted user record
+        if (user.email) {
+          try {
+            await connectDB();
+            await User.findOneAndUpdate(
+              { email: user.email },
+              { lastLogin: new Date() }
+            );
+          } catch (error) {
+            console.error("❌ [AUTH JWT] Error recording lastLogin:", error);
+          }
+        }
       }
 
       if (user) {

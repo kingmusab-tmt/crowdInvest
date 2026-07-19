@@ -4,12 +4,8 @@ import * as React from "react";
 import { Suspense } from "react";
 import {
   Box,
-  Container,
   Typography,
   Paper,
-  Card,
-  CardContent,
-  CardActions,
   Button,
   CircularProgress,
   Stack,
@@ -17,19 +13,37 @@ import {
   Tabs,
   Tab,
   Alert,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Grid,
 } from "@mui/material";
+import { alpha, Theme } from "@mui/material/styles";
 import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
-import DeleteIcon from "@mui/icons-material/Delete";
+import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import EventIcon from "@mui/icons-material/Event";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import PaidIcon from "@mui/icons-material/Paid";
+import SavingsIcon from "@mui/icons-material/Savings";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
+import PieChartIcon from "@mui/icons-material/PieChart";
+import ForumIcon from "@mui/icons-material/Forum";
+import CampaignIcon from "@mui/icons-material/Campaign";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import { useRouter, useSearchParams } from "next/navigation";
+
+type StatColor = "primary" | "success" | "error" | "warning" | "info" | "secondary";
 
 interface Notification {
   _id: string;
@@ -43,12 +57,154 @@ interface Notification {
   createdAt: string;
 }
 
+interface NotificationMeta {
+  icon: React.ReactNode;
+  color: StatColor;
+  label: string;
+}
+
+const NOTIFICATION_META: Record<string, NotificationMeta> = {
+  kyc_verified: { icon: <CheckCircleIcon fontSize="small" />, color: "success", label: "KYC Verified" },
+  kyc_rejected: { icon: <CancelIcon fontSize="small" />, color: "error", label: "KYC Rejected" },
+  investment: { icon: <TrendingUpIcon fontSize="small" />, color: "primary", label: "Investment" },
+  withdrawal: { icon: <PaidIcon fontSize="small" />, color: "warning", label: "Withdrawal" },
+  monthly_contribution: { icon: <SavingsIcon fontSize="small" />, color: "success", label: "Monthly Contribution" },
+  contribution: { icon: <SavingsIcon fontSize="small" />, color: "success", label: "Contribution" },
+  profit_deposit: { icon: <TrendingUpIcon fontSize="small" />, color: "info", label: "Profit Deposit" },
+  manual_deposit: { icon: <AccountBalanceWalletIcon fontSize="small" />, color: "primary", label: "Manual Deposit" },
+  assistance: { icon: <VolunteerActivismIcon fontSize="small" />, color: "secondary", label: "Assistance" },
+  profit_share: { icon: <PieChartIcon fontSize="small" />, color: "info", label: "Profit Share" },
+  proposal: { icon: <ForumIcon fontSize="small" />, color: "secondary", label: "Proposal" },
+  event: { icon: <EventIcon fontSize="small" />, color: "secondary", label: "Event" },
+  announcement: { icon: <CampaignIcon fontSize="small" />, color: "info", label: "Announcement" },
+  business_approved: { icon: <StorefrontIcon fontSize="small" />, color: "success", label: "Business Approved" },
+  business_rejected: { icon: <StorefrontIcon fontSize="small" />, color: "error", label: "Business Rejected" },
+  investment_suggestion: { icon: <LightbulbIcon fontSize="small" />, color: "primary", label: "Investment Suggestion" },
+  investment_suggestion_approved: { icon: <CheckCircleIcon fontSize="small" />, color: "success", label: "Suggestion Approved" },
+  investment_suggestion_rejected: { icon: <CancelIcon fontSize="small" />, color: "error", label: "Suggestion Rejected" },
+  investment_voting_open: { icon: <HowToVoteIcon fontSize="small" />, color: "primary", label: "Voting Open" },
+  investment_voting_closed: { icon: <HowToVoteIcon fontSize="small" />, color: "secondary", label: "Voting Closed" },
+  general: { icon: <NotificationsIcon fontSize="small" />, color: "info", label: "General" },
+};
+
+function getNotificationMeta(type: string): NotificationMeta {
+  return (
+    NOTIFICATION_META[type] || {
+      icon: <NotificationsIcon fontSize="small" />,
+      color: "info",
+      label: "Notification",
+    }
+  );
+}
+
 function a11yProps(index: number) {
   return {
     id: `notification-tab-${index}`,
     "aria-controls": `notification-tabpanel-${index}`,
   };
 }
+
+// --- Small presentational helpers -----------------------------------------
+
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  color: StatColor;
+}) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 3, height: "100%" }}
+    >
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{ alignItems: "center", mb: 1.5 }}
+      >
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: (theme: Theme) => alpha(theme.palette[color].main, 0.12),
+            color: `${color}.main`,
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </Box>
+        <Typography
+          variant="body2"
+          sx={{ color: "text.secondary", fontWeight: 500 }}
+        >
+          {label}
+        </Typography>
+      </Stack>
+      <Typography
+        variant="h5"
+        sx={{ fontWeight: 700, color: `${color}.main`, lineHeight: 1.2 }}
+      >
+        {value}
+      </Typography>
+    </Paper>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <Paper variant="outlined" sx={{ borderRadius: 3 }}>
+      <Box sx={{ textAlign: "center", py: 7, px: 2 }}>
+        <Box
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            bgcolor: "action.hover",
+            color: "text.disabled",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mx: "auto",
+            mb: 2,
+          }}
+        >
+          {icon}
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: description ? 0.5 : 0 }}>
+          {title}
+        </Typography>
+        {description && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ maxWidth: 360, mx: "auto" }}
+          >
+            {description}
+          </Typography>
+        )}
+      </Box>
+    </Paper>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 function NotificationsContent() {
   const router = useRouter();
@@ -81,10 +237,6 @@ function NotificationsContent() {
   React.useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
-
-  React.useEffect(() => {
-    fetchNotifications();
-  }, []);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
@@ -131,66 +283,6 @@ function NotificationsContent() {
     }
   };
 
-  const getNotificationIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      kyc_verified: "✅",
-      kyc_rejected: "❌",
-      investment: "💰",
-      withdrawal: "💸",
-      monthly_contribution: "💵",
-      profit_deposit: "📈",
-      refund_deposit: "↩️",
-      manual_deposit: "🏦",
-      assistance: "🤝",
-      profit_share: "💹",
-      proposal: "📋",
-      event: "📅",
-      announcement: "📢",
-      general: "🔔",
-    };
-    return icons[type] || "🔔";
-  };
-
-  const getNotificationColor = (type: string) => {
-    const colors: Record<string, string> = {
-      kyc_verified: "#4caf50",
-      kyc_rejected: "#f44336",
-      investment: "#2196f3",
-      withdrawal: "#ff9800",
-      monthly_contribution: "#2e7d32",
-      profit_deposit: "#1565c0",
-      refund_deposit: "#ef6c00",
-      manual_deposit: "#6d4c41",
-      assistance: "#7b1fa2",
-      profit_share: "#3949ab",
-      proposal: "#9c27b0",
-      event: "#e91e63",
-      announcement: "#00bcd4",
-      general: "#757575",
-    };
-    return colors[type] || "#757575";
-  };
-
-  const getNotificationTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      kyc_verified: "KYC Verified",
-      kyc_rejected: "KYC Rejected",
-      investment: "Investment",
-      withdrawal: "Withdrawal",
-      monthly_contribution: "Monthly Contribution",
-      profit_deposit: "Profit Deposit",
-      refund_deposit: "Refund Deposit",
-      manual_deposit: "Manual Deposit",
-      assistance: "Assistance",
-      profit_share: "Profit Share",
-      proposal: "Proposal",
-      event: "Event",
-      announcement: "Announcement",
-      general: "General",
-    };
-    return labels[type] || "Notification";
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -233,11 +325,11 @@ function NotificationsContent() {
           </Typography>
           {/* Event Details Card */}
           <Paper
+            variant="outlined"
             sx={{
               p: 3,
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.primary.light}15 0%, ${theme.palette.primary.light}05 100%)`,
-              border: (theme) => `2px solid ${theme.palette.primary.light}`,
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+              borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
               borderRadius: 2,
             }}
           >
@@ -386,7 +478,7 @@ function NotificationsContent() {
       return (
         <Stack spacing={2}>
           <Typography variant="body1">{notification.message}</Typography>
-          <Paper sx={{ p: 2, bgcolor: "background.default" }}>
+          <Paper variant="outlined" sx={{ p: 2, bgcolor: "action.hover" }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
               Additional Information
             </Typography>
@@ -418,39 +510,53 @@ function NotificationsContent() {
       : notifications.filter((n) => n.read);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const readCount = notifications.length - unreadCount;
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
+      <Box sx={{ py: 6, textAlign: "center" }}>
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}
-    >
+    <Box>
       {/* Header */}
-      <Box
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
           mb: 4,
+          justifyContent: "space-between",
+          alignItems: { xs: "flex-start", sm: "center" },
         }}
       >
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-            Notifications
-          </Typography>
-          <Typography variant="body2" sx={{
-            color: "text.secondary"
-          }}>
-            Stay updated with your community activities
-          </Typography>
-        </Box>
+        <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+              color: "primary.main",
+              flexShrink: 0,
+            }}
+          >
+            <NotificationsIcon />
+          </Box>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              Notifications
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Stay updated with your community activities
+            </Typography>
+          </Box>
+        </Stack>
         {unreadCount > 0 && (
           <Button
             variant="outlined"
@@ -460,7 +566,8 @@ function NotificationsContent() {
             Mark All as Read ({unreadCount})
           </Button>
         )}
-      </Box>
+      </Stack>
+
       {success && (
         <Alert
           severity="success"
@@ -470,137 +577,222 @@ function NotificationsContent() {
           {success}
         </Alert>
       )}
+
+      {/* Overall Stats */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 4 }}>
+          <StatCard
+            icon={<NotificationsIcon fontSize="small" />}
+            label="Total"
+            value={notifications.length}
+            color="primary"
+          />
+        </Grid>
+        <Grid size={{ xs: 4 }}>
+          <StatCard
+            icon={<MarkEmailUnreadIcon fontSize="small" />}
+            label="Unread"
+            value={unreadCount}
+            color="warning"
+          />
+        </Grid>
+        <Grid size={{ xs: 4 }}>
+          <StatCard
+            icon={<MarkEmailReadIcon fontSize="small" />}
+            label="Read"
+            value={readCount}
+            color="success"
+          />
+        </Grid>
+      </Grid>
+
       {/* Tabs */}
-      <Paper sx={{ mb: 3 }}>
+      <Paper variant="outlined" sx={{ mb: 3, borderRadius: 3, overflow: "hidden" }}>
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
           aria-label="notification tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            bgcolor: "background.paper",
+            px: 1,
+            "& .MuiTab-root": {
+              minWidth: { xs: 120, sm: 150 },
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              fontWeight: 600,
+              textTransform: "none",
+            },
+          }}
         >
-          <Tab label={`All (${notifications.length})`} {...a11yProps(0)} />
-          <Tab label={`Unread (${unreadCount})`} {...a11yProps(1)} />
           <Tab
-            label={`Read (${notifications.length - unreadCount})`}
+            icon={<NotificationsIcon fontSize="small" />}
+            iconPosition="start"
+            label={`All (${notifications.length})`}
+            {...a11yProps(0)}
+          />
+          <Tab
+            icon={<MarkEmailUnreadIcon fontSize="small" />}
+            iconPosition="start"
+            label={`Unread (${unreadCount})`}
+            {...a11yProps(1)}
+          />
+          <Tab
+            icon={<MarkEmailReadIcon fontSize="small" />}
+            iconPosition="start"
+            label={`Read (${readCount})`}
             {...a11yProps(2)}
           />
         </Tabs>
       </Paper>
+
       {/* Notifications List */}
       {filteredNotifications.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: "center" }}>
-          <Typography
-            variant="h6"
-            sx={{
-              color: "text.secondary",
-              mb: 1
-            }}>
-            {tab === 1 ? "No unread notifications" : "No notifications yet"}
-          </Typography>
-          <Typography variant="body2" sx={{
-            color: "text.secondary"
-          }}>
-            {tab === 1
+        <EmptyState
+          icon={<NotificationsNoneIcon />}
+          title={tab === 1 ? "No unread notifications" : "No notifications yet"}
+          description={
+            tab === 1
               ? "You're all caught up!"
-              : "You'll see notifications here when you receive them"}
-          </Typography>
-        </Paper>
+              : "You'll see notifications here when you receive them"
+          }
+        />
       ) : (
-        <Stack spacing={2}>
-          {filteredNotifications.map((notification) => (
-            <Card
-              key={notification._id}
-              sx={{
-                borderLeft: !notification.read
-                  ? `6px solid ${getNotificationColor(notification.type)}`
-                  : "6px solid transparent",
-                bgcolor: !notification.read ? "action.hover" : "transparent",
-                transition: "all 0.2s",
-                "&:hover": {
-                  boxShadow: 3,
-                },
-              }}
-            >
-              <CardContent>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 2,
-                  }}
-                >
-                  <Typography sx={{ fontSize: 32, lineHeight: 1 }}>
-                    {getNotificationIcon(notification.type)}
-                  </Typography>
+        <Stack spacing={1.5}>
+          {filteredNotifications.map((notification) => {
+            const meta = getNotificationMeta(notification.type);
+            return (
+              <Paper
+                key={notification._id}
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  borderRadius: 3,
+                  borderLeft: (theme) =>
+                    `4px solid ${
+                      !notification.read
+                        ? theme.palette[meta.color].main
+                        : "transparent"
+                    }`,
+                  bgcolor: !notification.read
+                    ? (theme) => alpha(theme.palette[meta.color].main, 0.04)
+                    : "transparent",
+                  transition: "box-shadow 0.2s",
+                  "&:hover": { boxShadow: "0 4px 16px rgba(0,0,0,0.08)" },
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: (theme) => alpha(theme.palette[meta.color].main, 0.12),
+                      color: `${meta.color}.main`,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {meta.icon}
+                  </Box>
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box
+                    <Stack
+                      direction="row"
+                      spacing={1}
                       sx={{
-                        display: "flex",
                         justifyContent: "space-between",
                         alignItems: "flex-start",
-                        mb: 1,
+                        mb: 0.5,
+                        flexWrap: "wrap",
                       }}
                     >
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: !notification.read ? 600 : 500,
-                          fontSize: "1.1rem",
-                        }}
-                      >
-                        {notification.title}
-                      </Typography>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                        {!notification.read && (
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor: `${meta.color}.main`,
+                              flexShrink: 0,
+                            }}
+                          />
+                        )}
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: !notification.read ? 700 : 500,
+                          }}
+                        >
+                          {notification.title}
+                        </Typography>
+                      </Stack>
                       <Chip
-                        label={getNotificationTypeLabel(notification.type)}
+                        label={meta.label}
                         size="small"
                         sx={{
-                          bgcolor: getNotificationColor(notification.type),
-                          color: "white",
                           fontWeight: 600,
-                          fontSize: "0.7rem",
+                          bgcolor: (theme) => alpha(theme.palette[meta.color].main, 0.12),
+                          color: `${meta.color}.main`,
                         }}
                       />
-                    </Box>
+                    </Stack>
 
                     <Typography
                       variant="body2"
                       sx={{
                         color: "text.secondary",
-                        mb: 1
-                      }}>
+                        mb: 1,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
                       {notification.message}
                     </Typography>
 
-                    <Typography variant="caption" sx={{
-                      color: "text.secondary"
-                    }}>
-                      {formatDate(notification.createdAt)}
-                    </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      sx={{ alignItems: "center", color: "text.secondary", mb: 1.5 }}
+                    >
+                      <CalendarTodayIcon sx={{ fontSize: 13 }} />
+                      <Typography variant="caption">
+                        {formatDate(notification.createdAt)}
+                      </Typography>
+                    </Stack>
+
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleViewDetail(notification)}
+                      >
+                        View Details
+                      </Button>
+                      {!notification.read && (
+                        <Button
+                          size="small"
+                          onClick={() => handleMarkAsRead(notification._id)}
+                          startIcon={<MarkEmailReadIcon fontSize="small" />}
+                        >
+                          Mark as Read
+                        </Button>
+                      )}
+                    </Stack>
                   </Box>
                 </Box>
-              </CardContent>
-
-              <CardActions sx={{ px: 2, pb: 2 }}>
-                <Button
-                  size="small"
-                  onClick={() => handleViewDetail(notification)}
-                >
-                  View Details
-                </Button>
-                {!notification.read && (
-                  <Button
-                    size="small"
-                    onClick={() => handleMarkAsRead(notification._id)}
-                    startIcon={<MarkEmailReadIcon />}
-                  >
-                    Mark as Read
-                  </Button>
-                )}
-              </CardActions>
-            </Card>
-          ))}
+              </Paper>
+            );
+          })}
         </Stack>
       )}
+
       {/* Detail Dialog */}
       <Dialog
         open={detailDialogOpen}
@@ -612,22 +804,41 @@ function NotificationsContent() {
           <>
             <DialogTitle>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Typography sx={{ fontSize: 32 }}>
-                  {getNotificationIcon(selectedNotification.type)}
-                </Typography>
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 2.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: (theme) =>
+                      alpha(
+                        theme.palette[getNotificationMeta(selectedNotification.type).color].main,
+                        0.12
+                      ),
+                    color: `${getNotificationMeta(selectedNotification.type).color}.main`,
+                    flexShrink: 0,
+                  }}
+                >
+                  {getNotificationMeta(selectedNotification.type).icon}
+                </Box>
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
                     {selectedNotification.title}
                   </Typography>
                   <Chip
-                    label={getNotificationTypeLabel(selectedNotification.type)}
+                    label={getNotificationMeta(selectedNotification.type).label}
                     size="small"
                     sx={{
-                      bgcolor: getNotificationColor(selectedNotification.type),
-                      color: "white",
-                      fontWeight: 600,
-                      fontSize: "0.7rem",
                       mt: 0.5,
+                      fontWeight: 600,
+                      bgcolor: (theme) =>
+                        alpha(
+                          theme.palette[getNotificationMeta(selectedNotification.type).color].main,
+                          0.12
+                        ),
+                      color: `${getNotificationMeta(selectedNotification.type).color}.main`,
                     }}
                   />
                 </Box>
@@ -653,6 +864,7 @@ function NotificationsContent() {
               {selectedNotification.actionUrl && (
                 <Button
                   variant="contained"
+                  disableElevation
                   onClick={() =>
                     handleActionClick(selectedNotification.actionUrl)
                   }
@@ -664,7 +876,7 @@ function NotificationsContent() {
           </>
         )}
       </Dialog>
-    </Container>
+    </Box>
   );
 }
 
@@ -672,9 +884,9 @@ export default function NotificationsPage() {
   return (
     <Suspense
       fallback={
-        <Container>
+        <Box sx={{ py: 6, textAlign: "center" }}>
           <CircularProgress />
-        </Container>
+        </Box>
       }
     >
       <NotificationsContent />

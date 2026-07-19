@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -13,31 +12,29 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import PieChartIcon from "@mui/icons-material/PieChart";
 import EventIcon from "@mui/icons-material/Event";
-import AddIcon from "@mui/icons-material/Add";
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import Chip from "@mui/material/Chip";
-import Avatar from "@mui/material/Avatar";
-import LinearProgress from "@mui/material/LinearProgress";
 import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
 import Alert from "@mui/material/Alert";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { formatNaira } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
+import { CONTRIBUTION_MODAL_SESSION_KEY } from "@/lib/dashboardConstants";
 
 // Stats Card Component
-function StatsCard({ title, value, icon, color, action }: any) {
+function StatsCard({ title, value, icon, color, action, caption }: any) {
   return (
-    <Card>
-      <CardContent>
+    <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <CardContent sx={{ flexGrow: 1 }}>
         <Box
           sx={{
             display: "flex",
@@ -49,11 +46,18 @@ function StatsCard({ title, value, icon, color, action }: any) {
           <Typography color="textSecondary" variant="body2">
             {title}
           </Typography>
-          <Avatar sx={{ bgcolor: color, width: 48, height: 48 }}>{icon}</Avatar>
+          <Box sx={{ color, display: "flex" }}>
+            {React.cloneElement(icon, { sx: { fontSize: 32 } })}
+          </Box>
         </Box>
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           {value}
         </Typography>
+        {caption && (
+          <Typography variant="caption" color="textSecondary">
+            {caption}
+          </Typography>
+        )}
       </CardContent>
       {action && (
         <CardActions>
@@ -62,78 +66,6 @@ function StatsCard({ title, value, icon, color, action }: any) {
           </Button>
         </CardActions>
       )}
-    </Card>
-  );
-}
-
-// Investment Card Component
-function InvestmentCard({ investment }: any) {
-  const router = useRouter();
-
-  // Handle both MemberInvestment and community investment formats
-  const progress = investment.currentValue
-    ? (investment.currentValue / investment.totalInvested) * 100
-    : 0;
-  const title = investment.title || "Investment";
-  const profitOrLoss = investment.profitOrLoss || 0;
-  const profitOrLossPercentage = investment.profitOrLossPercentage || 0;
-  const status = investment.status || "Active";
-
-  return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          {title}
-        </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          {investment.investmentType &&
-            `${
-              investment.investmentType.charAt(0).toUpperCase() +
-              investment.investmentType.slice(1)
-            } Investment`}
-        </Typography>
-        <Box sx={{ mb: 2 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="body2">Value</Typography>
-            <Typography variant="body2">{progress.toFixed(1)}%</Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={Math.min(progress, 100)}
-          />
-        </Box>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-          <Typography variant="body2" color="textSecondary">
-            {formatNaira(investment.totalInvested || 0)} invested
-          </Typography>
-          <Chip
-            label={status}
-            size="small"
-            color={
-              status === "Active"
-                ? "success"
-                : status === "Completed"
-                ? "warning"
-                : "error"
-            }
-          />
-        </Box>
-        <Typography
-          variant="caption"
-          color={profitOrLoss >= 0 ? "success.main" : "error.main"}
-        >
-          Profit/Loss: {formatNaira(profitOrLoss)} (
-          {profitOrLossPercentage.toFixed(2)}%)
-        </Typography>
-      </CardContent>
-      <CardActions>
-        <Button
-          size="small"
-          onClick={() => router.push(`/dashboard/investments`)}
-        >
-          View Details
-        </Button>
-      </CardActions>
     </Card>
   );
 }
@@ -151,17 +83,10 @@ export default function UserDashboard() {
   } = useSnackbar();
   const [investments, setInvestments] = React.useState([]);
   const [transactions, setTransactions] = React.useState([]);
-  const [events, setEvents] = React.useState([]);
-  const [userBalance, setUserBalance] = React.useState(0);
-  const [openEventModal, setOpenEventModal] = React.useState(false);
-  const [eventFormData, setEventFormData] = React.useState({
-    title: "",
-    description: "",
-    date: "",
-    location: "",
-  });
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [showContributionModal, setShowContributionModal] =
+    React.useState(false);
+  const hasShownContributionModal = React.useRef(false);
 
   // Community contribution stats
   const [totalCommunityContributions, setTotalCommunityContributions] =
@@ -257,33 +182,22 @@ export default function UserDashboard() {
       const eventsRes = await fetch("/api/events");
       const eventsData = await eventsRes.json();
 
-      // Filter to show only upcoming events, sorted by date
-      const now = new Date();
-      const upcomingEventsList = eventsData
-        .filter((e: any) => new Date(e.eventDate) > now)
-        .sort(
-          (a: any, b: any) =>
-            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
-        )
-        .slice(0, 3);
-
-      setEvents(upcomingEventsList);
-
       // Get user data and calculate contribution stats
       if (session?.user) {
         const userRes = await fetch(`/api/users?email=${session.user.email}`);
         const userData = await userRes.json();
         if (userData.length > 0) {
           const currentUser = userData[0];
-          setUserBalance(currentUser.balance || 0);
 
-          // Calculate member's total contributions
+          // Calculate member's total contributions: automatic deposits
+          // (recurring payment, one-time card, or reserved account — all
+          // recorded as "Monthly_Contribution") plus manual deposits
+          // recorded by an admin.
           const memberDeposits = transactionsData.filter(
             (t: any) =>
               t.userEmail === session.user.email &&
               (t.type === "Monthly_Contribution" ||
-                t.type === "manual_deposit" ||
-                t.type === "refund_deposit") &&
+                t.type === "manual_deposit") &&
               t.status === "Completed"
           );
           const memberTotalContribution = memberDeposits.reduce(
@@ -296,8 +210,7 @@ export default function UserDashboard() {
           const allDeposits = transactionsData.filter(
             (t: any) =>
               (t.type === "Monthly_Contribution" ||
-                t.type === "manual_deposit" ||
-                t.type === "refund_deposit") &&
+                t.type === "manual_deposit") &&
               t.status === "Completed"
           );
           const communityTotal = allDeposits.reduce(
@@ -562,8 +475,28 @@ export default function UserDashboard() {
       console.error("Failed to fetch dashboard data:", error);
     } finally {
       setIsRefreshing(false);
+
+      // Show the contribution status modal once per login, on the first
+      // successful data load only (not on manual "Refresh Data" reloads).
+      if (
+        !hasShownContributionModal.current &&
+        typeof window !== "undefined"
+      ) {
+        hasShownContributionModal.current = true;
+        if (!sessionStorage.getItem(CONTRIBUTION_MODAL_SESSION_KEY)) {
+          sessionStorage.setItem(CONTRIBUTION_MODAL_SESSION_KEY, "1");
+          setShowContributionModal(true);
+        }
+      }
     }
   }, [session]);
+
+  // Auto-close the contribution modal after 5 seconds
+  React.useEffect(() => {
+    if (!showContributionModal) return;
+    const timer = setTimeout(() => setShowContributionModal(false), 5000);
+    return () => clearTimeout(timer);
+  }, [showContributionModal]);
 
   React.useEffect(() => {
     fetchDashboardData();
@@ -586,51 +519,6 @@ export default function UserDashboard() {
       window.removeEventListener("focus", handleWindowFocus);
     };
   }, [fetchDashboardData, checkMonthlyContributions, verifyPaymentIfReturned]);
-
-  const handleSubmitEvent = React.useCallback(async () => {
-    if (
-      !eventFormData.title ||
-      !eventFormData.date ||
-      !eventFormData.location
-    ) {
-      showError("Please fill in all required fields");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...eventFormData,
-          createdBy: session?.user?.email,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to submit event");
-      }
-
-      // Reset form and close modal
-      setEventFormData({ title: "", description: "", date: "", location: "" });
-      setOpenEventModal(false);
-
-      // Refresh events list
-      fetchDashboardData();
-    } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Failed to submit event"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [eventFormData, session?.user?.email, fetchDashboardData]);
-
-  const handleEventInputChange = (field: string, value: string) => {
-    setEventFormData((prev) => ({ ...prev, [field]: value }));
-  };
 
   // Guard against rendering before session is loaded
   if (!session?.user) {
@@ -681,51 +569,60 @@ export default function UserDashboard() {
           )}
         </Box>
       </Box>
-      <Grid container spacing={3}>
-        {/* Community Contribution Overview */}
-        <Grid size={12}>
-          <Paper sx={{ p: 3, bgcolor: "primary.dark", color: "white" }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Monthly Contribution Status
-            </Typography>
-            {monthlyContributionStatus.hasPaid ? (
-              <Alert severity="success" sx={{ bgcolor: "success.light" }}>
-                ✓ You've made your monthly contribution of ₦
-                {monthlyContributionStatus.amount.toLocaleString()} for{" "}
-                {new Date().toLocaleString("default", { month: "long" })}
+      <Dialog
+        open={showContributionModal}
+        onClose={() => setShowContributionModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pr: 6 }}>
+          Monthly Contribution Status
+          <IconButton
+            onClick={() => setShowContributionModal(false)}
+            sx={{ position: "absolute", right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {monthlyContributionStatus.hasPaid ? (
+            <Alert severity="success">
+              ✓ You've made your monthly contribution of ₦
+              {monthlyContributionStatus.amount.toLocaleString()} for{" "}
+              {new Date().toLocaleString("default", { month: "long" })}
+            </Alert>
+          ) : (
+            <Box>
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                ⚠ Monthly contribution pending. Due by{" "}
+                {new Date(
+                  new Date().getMonth() === 11
+                    ? new Date().getFullYear() + 1
+                    : new Date().getFullYear(),
+                  new Date().getMonth() === 11 ? 0 : new Date().getMonth() + 1,
+                  10
+                ).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
               </Alert>
-            ) : (
-              <Box>
-                <Alert
-                  severity="warning"
-                  sx={{ bgcolor: "warning.light", mb: 2 }}
-                >
-                  ⚠ Monthly contribution pending. Due by{" "}
-                  {new Date(
-                    new Date().getMonth() === 11
-                      ? new Date().getFullYear() + 1
-                      : new Date().getFullYear(),
-                    new Date().getMonth() === 11
-                      ? 0
-                      : new Date().getMonth() + 1,
-                    10
-                  ).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </Alert>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  💡 Contributions are due by the 10th of each month. Your
-                  contribution percentage determines your profit share from
-                  community investments.
-                </Typography>
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Stats Cards Row 1: Contribution Stats */}
+              <Typography variant="body2" color="textSecondary">
+                💡 Contributions are due by the 10th of each month. Your
+                contribution percentage determines your profit share from
+                community investments.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowContributionModal(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Grid container spacing={3}>
+        {/* Stats Cards Row 1: My Contribution Overview */}
         <Grid size={12}>
           <Typography
             variant="h6"
@@ -737,9 +634,8 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
+            xs: 6,
+            lg: 2.4
           }}>
           <StatsCard
             title="My Total Contribution"
@@ -755,9 +651,8 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
+            xs: 6,
+            lg: 2.4
           }}>
           <StatsCard
             title="My Contribution %"
@@ -769,49 +664,46 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
+            xs: 6,
+            lg: 2.4
           }}>
           <StatsCard
-            title="Community Total"
-            value={formatNaira(totalCommunityContributions)}
-            icon={<AccountBalanceWalletIcon />}
-            color="secondary.main"
+            title="My Last Contribution"
+            value={formatNaira(lastContribution.amount)}
+            icon={<CalendarMonthIcon />}
+            color="success.main"
+            caption={lastContribution.date}
           />
         </Grid>
 
         <Grid
           size={{
-            xs: 12,
-            sm: 6,
-            md: 3
+            xs: 6,
+            lg: 2.4
           }}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  mb: 2,
-                }}
-              >
-                <Typography color="textSecondary" variant="body2">
-                  My Last Contribution
-                </Typography>
-                <Avatar sx={{ bgcolor: "success.main", width: 48, height: 48 }}>
-                  <CalendarMonthIcon />
-                </Avatar>
-              </Box>
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                {formatNaira(lastContribution.amount)}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                {lastContribution.date}
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="My Total Withdrawal"
+            value={formatNaira(myTotalWithdrawal)}
+            icon={<AccountBalanceWalletIcon />}
+            color="warning.main"
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 6,
+            lg: 2.4
+          }}>
+          <StatsCard
+            title="My Profit Share"
+            value={formatNaira(memberProfitShare)}
+            icon={<TrendingUpIcon />}
+            color="warning.main"
+            action={{
+              label: "Withdraw",
+              onClick: () => router.push("/dashboard/funds?tab=withdrawal"),
+            }}
+          />
         </Grid>
 
         {/* Stats Cards Row 2: Community Insights */}
@@ -844,151 +736,12 @@ export default function UserDashboard() {
             sm: 6,
             md: 3
           }}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  mb: 2,
-                }}
-              >
-                <Typography color="textSecondary" variant="body2">
-                  Upcoming Events
-                </Typography>
-                <Avatar sx={{ bgcolor: "warning.main", width: 48, height: 48 }}>
-                  <EventIcon />
-                </Avatar>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {upcomingEvents.count}
-              </Typography>
-              <Typography variant="caption" color="textSecondary">
-                Next: {upcomingEvents.closestDate}
-              </Typography>
-            </CardContent>
-            <CardActions>
-              <Button
-                size="small"
-                onClick={() => router.push("/dashboard/events")}
-              >
-                View Events
-              </Button>
-            </CardActions>
-          </Card>
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
           <StatsCard
-            title="Member Businesses"
-            value={memberBusinessCount}
-            icon={<BusinessIcon />}
-            color="secondary.main"
-            action={{
-              label: "View All",
-              onClick: () => router.push("/dashboard/member-businesses"),
-            }}
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="Active Investments"
-            value={investments.length}
-            icon={<TrendingUpIcon />}
-            color="primary.main"
-            action={{
-              label: "View All",
-              onClick: () => router.push("/dashboard/investments"),
-            }}
-          />
-        </Grid>
-
-        {/* Stats Cards Row 3: Member Statistics */}
-        <Grid size={12}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
-          >
-            Member Statistics
-          </Typography>
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="Total Community Members"
-            value={totalCommunityMembers}
-            icon={<PeopleIcon />}
-            color="primary.main"
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="Active Members"
-            value={activeMembers}
-            icon={<PeopleIcon />}
-            color="success.main"
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="Inactive Members"
-            value={inactiveMembers}
-            icon={<PeopleIcon />}
-            color="error.main"
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
-          <StatsCard
-            title="My Total Withdrawal"
-            value={formatNaira(myTotalWithdrawal)}
+            title="Community Total"
+            value={formatNaira(totalCommunityContributions)}
             icon={<AccountBalanceWalletIcon />}
-            color="warning.main"
+            color="secondary.main"
           />
-        </Grid>
-
-        {/* Stats Cards Row 4: Financial Performance */}
-        <Grid size={12}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
-          >
-            Financial Performance
-          </Typography>
         </Grid>
 
         <Grid
@@ -1023,16 +776,17 @@ export default function UserDashboard() {
           size={{
             xs: 12,
             sm: 6,
-            md: 3
+            md: 4
           }}>
           <StatsCard
-            title="My Profit Share"
-            value={formatNaira(memberProfitShare)}
-            icon={<TrendingUpIcon />}
+            title="Upcoming Events"
+            value={upcomingEvents.count}
+            icon={<EventIcon />}
             color="warning.main"
+            caption={`Next: ${upcomingEvents.closestDate}`}
             action={{
-              label: "Withdraw",
-              onClick: () => router.push("/dashboard/funds?tab=withdrawal"),
+              label: "View Events",
+              onClick: () => router.push("/dashboard/events"),
             }}
           />
         </Grid>
@@ -1041,308 +795,39 @@ export default function UserDashboard() {
           size={{
             xs: 12,
             sm: 6,
-            md: 3
+            md: 4
           }}>
           <StatsCard
-            title="Wallet Balance"
-            value={formatNaira(userBalance)}
-            icon={<AccountBalanceWalletIcon />}
+            title="Member Businesses"
+            value={memberBusinessCount}
+            icon={<BusinessIcon />}
+            color="secondary.main"
+            action={{
+              label: "View All",
+              onClick: () => router.push("/dashboard/member-businesses"),
+            }}
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 4
+          }}>
+          <StatsCard
+            title="Active Investments"
+            value={investments.length}
+            icon={<TrendingUpIcon />}
             color="primary.main"
             action={{
-              label: "Add Funds",
-              onClick: () => router.push("/dashboard/funds?tab=deposit"),
+              label: "View All",
+              onClick: () => router.push("/dashboard/investments"),
             }}
           />
         </Grid>
 
-        {/* Financial Summary Card */}
-        <Grid size={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Financial Summary
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid
-                size={{
-                  xs: 12,
-                  md: 6
-                }}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    Available for Investment
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                    ₦
-                    {(
-                      totalCommunityContributions - totalSpending
-                    ).toLocaleString()}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Total contributions minus spending
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid
-                size={{
-                  xs: 12,
-                  md: 6
-                }}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    Total Investment Income Ever Achieved
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 600,
-                      color: totalIncome > 0 ? "success.main" : "text.primary",
-                    }}
-                  >
-                    {formatNaira(totalIncome)}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    All profit deposits received by community
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid
-                size={{
-                  xs: 12,
-                  md: 6
-                }}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    Total Withdrawn by All Members
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 600,
-                      color:
-                        communityTotalWithdrawals > 0
-                          ? "warning.main"
-                          : "text.primary",
-                    }}
-                  >
-                    {formatNaira(communityTotalWithdrawals)}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Amount withdrawn or converted by members
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid
-                size={{
-                  xs: 12,
-                  md: 6
-                }}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    Current Investment Income Balance
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 600,
-                      color:
-                        communityRemainingIncome > 0
-                          ? "primary.main"
-                          : "text.primary",
-                    }}
-                  >
-                    {formatNaira(communityRemainingIncome)}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Remaining after all member withdrawals
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-
-        {/* Active Investments */}
-        <Grid size={12}>
-          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-            Active Investment Opportunities
-          </Typography>
-        </Grid>
-
-        {investments.map((investment: any, idx: number) => (
-          <Grid
-            key={idx}
-            size={{
-              xs: 12,
-              md: 4
-            }}>
-            <InvestmentCard investment={investment} />
-          </Grid>
-        ))}
-
-        {/* Upcoming Events */}
-        <Grid
-          size={{
-            xs: 12,
-            md: 6
-          }}>
-          <Paper sx={{ p: 3 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Upcoming Events
-              </Typography>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => setOpenEventModal(true)}
-              >
-                Submit Event
-              </Button>
-            </Box>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {events.length > 0 ? (
-                events.map((event: any, idx: number) => (
-                  <Box
-                    key={idx}
-                    sx={{ borderLeft: 3, borderColor: "primary.main", pl: 2 }}
-                  >
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      {event.title}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {new Date(event.eventDate).toLocaleDateString()} •{" "}
-                      {event.location}
-                    </Typography>
-                  </Box>
-                ))
-              ) : (
-                <Typography variant="body2" color="textSecondary">
-                  No upcoming events
-                </Typography>
-              )}
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* Quick Actions */}
-        <Grid
-          size={{
-            xs: 12,
-            md: 6
-          }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Quick Actions
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid size={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => router.push("/dashboard/funds?tab=deposit")}
-                >
-                  Deposit Funds
-                </Button>
-              </Grid>
-              <Grid size={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => router.push("/dashboard/funds?tab=withdrawal")}
-                >
-                  Withdraw
-                </Button>
-              </Grid>
-              <Grid size={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => router.push("/dashboard/voting")}
-                >
-                  Vote on Proposals
-                </Button>
-              </Grid>
-              <Grid size={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => router.push("/dashboard/assistance")}
-                >
-                  Request Assistance
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
       </Grid>
-      {/* Submit Event Modal */}
-      <Dialog
-        open={openEventModal}
-        onClose={() => setOpenEventModal(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Submit New Event</DialogTitle>
-        <DialogContent
-          sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}
-        >
-          <TextField
-            label="Event Title"
-            fullWidth
-            value={eventFormData.title}
-            onChange={(e) => handleEventInputChange("title", e.target.value)}
-            placeholder="Enter event title"
-            required
-          />
-          <TextField
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            value={eventFormData.description}
-            onChange={(e) =>
-              handleEventInputChange("description", e.target.value)
-            }
-            placeholder="Enter event description"
-          />
-          <TextField
-            label="Date"
-            fullWidth
-            type="date"
-            value={eventFormData.date}
-            onChange={(e) => handleEventInputChange("date", e.target.value)}
-            required
-            slotProps={{
-              inputLabel: { shrink: true }
-            }}
-          />
-          <TextField
-            label="Location"
-            fullWidth
-            value={eventFormData.location}
-            onChange={(e) => handleEventInputChange("location", e.target.value)}
-            placeholder="Enter event location"
-            required
-          />
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenEventModal(false)}>Cancel</Button>
-          <Button
-            onClick={handleSubmitEvent}
-            variant="contained"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Submit Event"}
-          </Button>
-        </DialogActions>
-      </Dialog>
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}

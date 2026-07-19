@@ -7,16 +7,11 @@ export interface IProposal extends Document {
   description: string;
   longDescription?: string;
   proposalType: "policy" | "initiative" | "budget" | "event" | "other";
-  status:
-    | "pending"
-    | "approved"
-    | "rejected"
-    | "voting"
-    | "Pending"
-    | "Approved"
-    | "Rejected"
-    | "Voting";
+  status: "pending" | "approved" | "rejected" | "voting";
   rejectionReason?: string;
+  approvedBy?: mongoose.Types.ObjectId;
+  approvalDate?: Date;
+  votingDeadline?: Date;
   votes?: Array<{
     userId: mongoose.Types.ObjectId;
     vote: "yes" | "no";
@@ -47,19 +42,16 @@ const ProposalSchema = new Schema<IProposal>(
     },
     status: {
       type: String,
-      enum: [
-        "pending",
-        "approved",
-        "rejected",
-        "voting",
-        "Pending",
-        "Approved",
-        "Rejected",
-        "Voting",
-      ],
+      enum: ["pending", "approved", "rejected", "voting"],
       default: "pending",
     },
     rejectionReason: String,
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    approvalDate: Date,
+    votingDeadline: Date,
     votes: [
       {
         userId: {

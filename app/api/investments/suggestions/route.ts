@@ -2,10 +2,23 @@ import { NextResponse, NextRequest } from "next/server";
 import dbConnect from "../../../../utils/connectDB";
 import InvestmentSuggestion from "../../../../models/InvestmentSuggestion";
 import { Types } from "mongoose";
+import {
+  closeExpiredVoting,
+  notifyAdminsOfNewSuggestion,
+  notifyVotingClosedResults,
+} from "../../../../services/investmentSuggestionService";
 
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+
+    // Lazily resolve any suggestion whose 3-day voting window has passed
+    // before returning the list, since this app has no cron infrastructure.
+    const closed = await closeExpiredVoting();
+    if (closed.length > 0) {
+      await notifyVotingClosedResults(closed);
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const community =
       searchParams.get("community") || searchParams.get("communityId");
@@ -71,6 +84,12 @@ export async function POST(request: NextRequest) {
 
     // Populate the suggestedBy field
     await suggestion.populate("suggestedBy", "name email avatarUrl");
+
+    // Notify all admins so they know to review it
+    await notifyAdminsOfNewSuggestion(
+      suggestion,
+      (suggestion.suggestedBy as any)?.name || "A member"
+    );
 
     return NextResponse.json(suggestion, { status: 201 });
   } catch (error) {

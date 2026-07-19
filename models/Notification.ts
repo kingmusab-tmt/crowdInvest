@@ -11,13 +11,19 @@ export interface INotification extends Document {
     | "monthly_contribution"
     | "profit_deposit"
     | "manual_deposit"
-    | "refund_deposit"
     | "assistance"
     | "profit_share"
     | "proposal"
     | "event"
     | "announcement"
     | "contribution"
+    | "business_approved"
+    | "business_rejected"
+    | "investment_suggestion"
+    | "investment_suggestion_approved"
+    | "investment_suggestion_rejected"
+    | "investment_voting_open"
+    | "investment_voting_closed"
     | "general";
   title: string;
   message: string;
@@ -47,13 +53,19 @@ const NotificationSchema = new Schema<INotification>(
         "monthly_contribution",
         "profit_deposit",
         "manual_deposit",
-        "refund_deposit",
         "assistance",
         "profit_share",
         "proposal",
         "event",
         "announcement",
         "contribution",
+        "business_approved",
+        "business_rejected",
+        "investment_suggestion",
+        "investment_suggestion_approved",
+        "investment_suggestion_rejected",
+        "investment_voting_open",
+        "investment_voting_closed",
         "general",
       ],
       default: "general",

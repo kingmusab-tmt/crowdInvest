@@ -1,9 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { INVESTMENT_TYPE_VALUES, InvestmentType } from "@/lib/investmentTypes";
 
 export interface IInvestmentSuggestion extends Document {
   community: mongoose.Types.ObjectId;
   suggestedBy: mongoose.Types.ObjectId;
-  investmentType: "stock" | "business" | "crypto" | "real-estate";
+  investmentType: InvestmentType;
   title: string;
   description: string;
   reason: string;
@@ -11,9 +12,15 @@ export interface IInvestmentSuggestion extends Document {
   timeframe: string;
   expectedReturn?: string;
   riskLevel: "Low" | "Medium" | "High";
-  status: "Pending" | "Approved" | "Rejected" | "Voting";
+  status:
+    | "Pending"
+    | "Approved"
+    | "Rejected"
+    | "Voting"
+    | "Approved for Investing";
   approvedBy?: mongoose.Types.ObjectId;
   approvalDate?: Date;
+  votingDeadline?: Date;
   rejectionReason?: string;
   votes?: Array<{
     userId: mongoose.Types.ObjectId;
@@ -38,7 +45,7 @@ const InvestmentSuggestionSchema = new Schema<IInvestmentSuggestion>(
     },
     investmentType: {
       type: String,
-      enum: ["stock", "business", "crypto", "real-estate"],
+      enum: INVESTMENT_TYPE_VALUES,
       required: true,
     },
     title: { type: String, required: true },
@@ -54,7 +61,13 @@ const InvestmentSuggestionSchema = new Schema<IInvestmentSuggestion>(
     },
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Rejected", "Voting"],
+      enum: [
+        "Pending",
+        "Approved",
+        "Rejected",
+        "Voting",
+        "Approved for Investing",
+      ],
       default: "Pending",
     },
     approvedBy: {
@@ -62,6 +75,7 @@ const InvestmentSuggestionSchema = new Schema<IInvestmentSuggestion>(
       ref: "User",
     },
     approvalDate: Date,
+    votingDeadline: Date,
     rejectionReason: String,
     votes: [
       {

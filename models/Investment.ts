@@ -1,16 +1,20 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { INVESTMENT_TYPE_VALUES, InvestmentType } from "@/lib/investmentTypes";
 
 export interface IInvestment extends Document {
   title: string;
   description?: string;
-  investmentType: "stock" | "business" | "crypto" | "real-estate";
+  investmentType: InvestmentType;
   basePrice: number;
   currentPrice: number;
   quantity: number;
   totalInvested: number;
   dividendReceived: number;
-  status: "Active" | "Completed" | "Sold";
+  status: "Active" | "Completed" | "Sold" | "Cancelled";
   community?: mongoose.Types.ObjectId;
+  // Type-specific extra details (ticker/exchange for stock, propertyAddress
+  // for real-estate, etc.) — see lib/investmentTypes.ts for the field sets.
+  metadata?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,7 +25,7 @@ const InvestmentSchema = new Schema<IInvestment>(
     description: String,
     investmentType: {
       type: String,
-      enum: ["stock", "business", "crypto", "real-estate"],
+      enum: INVESTMENT_TYPE_VALUES,
       required: true,
     },
     basePrice: { type: Number, required: true },
@@ -31,12 +35,16 @@ const InvestmentSchema = new Schema<IInvestment>(
     dividendReceived: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["Active", "Completed", "Sold"],
+      enum: ["Active", "Completed", "Sold", "Cancelled"],
       default: "Active",
     },
     community: {
       type: Schema.Types.ObjectId,
       ref: "Community",
+    },
+    metadata: {
+      type: Schema.Types.Mixed,
+      default: {},
     },
   },
   { timestamps: true }

@@ -12,7 +12,6 @@ export interface CreateNotificationParams {
     | "withdrawal"
     | "monthly_contribution"
     | "profit_deposit"
-    | "refund_deposit"
     | "manual_deposit"
     | "assistance"
     | "profit_share"
@@ -20,6 +19,13 @@ export interface CreateNotificationParams {
     | "event"
     | "announcement"
     | "contribution"
+    | "business_approved"
+    | "business_rejected"
+    | "investment_suggestion"
+    | "investment_suggestion_approved"
+    | "investment_suggestion_rejected"
+    | "investment_voting_open"
+    | "investment_voting_closed"
     | "general";
   title: string;
   message: string;
@@ -105,7 +111,6 @@ function shouldSendEmailForType(type: string, emailPreferences: any): boolean {
     kyc_rejected: "kyc",
     investment: "investments",
     withdrawal: "withdrawals",
-    refund_deposit: "withdrawals",
     monthly_contribution: "investments",
     profit_deposit: "investments",
     manual_deposit: "announcements",
@@ -114,6 +119,13 @@ function shouldSendEmailForType(type: string, emailPreferences: any): boolean {
     proposal: "proposals",
     event: "events",
     announcement: "announcements",
+    business_approved: "announcements",
+    business_rejected: "announcements",
+    investment_suggestion: "investments",
+    investment_suggestion_approved: "investments",
+    investment_suggestion_rejected: "investments",
+    investment_voting_open: "investments",
+    investment_voting_closed: "investments",
   };
 
   const prefKey = typeMapping[type];
@@ -190,12 +202,18 @@ async function sendNotificationEmail(params: {
           .badge-withdrawal { background: #fff3e0; color: #f57c00; }
           .badge-monthly-contribution { background: #e8f5e9; color: #2e7d32; }
           .badge-profit-deposit { background: #e3f2fd; color: #1565c0; }
-          .badge-refund-deposit { background: #fff3e0; color: #ef6c00; }
           .badge-assistance { background: #f3e5f5; color: #6a1b9a; }
           .badge-profit-share { background: #e8eaf6; color: #3949ab; }
           .badge-proposal { background: #f3e5f5; color: #7b1fa2; }
           .badge-event { background: #fce4ec; color: #c2185b; }
           .badge-announcement { background: #e0f2f1; color: #00796b; }
+          .badge-business-approved { background: #e8f5e9; color: #2e7d32; }
+          .badge-business-rejected { background: #ffebee; color: #c62828; }
+          .badge-investment-suggestion { background: #e3f2fd; color: #1565c0; }
+          .badge-investment-suggestion-approved { background: #e8f5e9; color: #2e7d32; }
+          .badge-investment-suggestion-rejected { background: #ffebee; color: #c62828; }
+          .badge-investment-voting-open { background: #ede7f6; color: #4527a0; }
+          .badge-investment-voting-closed { background: #eceff1; color: #37474f; }
           .badge-general { background: #f5f5f5; color: #616161; }
           .message-box {
             background: #f9f9f9;
@@ -244,7 +262,7 @@ async function sendNotificationEmail(params: {
           <div class="content">
             <p>Hello ${name},</p>
             <span class="notification-badge badge-${type.replace(
-              "_",
+              /_/g,
               "-"
             )}">${getNotificationTypeLabel(type)}</span>
             
@@ -297,13 +315,19 @@ function getNotificationTypeLabel(type: string): string {
     withdrawal: "Withdrawal",
     monthly_contribution: "Monthly Contribution",
     profit_deposit: "Profit Deposit",
-    refund_deposit: "Refund Deposit",
     manual_deposit: "Manual Deposit",
     assistance: "Assistance",
     profit_share: "Profit Share",
     proposal: "Proposal",
     event: "Event",
     announcement: "Announcement",
+    business_approved: "Business Approved",
+    business_rejected: "Business Rejected",
+    investment_suggestion: "New Investment Suggestion",
+    investment_suggestion_approved: "Investment Suggestion Approved",
+    investment_suggestion_rejected: "Investment Suggestion Rejected",
+    investment_voting_open: "Investment Voting Open",
+    investment_voting_closed: "Investment Voting Closed",
     general: "General",
   };
   return labels[type] || "Notification";

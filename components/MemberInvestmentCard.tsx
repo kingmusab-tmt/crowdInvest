@@ -19,11 +19,17 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import DomainIcon from "@mui/icons-material/Domain";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import PieChartIcon from "@mui/icons-material/PieChart";
 import { formatNaira } from "@/lib/utils";
+import {
+  INVESTMENT_TYPE_CONFIG,
+  InvestmentType,
+} from "@/lib/investmentTypes";
 
 interface MemberInvestmentCardProps {
   title: string;
-  investmentType: "stock" | "business" | "crypto" | "real-estate";
+  investmentType: InvestmentType;
   basePrice: number;
   currentPrice: number;
   quantity: number;
@@ -32,7 +38,7 @@ interface MemberInvestmentCardProps {
   profitOrLoss: number;
   profitOrLossPercentage: number;
   dividendReceived: number;
-  status: "Active" | "Completed" | "Sold";
+  status: "Active" | "Completed" | "Sold" | "Cancelled";
   purchaseDate: string | Date;
 }
 
@@ -64,19 +70,17 @@ export default function MemberInvestmentCard({
         return "₿";
       case "real-estate":
         return <DomainIcon />;
+      case "bond":
+        return <AccountBalanceIcon />;
+      case "mutual-fund":
+        return <PieChartIcon />;
       default:
         return <AttachMoneyIcon />;
     }
   };
 
   const getInvestmentTypeLabel = () => {
-    const labels: Record<string, string> = {
-      stock: "Stock",
-      business: "Business",
-      crypto: "Cryptocurrency",
-      "real-estate": "Real Estate",
-    };
-    return labels[investmentType] || investmentType;
+    return INVESTMENT_TYPE_CONFIG[investmentType]?.label || investmentType;
   };
 
   const getStatusColor = () => {
@@ -87,6 +91,8 @@ export default function MemberInvestmentCard({
         return "warning";
       case "Sold":
         return "default";
+      case "Cancelled":
+        return "error";
       default:
         return "default";
     }
@@ -111,8 +117,23 @@ export default function MemberInvestmentCard({
     >
       <CardHeader
         title={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 0.75,
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                flexBasis: { xs: "100%", sm: "auto" },
+                flexGrow: 1,
+                fontSize: { xs: "0.95rem", sm: "1.25rem" },
+              }}
+            >
               {title}
             </Typography>
             <Chip
@@ -129,10 +150,17 @@ export default function MemberInvestmentCard({
           </Box>
         }
         subheader={`Purchased: ${new Date(purchaseDate).toLocaleDateString()}`}
-        sx={{ pb: 1 }}
+        sx={{ pb: 1, px: { xs: 1.5, sm: 2 }, pt: { xs: 1.5, sm: 2 } }}
       />
-      <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Grid container spacing={2} sx={{ mb: 2 }}>
+      <CardContent
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          px: { xs: 1.5, sm: 2 },
+        }}
+      >
+        <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: 2 }}>
           {/* Price Section */}
           <Grid size={6}>
             <Box>
@@ -213,9 +241,10 @@ export default function MemberInvestmentCard({
             bgcolor: `${profitColor}15`,
             borderRadius: 1,
             display: "flex",
-            alignItems: "center",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "flex-start", sm: "center" },
             justifyContent: "space-between",
-            gap: 2,
+            gap: { xs: 1, sm: 2 },
           }}
         >
           <Stack

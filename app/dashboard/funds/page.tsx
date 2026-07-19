@@ -4,7 +4,6 @@ import * as React from "react";
 import { Suspense } from "react";
 import {
   Box,
-  Container,
   Typography,
   Tabs,
   Tab,
@@ -12,6 +11,7 @@ import {
   Button,
   Paper,
   Stack,
+  Grid,
   RadioGroup,
   FormControlLabel,
   Radio,
@@ -108,7 +108,7 @@ function FundsContent() {
             showSuccess(
               `Payment of ${formatNaira(
                 data.amount
-              )} verified successfully! Your balance has been updated.`
+              )} verified successfully! Your contribution has been recorded.`
             );
           } else {
             showError(data.error || "Failed to verify payment");
@@ -575,10 +575,7 @@ function FundsContent() {
   };
 
   return (
-    <Container
-      maxWidth="md"
-      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
-    >
+    <Box>
       {verifyingPayment && (
         <Box
           sx={{
@@ -645,132 +642,134 @@ function FundsContent() {
                   )
                 }
               >
-                <Card
-                  variant="outlined"
-                  sx={{
-                    mb: 2,
-                    cursor: "pointer",
-                    borderColor:
-                      paymentMethod === "one-time" ? "primary.main" : "divider",
-                    bgcolor:
-                      paymentMethod === "one-time"
-                        ? "primary.lighter"
-                        : "transparent",
-                  }}
-                  onClick={() => handlePaymentMethodChange("one-time")}
-                >
-                  <CardContent>
-                    <FormControlLabel
-                      value="one-time"
-                      control={<Radio />}
-                      label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <PaymentIcon color="primary" />
-                          <Box>
-                            <Typography variant="subtitle1" sx={{
-                              fontWeight: 600
-                            }}>
-                              One-Time Payment
-                            </Typography>
-                            <Typography variant="body2" sx={{
-                              color: "text.secondary"
-                            }}>
-                              Make instant payments using Paystack
-                            </Typography>
-                          </Box>
-                        </Box>
-                      }
-                    />
-                  </CardContent>
-                </Card>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        height: "100%",
+                        cursor: "pointer",
+                        borderColor:
+                          paymentMethod === "one-time"
+                            ? "primary.main"
+                            : "divider",
+                        bgcolor:
+                          paymentMethod === "one-time"
+                            ? "primary.lighter"
+                            : "transparent",
+                      }}
+                      onClick={() => handlePaymentMethodChange("one-time")}
+                    >
+                      <CardContent>
+                        <FormControlLabel
+                          value="one-time"
+                          control={<Radio />}
+                          sx={{ alignItems: "flex-start", m: 0 }}
+                          label={
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, pt: 0.75 }}>
+                              <PaymentIcon color="primary" />
+                              <Typography variant="subtitle1" sx={{
+                                fontWeight: 600
+                              }}>
+                                One-Time Payment
+                              </Typography>
+                              <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                              }}>
+                                Make instant payments using Paystack
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </CardContent>
+                    </Card>
+                  </Grid>
 
-                <Card
-                  variant="outlined"
-                  sx={{
-                    mb: 2,
-                    cursor: "pointer",
-                    borderColor:
-                      paymentMethod === "reserved-account"
-                        ? "primary.main"
-                        : "divider",
-                    bgcolor:
-                      paymentMethod === "reserved-account"
-                        ? "primary.lighter"
-                        : "transparent",
-                  }}
-                  onClick={() => handlePaymentMethodChange("reserved-account")}
-                >
-                  <CardContent>
-                    <FormControlLabel
-                      value="reserved-account"
-                      control={<Radio />}
-                      label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <AccountBalanceIcon color="primary" />
-                          <Box>
-                            <Typography variant="subtitle1" sx={{
-                              fontWeight: 600
-                            }}>
-                              Reserved Account
-                            </Typography>
-                            <Typography variant="body2" sx={{
-                              color: "text.secondary"
-                            }}>
-                              Get a dedicated account number for automatic
-                              deposits
-                            </Typography>
-                          </Box>
-                        </Box>
-                      }
-                    />
-                  </CardContent>
-                </Card>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        height: "100%",
+                        cursor: "pointer",
+                        borderColor:
+                          paymentMethod === "reserved-account"
+                            ? "primary.main"
+                            : "divider",
+                        bgcolor:
+                          paymentMethod === "reserved-account"
+                            ? "primary.lighter"
+                            : "transparent",
+                      }}
+                      onClick={() => handlePaymentMethodChange("reserved-account")}
+                    >
+                      <CardContent>
+                        <FormControlLabel
+                          value="reserved-account"
+                          control={<Radio />}
+                          sx={{ alignItems: "flex-start", m: 0 }}
+                          label={
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, pt: 0.75 }}>
+                              <AccountBalanceIcon color="primary" />
+                              <Typography variant="subtitle1" sx={{
+                                fontWeight: 600
+                              }}>
+                                Reserved Account
+                              </Typography>
+                              <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                              }}>
+                                Get a dedicated account number for automatic
+                                deposits
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </CardContent>
+                    </Card>
+                  </Grid>
 
-                <Card
-                  variant="outlined"
-                  sx={{
-                    cursor: "pointer",
-                    borderColor:
-                      paymentMethod === "recurring"
-                        ? "primary.main"
-                        : "divider",
-                    bgcolor:
-                      paymentMethod === "recurring"
-                        ? "primary.lighter"
-                        : "transparent",
-                  }}
-                  onClick={() => handlePaymentMethodChange("recurring")}
-                >
-                  <CardContent>
-                    <FormControlLabel
-                      value="recurring"
-                      control={<Radio />}
-                      label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <AutorenewIcon color="primary" />
-                          <Box>
-                            <Typography variant="subtitle1" sx={{
-                              fontWeight: 600
-                            }}>
-                              Recurring Payment
-                            </Typography>
-                            <Typography variant="body2" sx={{
-                              color: "text.secondary"
-                            }}>
-                              Set up automatic monthly contributions
-                            </Typography>
-                          </Box>
-                        </Box>
-                      }
-                    />
-                  </CardContent>
-                </Card>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        height: "100%",
+                        cursor: "pointer",
+                        borderColor:
+                          paymentMethod === "recurring"
+                            ? "primary.main"
+                            : "divider",
+                        bgcolor:
+                          paymentMethod === "recurring"
+                            ? "primary.lighter"
+                            : "transparent",
+                      }}
+                      onClick={() => handlePaymentMethodChange("recurring")}
+                    >
+                      <CardContent>
+                        <FormControlLabel
+                          value="recurring"
+                          control={<Radio />}
+                          sx={{ alignItems: "flex-start", m: 0 }}
+                          label={
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, pt: 0.75 }}>
+                              <AutorenewIcon color="primary" />
+                              <Typography variant="subtitle1" sx={{
+                                fontWeight: 600
+                              }}>
+                                Recurring Payment
+                              </Typography>
+                              <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                              }}>
+                                Set up automatic monthly contributions
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
               </RadioGroup>
             </FormControl>
 
@@ -1276,7 +1275,7 @@ function FundsContent() {
         severity={snackbar.severity}
         onClose={closeSnackbar}
       />
-    </Container>
+    </Box>
   );
 }
 export default function FundsPage() {

@@ -4,13 +4,11 @@ import * as React from "react";
 import {
   Box,
   Button,
-  Container,
   Typography,
   Paper,
   Grid,
   Card,
   CardContent,
-  CardMedia,
   CardActions,
   Dialog,
   DialogTitle,
@@ -26,6 +24,8 @@ import {
   Select,
   MenuItem,
   InputAdornment,
+  Avatar,
+  Pagination,
 } from "@mui/material";
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -33,6 +33,12 @@ import SearchIcon from "@mui/icons-material/Search";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import CancelIcon from "@mui/icons-material/Cancel";
+import PersonIcon from "@mui/icons-material/Person";
+import HomeWorkIcon from "@mui/icons-material/HomeWork";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import LanguageIcon from "@mui/icons-material/Language";
+import StorefrontIcon from "@mui/icons-material/Storefront";
 import { useSession } from "next-auth/react";
 import { uploadFileToServer } from "@/utils/uploadHandler";
 import { useSnackbar } from "@/hooks/use-snackbar";
@@ -117,7 +123,7 @@ interface Business {
 }
 
 export default function MemberBusinessesPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { snackbar, closeSnackbar, showWarning, showError, showSuccess } =
     useSnackbar();
   const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
@@ -146,6 +152,7 @@ export default function MemberBusinessesPage() {
   const [statusFilter, setStatusFilter] = React.useState("All");
   const [categoryFilter, setCategoryFilter] = React.useState("All");
   const [locationFilter, setLocationFilter] = React.useState("All");
+  const [page, setPage] = React.useState(1);
 
   const fetchBusinesses = React.useCallback(async () => {
     try {
@@ -180,8 +187,14 @@ export default function MemberBusinessesPage() {
   }, [session?.user?.id]);
 
   React.useEffect(() => {
+    // Wait for the session to resolve before fetching — otherwise
+    // session?.user?.id/email are still undefined, the ownership check
+    // below can never match, and the user's own Pending/Rejected
+    // businesses are wrongly filtered out until a second fetch fires
+    // once the session hydrates.
+    if (sessionStatus === "loading") return;
     fetchBusinesses();
-  }, [fetchBusinesses]);
+  }, [sessionStatus, fetchBusinesses]);
 
   React.useEffect(() => {
     if (session?.user?.email) {
@@ -293,7 +306,7 @@ export default function MemberBusinessesPage() {
       fetchBusinesses();
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : "Failed to submit business"
+        error instanceof Error ? error.message : "Failed to submit business",
       );
     } finally {
       setIsSubmitting(false);
@@ -341,7 +354,7 @@ export default function MemberBusinessesPage() {
         } catch (err) {
           setSubmitError("Error deleting business");
         }
-      }
+      },
     );
   };
 
@@ -372,19 +385,37 @@ export default function MemberBusinessesPage() {
     return matchesSearch && matchesStatus && matchesCategory && matchesLocation;
   });
 
+  const BUSINESSES_PAGE_SIZE = 4;
+  const pageCount = Math.max(
+    1,
+    Math.ceil(filtered.length / BUSINESSES_PAGE_SIZE)
+  );
+
+  // Reset to page 1 whenever the filters/search change
+  React.useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, categoryFilter, locationFilter]);
+
+  // Clamp page if the filtered list shrinks (e.g. after a delete)
+  React.useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  const pagedBusinesses = filtered.slice(
+    (page - 1) * BUSINESSES_PAGE_SIZE,
+    page * BUSINESSES_PAGE_SIZE
+  );
+
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 6, textAlign: "center" }}>
+      <Box sx={{ py: 6, textAlign: "center" }}>
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ py: { xs: 2, sm: 4, md: 6 }, px: { xs: 1, sm: 2 } }}
-    >
+    <Box>
       <SnackbarAlert
         open={snackbar.open}
         message={snackbar.message}
@@ -413,9 +444,12 @@ export default function MemberBusinessesPage() {
           <Typography variant="h4" sx={{ fontWeight: 600 }}>
             Member Businesses
           </Typography>
-          <Typography variant="body2" sx={{
-            color: "text.secondary"
-          }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+            }}
+          >
             Browse community businesses or add your own
           </Typography>
         </Box>
@@ -441,7 +475,7 @@ export default function MemberBusinessesPage() {
                   <SearchIcon fontSize="small" />
                 </InputAdornment>
               ),
-            }
+            },
           }}
         />
         <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -490,17 +524,22 @@ export default function MemberBusinessesPage() {
       </Stack>
       {businesses.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: "center" }}>
-          <Typography variant="h6" gutterBottom sx={{
-            color: "text.secondary"
-          }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{
+              color: "text.secondary",
+            }}
+          >
             No businesses yet
           </Typography>
           <Typography
             variant="body2"
             sx={{
               color: "text.secondary",
-              mb: 2
-            }}>
+              mb: 2,
+            }}
+          >
             Be the first to add your business to the community!
           </Typography>
           <Button
@@ -513,14 +552,15 @@ export default function MemberBusinessesPage() {
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {filtered.map((business) => (
+          {pagedBusinesses.map((business) => (
             <Grid
               key={business._id}
               size={{
                 xs: 12,
                 sm: 6,
-                md: 4
-              }}>
+                md: 3,
+              }}
+            >
               <Card
                 sx={{
                   height: "100%",
@@ -536,27 +576,42 @@ export default function MemberBusinessesPage() {
                       : "background.paper",
                 }}
               >
-                {business.imageUrl && (
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={business.imageUrl}
-                    alt={business.name}
-                    sx={{ objectFit: "cover" }}
-                  />
-                )}
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box
                     sx={{
                       display: "flex",
                       justifyContent: "space-between",
-                      alignItems: "start",
+                      alignItems: "center",
                       mb: 1,
+                      gap: 1,
                     }}
                   >
-                    <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
-                      {business.name}
-                    </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      sx={{ alignItems: "center", minWidth: 0 }}
+                    >
+                      <Avatar
+                        src={business.imageUrl}
+                        variant="rounded"
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <StorefrontIcon fontSize="small" />
+                      </Avatar>
+                      <Typography
+                        variant="h6"
+                        noWrap
+                        title={business.name}
+                        sx={{ minWidth: 0 }}
+                      >
+                        {business.name}
+                      </Typography>
+                    </Stack>
                     {business.status === "Approved" && (
                       <Box
                         sx={{
@@ -620,57 +675,98 @@ export default function MemberBusinessesPage() {
                     variant="body2"
                     sx={{
                       color: "text.secondary",
-                      mb: 1
-                    }}>
+                      mb: 1,
+                    }}
+                  >
                     {business.description}
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "text.secondary",
-                      display: "block"
-                    }}>
-                    📍 {business.location}
-                  </Typography>
-                  {business.fullAddress && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "text.secondary",
-                        display: "block"
-                      }}>
-                      🏠 {business.fullAddress}
-                    </Typography>
-                  )}
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "text.secondary",
-                      display: "block"
-                    }}>
-                    👤 Owner: {business.ownerName}
-                  </Typography>
-                  <Box sx={{ mt: 1, display: "grid", gap: 0.5 }}>
-                    <Typography variant="body2" sx={{
-                      color: "text.primary"
-                    }}>
-                      Contact Email: {business.contactEmail}
-                    </Typography>
-                    {business.contactPhone && (
-                      <Typography variant="body2" sx={{
-                        color: "text.primary"
-                      }}>
-                        Contact Phone: {business.contactPhone}
+                  <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+                    {business.fullAddress && (
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: "center" }}
+                      >
+                        <HomeWorkIcon
+                          fontSize="small"
+                          sx={{ color: "text.secondary" }}
+                        />
+                        <Typography variant="caption">
+                          {business.fullAddress}
+                        </Typography>
+                      </Stack>
+                    )}
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <EmailIcon
+                        fontSize="small"
+                        sx={{ color: "text.secondary" }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{ wordBreak: "break-all" }}
+                      >
+                        {business.contactEmail}
                       </Typography>
+                    </Stack>
+                    {business.contactPhone && (
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: "center" }}
+                      >
+                        <PhoneIcon
+                          fontSize="small"
+                          sx={{ color: "text.secondary" }}
+                        />
+                        <Typography variant="caption">
+                          {business.contactPhone}
+                        </Typography>
+                      </Stack>
                     )}
                     {business.website && (
-                      <Typography variant="body2" sx={{
-                        color: "text.primary"
-                      }}>
-                        Website: {business.website}
-                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: "center" }}
+                      >
+                        <LanguageIcon
+                          fontSize="small"
+                          sx={{ color: "text.secondary" }}
+                        />
+                        <Typography
+                          variant="caption"
+                          sx={{ wordBreak: "break-all" }}
+                        >
+                          {business.website}
+                        </Typography>
+                      </Stack>
                     )}
-                  </Box>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "center",
+                      mt: 1.5,
+                      pt: 1,
+                      borderTop: 1,
+                      borderColor: "divider",
+                    }}
+                  >
+                    <PersonIcon
+                      fontSize="small"
+                      sx={{ color: "text.secondary" }}
+                    />
+                    <Typography variant="caption" color="textSecondary">
+                      {business.ownerName}
+                    </Typography>
+                  </Stack>
                 </CardContent>
                 {business.status === "Rejected" &&
                   (business.ownerId === session?.user?.id ||
@@ -702,6 +798,18 @@ export default function MemberBusinessesPage() {
           ))}
         </Grid>
       )}
+
+      {filtered.length > 0 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={(_, value) => setPage(value)}
+            color="primary"
+          />
+        </Box>
+      )}
+
       {/* Add/Edit Business Dialog */}
       <Dialog
         open={openDialog}
@@ -746,8 +854,9 @@ export default function MemberBusinessesPage() {
             <Grid
               size={{
                 xs: 12,
-                sm: 6
-              }}>
+                sm: 6,
+              }}
+            >
               <FormControl fullWidth required>
                 <InputLabel>Category</InputLabel>
                 <Select
@@ -768,8 +877,9 @@ export default function MemberBusinessesPage() {
             <Grid
               size={{
                 xs: 12,
-                sm: 6
-              }}>
+                sm: 6,
+              }}
+            >
               <FormControl fullWidth required>
                 <InputLabel>Location (State)</InputLabel>
                 <Select
@@ -802,8 +912,9 @@ export default function MemberBusinessesPage() {
             <Grid
               size={{
                 xs: 12,
-                sm: 6
-              }}>
+                sm: 6,
+              }}
+            >
               <TextField
                 label="Contact Email"
                 fullWidth
@@ -818,8 +929,9 @@ export default function MemberBusinessesPage() {
             <Grid
               size={{
                 xs: 12,
-                sm: 6
-              }}>
+                sm: 6,
+              }}
+            >
               <TextField
                 label="Contact Phone"
                 fullWidth
@@ -886,11 +998,11 @@ export default function MemberBusinessesPage() {
             {isSubmitting
               ? "Submitting..."
               : editingBusinessId
-              ? "Update & Resubmit"
-              : "Add Business"}
+                ? "Update & Resubmit"
+                : "Add Business"}
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 }
