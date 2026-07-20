@@ -37,6 +37,8 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import NotificationBell from "./NotificationBell";
+import DarkModeToggle from "./DarkModeToggle";
+import { usePlatformSettings } from "./PlatformSettingsContext";
 import { CONTRIBUTION_MODAL_SESSION_KEY } from "@/lib/dashboardConstants";
 
 const drawerWidth = 260;
@@ -121,18 +123,30 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 
 const menuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-  { text: "Events", icon: <EventIcon />, path: "/dashboard/events" },
+  {
+    text: "Events",
+    icon: <EventIcon />,
+    path: "/dashboard/events",
+    module: "events" as const,
+  },
   {
     text: "Investments",
     icon: <AccountBalanceIcon />,
     path: "/dashboard/investments",
+    module: "investments" as const,
   },
   {
     text: "Proposals",
     icon: <HowToVoteIcon />,
     path: "/dashboard/proposals",
+    module: "proposals" as const,
   },
-  { text: "Assistance", icon: <HelpIcon />, path: "/dashboard/assistance" },
+  {
+    text: "Assistance",
+    icon: <HelpIcon />,
+    path: "/dashboard/assistance",
+    module: "assistance" as const,
+  },
   {
     text: "My Businesses",
     icon: <BusinessCenterIcon />,
@@ -182,6 +196,33 @@ export default function UserDashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { settings: platformSettings } = usePlatformSettings();
+  const [enabledModules, setEnabledModules] = React.useState<Record<
+    string,
+    boolean
+  > | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/community")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.enabledFunctions) setEnabledModules(data.enabledFunctions);
+      })
+      .catch(() => {
+        // Fail open — don't hide nav items if the community fetch fails
+      });
+  }, []);
+
+  const visibleMenuItems = React.useMemo(
+    () =>
+      menuItems.filter(
+        (item) =>
+          !("module" in item) ||
+          !enabledModules ||
+          enabledModules[item.module as string] !== false
+      ),
+    [enabledModules]
+  );
 
   // Desktop: open = expanded menu, closed = icon-only menu
   // Mobile: open = drawer visible, closed = drawer hidden
@@ -234,9 +275,10 @@ export default function UserDashboardLayout({
             component="div"
             sx={{ flexGrow: 1, fontSize: { xs: "1rem", sm: "1.25rem" } }}
           >
-            CrowdInvest
+            {platformSettings.platformName}
           </Typography>
 
+          <DarkModeToggle />
           <NotificationBell />
 
           <Tooltip title="Account settings">
@@ -282,7 +324,7 @@ export default function UserDashboardLayout({
           <DrawerHeader />
           <Divider />
           <List>
-            {menuItems.map((item) => (
+            {visibleMenuItems.map((item) => (
               <ListItem
                 key={item.text}
                 disablePadding
@@ -318,7 +360,7 @@ export default function UserDashboardLayout({
           </DrawerHeader>
           <Divider />
           <List>
-            {menuItems.map((item) => (
+            {visibleMenuItems.map((item) => (
               <ListItem
                 key={item.text}
                 disablePadding

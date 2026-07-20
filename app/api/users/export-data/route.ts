@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/auth";
 import connectDB from "@/utils/connectDB";
 import User from "@/models/User";
-import Investment from "@/models/Investment";
+import MemberInvestment from "@/models/MemberInvestment";
 import Transaction from "@/models/Transaction";
 import Proposal from "@/models/Proposal";
 
@@ -24,9 +24,13 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch all user data
-    const investments = await Investment.find({ user: user._id }).lean();
-    const transactions = await Transaction.find({ user: user._id }).lean();
-    const proposals = await Proposal.find({ createdBy: user._id }).lean();
+    const investments = await MemberInvestment.find({
+      user: user._id,
+    }).lean();
+    const transactions = await Transaction.find({
+      userEmail: user.email,
+    }).lean();
+    const proposals = await Proposal.find({ proposedBy: user._id }).lean();
 
     // Compile all data
     const userData = {

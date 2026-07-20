@@ -24,38 +24,21 @@ export async function PUT(request: NextRequest) {
 
     // Update notification settings
     if (notifications) {
-      user.settings = {
-        ...user.settings,
-        notifications: {
-          inApp: notifications.inApp ?? true,
-          email: notifications.email ?? true,
-          emailPreferences: {
-            announcements:
-              notifications.emailPreferences?.announcements ?? true,
-            investments: notifications.emailPreferences?.investments ?? true,
-            withdrawals: notifications.emailPreferences?.withdrawals ?? true,
-            kyc: notifications.emailPreferences?.kyc ?? true,
-            proposals: notifications.emailPreferences?.proposals ?? true,
-            events: notifications.emailPreferences?.events ?? true,
-          },
-        },
-      };
+      user.set("settings.notifications", {
+        inApp: notifications.inApp ?? true,
+        email: notifications.email ?? true,
+        push: notifications.push ?? true,
+      });
     }
 
     // Update theme preference
     if (theme) {
-      user.settings = {
-        ...user.settings,
-        theme: theme,
-      };
+      user.set("settings.theme", theme);
     }
 
     // Update profile visibility
     if (profileVisibility) {
-      user.settings = {
-        ...user.settings,
-        profileVisibility: profileVisibility,
-      };
+      user.set("settings.profileVisibility", profileVisibility);
     }
 
     await user.save();

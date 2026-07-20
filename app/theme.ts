@@ -2,20 +2,19 @@
 
 import { createTheme, PaletteMode } from "@mui/material/styles";
 
-export const getTheme = (mode: PaletteMode) =>
+export const getTheme = (
+  mode: PaletteMode,
+  brandColors?: { primaryColor?: string; secondaryColor?: string }
+) =>
   createTheme({
     palette: {
       mode,
       primary: {
-        main: "#1976d2",
-        light: "#42a5f5",
-        dark: "#1565c0",
+        main: brandColors?.primaryColor || "#1976d2",
         contrastText: "#fff",
       },
       secondary: {
-        main: "#dc004e",
-        light: "#e33371",
-        dark: "#9a0036",
+        main: brandColors?.secondaryColor || "#dc004e",
         contrastText: "#fff",
       },
       success: {

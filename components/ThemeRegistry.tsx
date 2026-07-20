@@ -5,16 +5,18 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { getTheme } from "@/app/theme";
 import { useSession } from "next-auth/react";
-import { ThemeContextProvider } from "./ThemeContext";
+import { ThemeContextProvider, useThemeRefresh } from "./ThemeContext";
+import { usePlatformSettings } from "./PlatformSettingsContext";
 
 function ThemeProviderContent({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
+  const { refreshTrigger } = useThemeRefresh();
+  const { settings: platformSettings } = usePlatformSettings();
   const [mounted, setMounted] = React.useState(false);
   const [mode, setMode] = React.useState<"light" | "dark" | "system">("light");
   const [systemPreference, setSystemPreference] = React.useState<
     "light" | "dark"
   >("light");
-  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   // Effect to set mounted and detect system preference
   React.useEffect(() => {
@@ -53,14 +55,14 @@ function ThemeProviderContent({ children }: { children: React.ReactNode }) {
   };
 
   const theme = React.useMemo(
-    () => getTheme(getActualMode()),
-    [mode, systemPreference]
+    () => getTheme(getActualMode(), platformSettings.appearance),
+    [mode, systemPreference, platformSettings.appearance]
   );
 
   // Don't render children until hydration is complete to prevent mismatch
   if (!mounted) {
     return (
-      <ThemeProvider theme={getTheme("light")}>
+      <ThemeProvider theme={getTheme("light", platformSettings.appearance)}>
         <CssBaseline />
         {children}
       </ThemeProvider>

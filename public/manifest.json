@@ -2,7 +2,7 @@
   "name": "CROWD Invest - Community Investment Platform",
   "short_name": "CROWD Invest",
   "description": "Contribute together, Assist each other, Invest together, grow together.",
-  "start_url": "/",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

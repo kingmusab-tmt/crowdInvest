@@ -1,6 +1,7 @@
 import connectDB from "@/utils/connectDB";
 import User from "@/models/User";
 import { getSingletonCommunity } from "@/utils/getCommunity";
+import { getPlatformSettings } from "@/utils/getPlatformSettings";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
       placeOfWork,
       address,
       phoneNumber,
+      whatsappNumber,
       socialMedia,
       maritalStatus,
       nextOfKin,
@@ -62,12 +64,21 @@ export async function POST(req: NextRequest) {
     user.placeOfWork = placeOfWork;
     user.address = address;
     user.phoneNumber = phoneNumber;
+    user.whatsappNumber = whatsappNumber;
     user.socialMedia = socialMedia;
     user.maritalStatus = maritalStatus;
     user.nextOfKin = nextOfKin;
     user.termsAccepted = termsAccepted;
     user.privacyAccepted = privacyAccepted;
     user.profileCompleted = true;
+
+    // Onboarding completion is this app's KYC submission point
+    const platformSettings = await getPlatformSettings();
+    if (platformSettings.kyc.autoApprove) {
+      user.set("kyc.isVerified", true);
+      user.set("kyc.verifiedAt", new Date());
+      user.set("kyc.submittedAt", new Date());
+    }
 
     await user.save();
 

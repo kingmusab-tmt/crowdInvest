@@ -1,6 +1,7 @@
 import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { sendEmail } from "@/utils/emailService";
+import { getPlatformSettings } from "@/utils/getPlatformSettings";
 import mongoose from "mongoose";
 
 export interface CreateNotificationParams {
@@ -55,14 +56,7 @@ export async function createNotification(
     const notificationSettings = user.settings?.notifications || {
       inApp: true,
       email: true,
-      emailPreferences: {
-        announcements: true,
-        investments: true,
-        withdrawals: true,
-        kyc: true,
-        proposals: true,
-        events: true,
-      },
+      push: true,
     };
 
     // Create in-app notification if enabled
@@ -78,63 +72,25 @@ export async function createNotification(
       });
     }
 
-    // Send email notification if enabled
+    // Send email notification if enabled - once on, all notification types are sent
     if (notificationSettings.email !== false) {
-      const shouldSendEmail = shouldSendEmailForType(
+      const platformSettings = await getPlatformSettings();
+      await sendNotificationEmail({
+        to: user.email,
+        name: user.name,
+        title,
+        message,
+        actionUrl,
         type,
-        notificationSettings.emailPreferences
-      );
-
-      if (shouldSendEmail) {
-        await sendNotificationEmail({
-          to: user.email,
-          name: user.name,
-          title,
-          message,
-          actionUrl,
-          type,
-        });
-      }
+        platformName: platformSettings.platformName,
+        senderName: platformSettings.notifications.emailSenderName,
+        senderAddress: platformSettings.notifications.emailSenderAddress,
+      });
     }
   } catch (error) {
     console.error("Error creating notification:", error);
     throw error;
   }
-}
-
-/**
- * Determines if email should be sent based on notification type and user preferences
- */
-function shouldSendEmailForType(type: string, emailPreferences: any): boolean {
-  const typeMapping: Record<string, string> = {
-    kyc_verified: "kyc",
-    kyc_rejected: "kyc",
-    investment: "investments",
-    withdrawal: "withdrawals",
-    monthly_contribution: "investments",
-    profit_deposit: "investments",
-    manual_deposit: "announcements",
-    profit_share: "investments",
-    assistance: "announcements",
-    proposal: "proposals",
-    event: "events",
-    announcement: "announcements",
-    business_approved: "announcements",
-    business_rejected: "announcements",
-    investment_suggestion: "investments",
-    investment_suggestion_approved: "investments",
-    investment_suggestion_rejected: "investments",
-    investment_voting_open: "investments",
-    investment_voting_closed: "investments",
-  };
-
-  const prefKey = typeMapping[type];
-  if (!prefKey) return true; // Send by default for unknown types
-
-  // If emailPreferences is undefined or null, send email by default
-  if (!emailPreferences) return true;
-
-  return emailPreferences[prefKey] !== false;
 }
 
 /**
@@ -147,10 +103,23 @@ async function sendNotificationEmail(params: {
   message: string;
   actionUrl?: string;
   type: string;
+  platformName: string;
+  senderName: string;
+  senderAddress?: string;
 }): Promise<void> {
-  const { to, name, title, message, actionUrl, type } = params;
+  const {
+    to,
+    name,
+    title,
+    message,
+    actionUrl,
+    type,
+    platformName,
+    senderName,
+    senderAddress,
+  } = params;
 
-  const emailSubject = `CrowdInvest: ${title}`;
+  const emailSubject = `${senderName}: ${title}`;
 
   const emailHtml = `
     <!DOCTYPE html>
@@ -257,7 +226,7 @@ async function sendNotificationEmail(params: {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🔔 CrowdInvest Notification</h1>
+            <h1>🔔 ${platformName} Notification</h1>
           </div>
           <div class="content">
             <p>Hello ${name},</p>
@@ -285,7 +254,7 @@ async function sendNotificationEmail(params: {
             </p>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} CrowdInvest. All rights reserved.</p>
+            <p>© ${new Date().getFullYear()} ${platformName}. All rights reserved.</p>
             <p>
               <a href="${
                 process.env.NEXTAUTH_URL || ""
@@ -301,6 +270,8 @@ async function sendNotificationEmail(params: {
     to,
     subject: emailSubject,
     html: emailHtml,
+    fromName: senderName,
+    fromAddress: senderAddress,
   });
 }
 

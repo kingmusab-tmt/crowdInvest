@@ -29,14 +29,13 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch members from the same community
-    // Only show members with public or community visibility
+    // Exclude members who have set their profile to private
     const members = await User.find({
       community: currentUser.community,
       _id: { $ne: currentUser._id }, // Exclude current user
       $or: [
         { "settings.profileVisibility": "public" },
-        { "settings.profileVisibility": "community" },
-        { "settings.profileVisibility": { $exists: false } }, // Include users without visibility settings (default to community)
+        { "settings.profileVisibility": { $exists: false } }, // Default to public when unset
       ],
     })
       .select(

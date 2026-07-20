@@ -33,6 +33,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
+import { alpha } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import VerifiedIcon from "@mui/icons-material/Verified";
@@ -261,7 +262,7 @@ export default function KYCPage() {
             sm: 6,
             md: 3
           }}>
-          <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#f5f5f5" }}>
+          <Paper sx={{ p: 2, textAlign: "center" }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {kycUsers.length}
             </Typography>
@@ -278,8 +279,18 @@ export default function KYCPage() {
             sm: 6,
             md: 3
           }}>
-          <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#e8f5e9" }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#2e7d32" }}>
+          <Paper
+            sx={{
+              p: 2,
+              textAlign: "center",
+              bgcolor: (theme) =>
+                alpha(
+                  theme.palette.success.main,
+                  theme.palette.mode === "dark" ? 0.16 : 0.1
+                ),
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "success.main" }}>
               {verifiedCount}
             </Typography>
             <Typography variant="caption" sx={{
@@ -295,8 +306,18 @@ export default function KYCPage() {
             sm: 6,
             md: 3
           }}>
-          <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#fff3e0" }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#e65100" }}>
+          <Paper
+            sx={{
+              p: 2,
+              textAlign: "center",
+              bgcolor: (theme) =>
+                alpha(
+                  theme.palette.warning.main,
+                  theme.palette.mode === "dark" ? 0.16 : 0.1
+                ),
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "warning.main" }}>
               {pendingCount}
             </Typography>
             <Typography variant="caption" sx={{
@@ -312,7 +333,7 @@ export default function KYCPage() {
             sm: 6,
             md: 3
           }}>
-          <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#f5f5f5" }}>
+          <Paper sx={{ p: 2, textAlign: "center" }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {kycUsers.length > 0
                 ? ((verifiedCount / kycUsers.length) * 100).toFixed(0)
@@ -369,9 +390,10 @@ export default function KYCPage() {
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
-                  border: user.kyc?.isVerified
-                    ? "2px solid #2e7d32"
-                    : "1px solid #e0e0e0",
+                  border: user.kyc?.isVerified ? "2px solid" : "1px solid",
+                  borderColor: user.kyc?.isVerified
+                    ? "success.main"
+                    : "divider",
                 }}
               >
                 {/* Verified Badge */}
@@ -381,8 +403,8 @@ export default function KYCPage() {
                       position: "absolute",
                       top: 8,
                       right: 8,
-                      bgcolor: "#2e7d32",
-                      color: "white",
+                      bgcolor: "success.main",
+                      color: "success.contrastText",
                       borderRadius: "50%",
                       p: 1,
                     }}

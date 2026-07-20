@@ -24,17 +24,22 @@ import {
   FormControlLabel,
   FormGroup,
   Grid,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
 import { useThemeRefresh } from "@/components/ThemeContext";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import HighlightOffIcon from "@mui/icons-material/HighlightOff";
-import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import SettingsBrightnessIcon from "@mui/icons-material/SettingsBrightness";
+import PublicIcon from "@mui/icons-material/Public";
+import LockIcon from "@mui/icons-material/Lock";
 
 interface UserProfile {
   _id: string;
@@ -80,18 +85,11 @@ interface UserProfile {
   privacyAccepted?: boolean;
   settings?: {
     theme?: "light" | "dark" | "system";
-    profileVisibility?: "public" | "private" | "community";
+    profileVisibility?: "public" | "private";
     notifications: {
       inApp: boolean;
       email: boolean;
-      emailPreferences: {
-        announcements: boolean;
-        investments: boolean;
-        withdrawals: boolean;
-        kyc: boolean;
-        proposals: boolean;
-        events: boolean;
-      };
+      push: boolean;
     };
   };
   kyc?: {
@@ -114,14 +112,7 @@ const normalizeNotificationSettings = (data: any) => {
   return {
     inApp: Boolean(data?.inApp ?? true),
     email: Boolean(data?.email ?? true),
-    emailPreferences: {
-      announcements: Boolean(data?.emailPreferences?.announcements ?? true),
-      investments: Boolean(data?.emailPreferences?.investments ?? true),
-      withdrawals: Boolean(data?.emailPreferences?.withdrawals ?? true),
-      kyc: Boolean(data?.emailPreferences?.kyc ?? true),
-      proposals: Boolean(data?.emailPreferences?.proposals ?? true),
-      events: Boolean(data?.emailPreferences?.events ?? true),
-    },
+    push: Boolean(data?.push ?? true),
   };
 };
 
@@ -133,13 +124,15 @@ export default function SettingsPage() {
     closeSnackbar,
     showError,
     showSuccess,
-    showWarning,
     showInfo,
   } = useSnackbar();
   const [tab, setTab] = React.useState(0);
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false);
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] =
+    React.useState(false);
+  const [deletingAccount, setDeletingAccount] = React.useState(false);
   const [formData, setFormData] = React.useState({
     name: "",
     dateOfBirth: "",
@@ -188,8 +181,8 @@ export default function SettingsPage() {
     "light" | "dark" | "system"
   >("system");
   const [profileVisibility, setProfileVisibility] = React.useState<
-    "public" | "private" | "community"
-  >("community");
+    "public" | "private"
+  >("public");
   const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
@@ -205,7 +198,9 @@ export default function SettingsPage() {
         setProfile(data);
         setFormData({
           name: data.name || "",
-          dateOfBirth: data.dateOfBirth || "",
+          dateOfBirth: data.dateOfBirth
+            ? new Date(data.dateOfBirth).toISOString().split("T")[0]
+            : "",
           phoneNumber: data.phoneNumber || "",
           whatsappNumber: data.whatsappNumber || "",
           placeOfWork: data.placeOfWork || "",
@@ -246,7 +241,7 @@ export default function SettingsPage() {
           normalizeNotificationSettings(data.settings?.notifications)
         );
         setThemePreference(data.settings?.theme || "system");
-        setProfileVisibility(data.settings?.profileVisibility || "community");
+        setProfileVisibility(data.settings?.profileVisibility || "public");
       } else {
         showError("Failed to load profile");
       }
@@ -316,6 +311,12 @@ export default function SettingsPage() {
 
       if (res.ok) {
         showSuccess("Notification preferences updated successfully!");
+
+        // Refresh the session so the push notification gate picks up the change immediately
+        if (updateSession) {
+          await updateSession();
+        }
+
         setTimeout(() => {
           fetchProfile();
         }, 2000);
@@ -395,9 +396,7 @@ export default function SettingsPage() {
   };
 
   const handleRequestAccountDeletion = async () => {
-    showWarning(
-      "Account deletion request initiated. This action cannot be undone and all your data will be permanently deleted."
-    );
+    setDeletingAccount(true);
 
     try {
       const res = await fetch("/api/users/delete-account", {
@@ -405,6 +404,7 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
+        setDeleteAccountDialogOpen(false);
         showSuccess(
           "Account deletion request submitted. An administrator will review your request."
         );
@@ -416,37 +416,10 @@ export default function SettingsPage() {
       showError(
         err instanceof Error ? err.message : "Failed to submit request"
       );
+    } finally {
+      setDeletingAccount(false);
     }
   };
-
-  const getKYCStatus = () => {
-    if (!profile?.kyc)
-      return {
-        status: "pending",
-        label: "Not Submitted",
-        icon: <PendingActionsIcon />,
-      };
-    if (profile.kyc.isVerified) {
-      return {
-        status: "verified",
-        label: "Verified",
-        icon: <CheckCircleIcon />,
-      };
-    } else if (profile.kyc.rejectionReason) {
-      return {
-        status: "rejected",
-        label: "Rejected",
-        icon: <HighlightOffIcon />,
-      };
-    }
-    return {
-      status: "pending",
-      label: "Pending Review",
-      icon: <PendingActionsIcon />,
-    };
-  };
-
-  const kycStatus = getKYCStatus();
 
   if (loading) {
     return (
@@ -480,10 +453,9 @@ export default function SettingsPage() {
           sx={{ mb: 3 }}
         >
           <Tab label="Profile" {...a11yProps(0)} />
-          <Tab label="KYC Verification" {...a11yProps(1)} />
-          <Tab label="Notifications" {...a11yProps(2)} />
-          <Tab label="Privacy & Appearance" {...a11yProps(3)} />
-          <Tab label="Data & Privacy" {...a11yProps(4)} />
+          <Tab label="Notifications" {...a11yProps(1)} />
+          <Tab label="Privacy & Appearance" {...a11yProps(2)} />
+          <Tab label="Data & Privacy" {...a11yProps(3)} />
         </Tabs>
 
         {tab === 0 && (
@@ -552,7 +524,9 @@ export default function SettingsPage() {
                           )}
                           <Chip
                             label={
-                              profile.settings?.profileVisibility || "Community"
+                              profile.settings?.profileVisibility === "private"
+                                ? "Private"
+                                : "Public"
                             }
                             size="small"
                             variant="outlined"
@@ -874,6 +848,82 @@ export default function SettingsPage() {
                   </Card>
                 )}
 
+                {/* Personal Account Details Card */}
+                {profile.personalAccountDetails &&
+                  (profile.personalAccountDetails.bankName ||
+                    profile.personalAccountDetails.accountNumber ||
+                    profile.personalAccountDetails.accountName) && (
+                    <Card>
+                      <CardContent sx={{ p: 3 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{ mb: 3, fontWeight: 600 }}
+                        >
+                          Personal Account Details
+                        </Typography>
+                        <Grid container spacing={3}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  letterSpacing: 0.5,
+                                }}
+                              >
+                                Bank Name
+                              </Typography>
+                              <Typography variant="body1" sx={{ mt: 0.5 }}>
+                                {profile.personalAccountDetails.bankName ||
+                                  "Not provided"}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  letterSpacing: 0.5,
+                                }}
+                              >
+                                Account Number
+                              </Typography>
+                              <Typography variant="body1" sx={{ mt: 0.5 }}>
+                                {profile.personalAccountDetails
+                                  .accountNumber || "Not provided"}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  letterSpacing: 0.5,
+                                }}
+                              >
+                                Account Name
+                              </Typography>
+                              <Typography variant="body1" sx={{ mt: 0.5 }}>
+                                {profile.personalAccountDetails.accountName ||
+                                  "Not provided"}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  )}
+
                 {/* Next of Kin Card */}
                 {profile.nextOfKin && (
                   <Card>
@@ -985,6 +1035,79 @@ export default function SettingsPage() {
                             </Typography>
                           </Box>
                         </Grid>
+                        {profile.nextOfKin.accountDetails &&
+                          (profile.nextOfKin.accountDetails.bankName ||
+                            profile.nextOfKin.accountDetails.accountNumber ||
+                            profile.nextOfKin.accountDetails.accountName) && (
+                            <>
+                              <Grid size={12}>
+                                <Divider sx={{ my: 1 }} />
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{ fontWeight: 600, mb: 1 }}
+                                >
+                                  Bank Account Details
+                                </Typography>
+                              </Grid>
+                              <Grid size={{ xs: 12, sm: 6 }}>
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: "text.secondary",
+                                      fontWeight: 600,
+                                      textTransform: "uppercase",
+                                      letterSpacing: 0.5,
+                                    }}
+                                  >
+                                    Bank Name
+                                  </Typography>
+                                  <Typography variant="body1" sx={{ mt: 0.5 }}>
+                                    {profile.nextOfKin.accountDetails
+                                      .bankName || "Not provided"}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                              <Grid size={{ xs: 12, sm: 6 }}>
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: "text.secondary",
+                                      fontWeight: 600,
+                                      textTransform: "uppercase",
+                                      letterSpacing: 0.5,
+                                    }}
+                                  >
+                                    Account Number
+                                  </Typography>
+                                  <Typography variant="body1" sx={{ mt: 0.5 }}>
+                                    {profile.nextOfKin.accountDetails
+                                      .accountNumber || "Not provided"}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                              <Grid size={{ xs: 12, sm: 6 }}>
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: "text.secondary",
+                                      fontWeight: 600,
+                                      textTransform: "uppercase",
+                                      letterSpacing: 0.5,
+                                    }}
+                                  >
+                                    Account Name
+                                  </Typography>
+                                  <Typography variant="body1" sx={{ mt: 0.5 }}>
+                                    {profile.nextOfKin.accountDetails
+                                      .accountName || "Not provided"}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                            </>
+                          )}
                       </Grid>
                     </CardContent>
                   </Card>
@@ -995,122 +1118,6 @@ export default function SettingsPage() {
         )}
 
         {tab === 1 && (
-          <Box>
-            <Typography variant="h6" sx={{ mb: 3 }}>
-              KYC Verification Status
-            </Typography>
-
-            {profile && (
-              <Stack spacing={3}>
-                {/* Status Card */}
-                <Card
-                  sx={{
-                    bgcolor:
-                      kycStatus.status === "verified"
-                        ? "success.50"
-                        : kycStatus.status === "rejected"
-                        ? "error.50"
-                        : "warning.50",
-                    borderLeft: (theme) =>
-                      kycStatus.status === "verified"
-                        ? `4px solid ${theme.palette.success.main}`
-                        : kycStatus.status === "rejected"
-                        ? `4px solid ${theme.palette.error.main}`
-                        : `4px solid ${theme.palette.warning.main}`,
-                  }}
-                >
-                  <CardContent>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Box
-                        sx={{
-                          color:
-                            kycStatus.status === "verified"
-                              ? "success.main"
-                              : kycStatus.status === "rejected"
-                              ? "error.main"
-                              : "warning.main",
-                        }}
-                      >
-                        {kycStatus.icon}
-                      </Box>
-                      <Box>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 600 }}
-                        >
-                          {kycStatus.label}
-                        </Typography>
-                        {profile.kyc?.verifiedAt && (
-                          <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                          }}>
-                            Verified on{" "}
-                            {new Date(
-                              profile.kyc.verifiedAt
-                            ).toLocaleDateString()}
-                          </Typography>
-                        )}
-                        {profile.kyc?.rejectionDate && (
-                          <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                          }}>
-                            Rejected on{" "}
-                            {new Date(
-                              profile.kyc.rejectionDate
-                            ).toLocaleDateString()}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-
-                {/* Rejection Reason */}
-                {kycStatus.status === "rejected" &&
-                  profile.kyc?.rejectionReason && (
-                    <Alert severity="error">
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: 600, mb: 1 }}
-                      >
-                        Reason for Rejection:
-                      </Typography>
-                      <Typography variant="body2">
-                        {profile.kyc.rejectionReason}
-                      </Typography>
-                    </Alert>
-                  )}
-
-                <Divider />
-
-                <Typography variant="body2" sx={{
-                  color: "text.secondary"
-                }}>
-                  {kycStatus.status === "verified"
-                    ? "Your KYC verification is complete. You have full access to all community features."
-                    : kycStatus.status === "rejected"
-                    ? "Your KYC verification was rejected. Please review the reason above and update your information."
-                    : "Your KYC verification is pending. An administrator will review your information shortly."}
-                </Typography>
-
-                {kycStatus.status === "rejected" && (
-                  <Button
-                    variant="contained"
-                    onClick={() => {
-                      setTab(0);
-                      setUpdateDialogOpen(true);
-                    }}
-                    sx={{ alignSelf: "flex-start" }}
-                  >
-                    Update Information & Resubmit
-                  </Button>
-                )}
-              </Stack>
-            )}
-          </Box>
-        )}
-
-        {tab === 2 && (
           <Box>
             <Typography variant="h6" sx={{ mb: 3 }}>
               Notification Preferences
@@ -1172,149 +1179,35 @@ export default function SettingsPage() {
                           <Typography variant="caption" sx={{
                             color: "text.secondary"
                           }}>
-                            Receive notifications via email
+                            Receive all notification updates via email
                           </Typography>
                         </Box>
                       }
                     />
-                  </FormGroup>
-                </Box>
-
-                <Divider />
-
-                {/* Email Notification Preferences */}
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, mb: 2 }}
-                  >
-                    Email Notification Types
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "text.secondary",
-                      mb: 2
-                    }}>
-                    Choose which types of notifications you want to receive via
-                    email
-                  </Typography>
-                  <FormGroup>
                     <FormControlLabel
                       control={
                         <Switch
-                          checked={notificationSettings.emailPreferences.kyc}
+                          checked={notificationSettings.push}
                           onChange={(e) =>
                             setNotificationSettings({
                               ...notificationSettings,
-                              emailPreferences: {
-                                ...notificationSettings.emailPreferences,
-                                kyc: e.target.checked,
-                              },
+                              push: e.target.checked,
                             })
                           }
-                          disabled={!notificationSettings.email}
                         />
                       }
-                      label="KYC Verification Updates"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={
-                            notificationSettings.emailPreferences.investments
-                          }
-                          onChange={(e) =>
-                            setNotificationSettings({
-                              ...notificationSettings,
-                              emailPreferences: {
-                                ...notificationSettings.emailPreferences,
-                                investments: e.target.checked,
-                              },
-                            })
-                          }
-                          disabled={!notificationSettings.email}
-                        />
+                      label={
+                        <Box>
+                          <Typography variant="body1">
+                            Push Notifications
+                          </Typography>
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
+                            Receive push notifications on this device
+                          </Typography>
+                        </Box>
                       }
-                      label="Investment Updates"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={
-                            notificationSettings.emailPreferences.withdrawals
-                          }
-                          onChange={(e) =>
-                            setNotificationSettings({
-                              ...notificationSettings,
-                              emailPreferences: {
-                                ...notificationSettings.emailPreferences,
-                                withdrawals: e.target.checked,
-                              },
-                            })
-                          }
-                          disabled={!notificationSettings.email}
-                        />
-                      }
-                      label="Withdrawal Updates"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={
-                            notificationSettings.emailPreferences.proposals
-                          }
-                          onChange={(e) =>
-                            setNotificationSettings({
-                              ...notificationSettings,
-                              emailPreferences: {
-                                ...notificationSettings.emailPreferences,
-                                proposals: e.target.checked,
-                              },
-                            })
-                          }
-                          disabled={!notificationSettings.email}
-                        />
-                      }
-                      label="Proposal Updates"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={notificationSettings.emailPreferences.events}
-                          onChange={(e) =>
-                            setNotificationSettings({
-                              ...notificationSettings,
-                              emailPreferences: {
-                                ...notificationSettings.emailPreferences,
-                                events: e.target.checked,
-                              },
-                            })
-                          }
-                          disabled={!notificationSettings.email}
-                        />
-                      }
-                      label="Event Updates"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={
-                            notificationSettings.emailPreferences.announcements
-                          }
-                          onChange={(e) =>
-                            setNotificationSettings({
-                              ...notificationSettings,
-                              emailPreferences: {
-                                ...notificationSettings.emailPreferences,
-                                announcements: e.target.checked,
-                              },
-                            })
-                          }
-                          disabled={!notificationSettings.email}
-                        />
-                      }
-                      label="Announcements"
                     />
                   </FormGroup>
                 </Box>
@@ -1336,7 +1229,7 @@ export default function SettingsPage() {
           </Box>
         )}
 
-        {tab === 3 && (
+        {tab === 2 && (
           <Box>
             <Typography variant="h6" sx={{ mb: 3 }}>
               Privacy & Appearance Settings
@@ -1360,47 +1253,27 @@ export default function SettingsPage() {
                     }}>
                     Choose your preferred theme for the dashboard
                   </Typography>
-                  <FormGroup>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={themePreference === "light"}
-                          onChange={(e) =>
-                            setThemePreference(
-                              e.target.checked ? "light" : "system"
-                            )
-                          }
-                        />
-                      }
-                      label="Light Mode"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={themePreference === "dark"}
-                          onChange={(e) =>
-                            setThemePreference(
-                              e.target.checked ? "dark" : "system"
-                            )
-                          }
-                        />
-                      }
-                      label="Dark Mode"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={themePreference === "system"}
-                          onChange={(e) =>
-                            setThemePreference(
-                              e.target.checked ? "system" : "light"
-                            )
-                          }
-                        />
-                      }
-                      label="System Default"
-                    />
-                  </FormGroup>
+                  <ToggleButtonGroup
+                    value={themePreference}
+                    exclusive
+                    onChange={(_, newValue) => {
+                      if (newValue !== null) setThemePreference(newValue);
+                    }}
+                    color="primary"
+                  >
+                    <ToggleButton value="light">
+                      <LightModeIcon sx={{ mr: 1 }} fontSize="small" />
+                      Light
+                    </ToggleButton>
+                    <ToggleButton value="dark">
+                      <DarkModeIcon sx={{ mr: 1 }} fontSize="small" />
+                      Dark
+                    </ToggleButton>
+                    <ToggleButton value="system">
+                      <SettingsBrightnessIcon sx={{ mr: 1 }} fontSize="small" />
+                      System Default
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                 </Box>
 
                 <Divider />
@@ -1419,78 +1292,37 @@ export default function SettingsPage() {
                       color: "text.secondary",
                       mb: 2
                     }}>
-                    Control who can see your profile information
+                    Control whether your profile appears in the community
+                    members directory
                   </Typography>
-                  <FormGroup>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={profileVisibility === "public"}
-                          onChange={(e) =>
-                            setProfileVisibility(
-                              e.target.checked ? "public" : "community"
-                            )
-                          }
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="body1">Public</Typography>
-                          <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                          }}>
-                            Your profile is visible to everyone
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={profileVisibility === "community"}
-                          onChange={(e) =>
-                            setProfileVisibility(
-                              e.target.checked ? "community" : "private"
-                            )
-                          }
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="body1">
-                            Community Only
-                          </Typography>
-                          <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                          }}>
-                            Only members of your community can see your profile
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={profileVisibility === "private"}
-                          onChange={(e) =>
-                            setProfileVisibility(
-                              e.target.checked ? "private" : "public"
-                            )
-                          }
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="body1">Private</Typography>
-                          <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                          }}>
-                            Your profile is completely private
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </FormGroup>
+                  <ToggleButtonGroup
+                    value={profileVisibility}
+                    exclusive
+                    onChange={(_, newValue) => {
+                      if (newValue !== null) setProfileVisibility(newValue);
+                    }}
+                    color="primary"
+                  >
+                    <ToggleButton value="public">
+                      <PublicIcon sx={{ mr: 1 }} fontSize="small" />
+                      Public
+                    </ToggleButton>
+                    <ToggleButton value="private">
+                      <LockIcon sx={{ mr: 1 }} fontSize="small" />
+                      Private
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      mt: 1,
+                      display: "block"
+                    }}>
+                    {profileVisibility === "private"
+                      ? "Your profile is hidden from the members directory."
+                      : "Your profile is visible to other members in the directory."}
+                  </Typography>
                 </Box>
 
                 <Button
@@ -1510,7 +1342,7 @@ export default function SettingsPage() {
           </Box>
         )}
 
-        {tab === 4 && (
+        {tab === 3 && (
           <Box>
             <Typography variant="h6" sx={{ mb: 3 }}>
               Data & Privacy Management
@@ -1564,7 +1396,7 @@ export default function SettingsPage() {
                     <Button
                       variant="outlined"
                       color="error"
-                      onClick={handleRequestAccountDeletion}
+                      onClick={() => setDeleteAccountDialogOpen(true)}
                     >
                       Request Account Deletion
                     </Button>
@@ -2051,6 +1883,51 @@ export default function SettingsPage() {
             disabled={saving}
           >
             {saving ? <CircularProgress size={24} /> : "Save Changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog
+        open={deleteAccountDialogOpen}
+        onClose={() => {
+          if (!deletingAccount) setDeleteAccountDialogOpen(false);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+            Delete Your Account?
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            This action cannot be undone. Once processed, your account and
+            all associated data will be permanently deleted.
+          </Alert>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Are you sure you want to request deletion of your account? An
+            administrator will review and process your request.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={() => setDeleteAccountDialogOpen(false)}
+            disabled={deletingAccount}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRequestAccountDeletion}
+            variant="contained"
+            color="error"
+            disabled={deletingAccount}
+          >
+            {deletingAccount ? (
+              <CircularProgress size={24} />
+            ) : (
+              "Yes, Delete My Account"
+            )}
           </Button>
         </DialogActions>
       </Dialog>

@@ -32,6 +32,7 @@ import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
 import { Country, ICountry } from "country-state-city";
 import NigeriaStates from "naija-state-local-government";
+import { usePlatformSettings } from "@/components/PlatformSettingsContext";
 
 const steps = [
   "Personal Information",
@@ -59,6 +60,7 @@ const RELATIONSHIP_OPTIONS = [
 
 export default function OnboardingPage() {
   const { data: session, update: updateSession } = useSession();
+  const { settings: platformSettings } = usePlatformSettings();
   const router = useRouter();
   const [activeStep, setActiveStep] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
@@ -93,6 +95,7 @@ export default function OnboardingPage() {
       postalCode: "",
     },
     phoneNumber: "",
+    whatsappNumber: "",
     socialMedia: {
       facebook: "",
       twitter: "",
@@ -426,6 +429,21 @@ export default function OnboardingPage() {
                     !PHONE_REGEX.test(formData.phoneNumber)
                   }
                   helperText="e.g. 08198765432 or +2348198765432"
+                />
+              </Grid>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
+                <TextField
+                  label="WhatsApp Number"
+                  fullWidth
+                  value={formData.whatsappNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, whatsappNumber: e.target.value })
+                  }
+                  placeholder="e.g. 08198765432 or +2348198765432"
                 />
               </Grid>
               <Grid
@@ -966,45 +984,11 @@ export default function OnboardingPage() {
       >
         <DialogTitle>Terms and Conditions</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>1. Acceptance of Terms</strong>
-            <br />
-            By accessing and using this platform, you accept and agree to be
-            bound by the terms and provision of this agreement.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>2. User Obligations</strong>
-            <br />
-            Users must provide accurate information, maintain account security,
-            and comply with all applicable laws and regulations.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>3. Investment Risks</strong>
-            <br />
-            All investments carry inherent risks. The platform does not
-            guarantee returns and users should invest responsibly.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>4. Platform Usage</strong>
-            <br />
-            Users agree not to misuse the platform, engage in fraudulent
-            activities, or violate community standards.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>5. Termination</strong>
-            <br />
-            The platform reserves the right to suspend or terminate accounts
-            that violate these terms.
+          <Typography
+            variant="body2"
+            sx={{ whiteSpace: "pre-line" }}
+          >
+            {platformSettings.legal.termsAndConditions}
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -1020,45 +1004,11 @@ export default function OnboardingPage() {
       >
         <DialogTitle>Privacy Policy</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>1. Data Collection</strong>
-            <br />
-            We collect personal information necessary for account creation,
-            investment management, and service delivery.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>2. Data Usage</strong>
-            <br />
-            Your data is used to provide services, process transactions,
-            communicate updates, and improve user experience.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>3. Data Protection</strong>
-            <br />
-            We implement industry-standard security measures to protect your
-            personal information from unauthorized access.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>4. Data Sharing</strong>
-            <br />
-            We do not sell your data. Information is only shared with your
-            consent or as required by law.
-          </Typography>
-          <Typography variant="body2" sx={{
-            marginBottom: "16px"
-          }}>
-            <strong>5. Your Rights</strong>
-            <br />
-            You have the right to access, update, or delete your personal data
-            at any time through your account settings.
+          <Typography
+            variant="body2"
+            sx={{ whiteSpace: "pre-line" }}
+          >
+            {platformSettings.legal.privacyPolicy}
           </Typography>
         </DialogContent>
         <DialogActions>

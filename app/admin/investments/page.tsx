@@ -57,6 +57,7 @@ import {
   INVESTMENT_TYPE_OPTIONS,
   InvestmentType,
 } from "@/lib/investmentTypes";
+import { usePlatformSettings } from "@/components/PlatformSettingsContext";
 
 type StatColor = "primary" | "success" | "error" | "warning" | "info";
 
@@ -422,6 +423,16 @@ function ViewToggle({
 
 export default function InvestmentsPage() {
   const { data: session } = useSession();
+  const { settings: platformSettings } = usePlatformSettings();
+  const availableInvestmentTypes = React.useMemo(
+    () =>
+      platformSettings.enabledInvestmentTypes.length > 0
+        ? INVESTMENT_TYPE_OPTIONS.filter((opt) =>
+            platformSettings.enabledInvestmentTypes.includes(opt.value)
+          )
+        : INVESTMENT_TYPE_OPTIONS,
+    [platformSettings.enabledInvestmentTypes]
+  );
   const router = useRouter();
   const { snackbar, closeSnackbar, showWarning } = useSnackbar();
   const { dialog, openConfirmDialog, closeConfirmDialog, handleConfirm } =
@@ -1482,7 +1493,7 @@ export default function InvestmentsPage() {
                 Investment Type
               </Typography>
               <Grid container spacing={1}>
-                {INVESTMENT_TYPE_OPTIONS.map((opt) => {
+                {availableInvestmentTypes.map((opt) => {
                   const selected = investmentForm.investmentType === opt.value;
                   return (
                     <Grid key={opt.value} size={{ xs: 6, sm: 4 }}>

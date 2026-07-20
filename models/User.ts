@@ -73,18 +73,11 @@ export interface IUser extends Document {
   settings?: {
     enableBiometrics: boolean;
     theme: "light" | "dark" | "system";
-    profileVisibility: "public" | "private" | "community";
+    profileVisibility: "public" | "private";
     notifications: {
       inApp: boolean; // In-app notifications
       email: boolean; // Email notifications
-      emailPreferences: {
-        announcements: boolean;
-        investments: boolean;
-        withdrawals: boolean;
-        kyc: boolean;
-        proposals: boolean;
-        events: boolean;
-      };
+      push: boolean; // Push (device/browser) notifications
     };
   };
   paymentSettings?: {
@@ -190,20 +183,13 @@ const UserSchema = new Schema<IUser>(
       },
       profileVisibility: {
         type: String,
-        enum: ["public", "private", "community"],
-        default: "community",
+        enum: ["public", "private"],
+        default: "public",
       },
       notifications: {
         inApp: { type: Boolean, default: true },
         email: { type: Boolean, default: true },
-        emailPreferences: {
-          announcements: { type: Boolean, default: true },
-          investments: { type: Boolean, default: true },
-          withdrawals: { type: Boolean, default: true },
-          kyc: { type: Boolean, default: true },
-          proposals: { type: Boolean, default: true },
-          events: { type: Boolean, default: true },
-        },
+        push: { type: Boolean, default: true },
       },
     },
     paymentSettings: {

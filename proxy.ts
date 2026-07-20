@@ -2,12 +2,38 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+async function isMaintenanceModeOn(request: NextRequest): Promise<boolean> {
+  try {
+    const res = await fetch(
+      new URL("/api/settings/public", request.url),
+      { next: { revalidate: 30 } }
+    );
+    if (!res.ok) return false;
+    const data = await res.json();
+    return Boolean(data?.legal?.maintenanceMode);
+  } catch {
+    // Fail open — never block access due to a settings-fetch hiccup
+    return false;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   const isPublicPath = path === "/login" || path === "/signup" || path === "/";
   const isOnboardingPath = path === "/onboarding";
+  const isMaintenancePath = path === "/maintenance";
   const token = await getToken({ req: request });
+
+  // Maintenance mode: block non-admin access to the dashboard/onboarding,
+  // but never touch /login, /signup, /, /admin, or /api so admins can
+  // always sign in and turn it back off.
+  if (!isMaintenancePath && (path.startsWith("/dashboard") || isOnboardingPath)) {
+    const isAdmin = token?.role === "Admin";
+    if (!isAdmin && (await isMaintenanceModeOn(request))) {
+      return NextResponse.redirect(new URL("/maintenance", request.url));
+    }
+  }
 
   // If user is logged in and tries to access auth pages
   if (isPublicPath && token) {

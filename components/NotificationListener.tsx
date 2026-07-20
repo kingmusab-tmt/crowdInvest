@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import {
   useNotificationPermission,
   sendNativeNotification,
@@ -12,10 +13,15 @@ interface NotificationActionType {
 }
 
 export default function NotificationListener() {
+  const { data: session, status } = useSession();
   const notificationTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useNotificationPermission();
 
   useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
     const checkForNewNotifications = async () => {
       try {
         const res = await fetch("/api/users/notifications?countOnly=true");
@@ -29,8 +35,13 @@ export default function NotificationListener() {
             parseInt(currentCount) > parseInt(previousCount)
           ) {
             // New notifications arrived - fetch them and show native notification
-            const notificationsRes = await fetch("/api/users/notifications");
-            if (notificationsRes.ok) {
+            const pushEnabled =
+              session?.user?.settings?.notifications?.push !== false;
+
+            const notificationsRes = pushEnabled
+              ? await fetch("/api/users/notifications")
+              : null;
+            if (notificationsRes?.ok) {
               const notifications = await notificationsRes.json();
               const latestNotification = notifications[0];
 
@@ -78,7 +89,7 @@ export default function NotificationListener() {
         clearInterval(notificationTimerRef.current);
       }
     };
-  }, []);
+  }, [status, session?.user?.settings?.notifications?.push]);
 
   return null;
 }

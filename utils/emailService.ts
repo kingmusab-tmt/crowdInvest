@@ -15,15 +15,27 @@ interface EmailOptions {
   to: string;
   subject: string;
   html: string;
+  fromName?: string;
+  fromAddress?: string;
+  replyTo?: string;
 }
 
-export async function sendEmail({ to, subject, html }: EmailOptions) {
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  fromName,
+  fromAddress,
+  replyTo,
+}: EmailOptions) {
   try {
+    const address = fromAddress || process.env.SUPPORT_EMAIL;
     await transporter.sendMail({
-      from: process.env.SUPPORT_EMAIL,
+      from: fromName ? `"${fromName}" <${address}>` : address,
       to,
       subject,
       html,
+      replyTo,
     });
     return true;
   } catch (error) {

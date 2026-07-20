@@ -5,6 +5,7 @@ import connectDB from "@/utils/connectDB";
 import WithdrawalRequest from "@/models/WithdrawalRequest";
 import Transaction from "@/models/Transaction";
 import User from "@/models/User";
+import { getPlatformSettings } from "@/utils/getPlatformSettings";
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,6 +63,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
+    const platformSettings = await getPlatformSettings();
+    if (
+      platformSettings.minimumWithdrawal > 0 &&
+      amount < platformSettings.minimumWithdrawal
+    ) {
+      return NextResponse.json(
+        {
+          error: `Minimum withdrawal amount is ₦${platformSettings.minimumWithdrawal.toLocaleString()}`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Get user to verify community
     const user: any = await User.findOne({ email: session.user.email }).lean();
     if (!user) {
@@ -90,6 +104,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-approve small withdrawals if configured
+    const autoApprove =
+      platformSettings.autoApproveWithdrawalUnder > 0 &&
+      amount <= platformSettings.autoApproveWithdrawalUnder;
+
     // Create withdrawal request
     const withdrawalRequest = await WithdrawalRequest.create({
       user: user._id,
@@ -98,13 +117,36 @@ export async function POST(request: NextRequest) {
       community: user.community || communityId,
       amount,
       description,
-      status: "Pending",
+      status: autoApprove ? "Approved" : "Pending",
       requestDate: new Date(),
+      ...(autoApprove && {
+        processedDate: new Date(),
+        processedByName: "System (Auto-Approved)",
+      }),
     });
+
+    if (autoApprove) {
+      await Transaction.create({
+        userName: withdrawalRequest.userName,
+        userEmail: withdrawalRequest.userEmail,
+        community: withdrawalRequest.community,
+        type: "Profit Share",
+        amount: -amount,
+        status: "Completed",
+        date: new Date(),
+        isAdminTransaction: true,
+        performedByName: "System (Auto-Approved)",
+        description: `Withdrawal auto-approved - ${
+          description || "Profit share withdrawal"
+        }`,
+      });
+    }
 
     return NextResponse.json(
       {
-        message: "Withdrawal request submitted successfully",
+        message: autoApprove
+          ? "Withdrawal auto-approved and processed successfully"
+          : "Withdrawal request submitted successfully",
         withdrawalRequest,
       },
       { status: 201 }

@@ -7,6 +7,7 @@ import {
   notifyAdminsOfNewSuggestion,
   notifyVotingClosedResults,
 } from "../../../../services/investmentSuggestionService";
+import { getPlatformSettings } from "../../../../utils/getPlatformSettings";
 
 export async function GET(request: NextRequest) {
   try {
@@ -73,6 +74,17 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    const platformSettings = await getPlatformSettings();
+    if (
+      platformSettings.enabledInvestmentTypes.length > 0 &&
+      !platformSettings.enabledInvestmentTypes.includes(body.investmentType)
+    ) {
+      return NextResponse.json(
+        { error: `Investment type "${body.investmentType}" is currently disabled` },
+        { status: 400 }
+      );
     }
 
     const suggestion = new InvestmentSuggestion({

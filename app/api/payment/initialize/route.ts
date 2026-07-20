@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/auth";
+import dbConnect from "@/utils/connectDB";
+import { getPlatformSettings } from "@/utils/getPlatformSettings";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -16,6 +18,20 @@ export async function POST(request: NextRequest) {
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    }
+
+    await dbConnect();
+    const platformSettings = await getPlatformSettings();
+    if (
+      platformSettings.minimumContribution > 0 &&
+      amount < platformSettings.minimumContribution
+    ) {
+      return NextResponse.json(
+        {
+          error: `Minimum contribution amount is ₦${platformSettings.minimumContribution.toLocaleString()}`,
+        },
+        { status: 400 }
+      );
     }
 
     // Initialize Paystack transaction

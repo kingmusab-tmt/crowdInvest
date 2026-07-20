@@ -38,6 +38,8 @@ import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import NotificationBell from "./NotificationBell";
+import DarkModeToggle from "./DarkModeToggle";
+import { usePlatformSettings } from "./PlatformSettingsContext";
 
 const drawerWidth = 260;
 const drawerCollapsedWidth = 65;
@@ -157,6 +159,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { settings: platformSettings } = usePlatformSettings();
 
   // Desktop: open = expanded menu, closed = icon-only menu
   // Mobile: open = drawer visible, closed = drawer hidden
@@ -207,9 +210,10 @@ export default function AdminLayout({
             component="div"
             sx={{ flexGrow: 1, fontSize: { xs: "1rem", sm: "1.25rem" } }}
           >
-            CrowdInvest Admin
+            {platformSettings.platformName} Admin
           </Typography>
 
+          <DarkModeToggle />
           <NotificationBell />
 
           <Tooltip title="Account settings">

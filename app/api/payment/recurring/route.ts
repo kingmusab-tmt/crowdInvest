@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/auth";
 import dbConnect from "@/utils/connectDB";
 import User from "@/models/User";
+import { getPlatformSettings } from "@/utils/getPlatformSettings";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -21,6 +22,19 @@ export async function POST(request: NextRequest) {
     }
 
     await dbConnect();
+
+    const platformSettings = await getPlatformSettings();
+    if (
+      platformSettings.minimumContribution > 0 &&
+      amount < platformSettings.minimumContribution
+    ) {
+      return NextResponse.json(
+        {
+          error: `Minimum contribution amount is ₦${platformSettings.minimumContribution.toLocaleString()}`,
+        },
+        { status: 400 }
+      );
+    }
 
     const user = await User.findOne({ email: session.user.email });
     if (!user) {

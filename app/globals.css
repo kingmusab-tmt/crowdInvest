@@ -119,3 +119,66 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* PWA boot splash — only shown when launched as an installed standalone
+   app (see the display-mode media query below), never in a regular
+   browser tab. Rendered as static HTML in the root layout so it paints
+   before JS hydrates, then removed by AppSplashRemover once mounted. */
+#app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #eaf4ff;
+  transition: opacity 0.35s ease;
+}
+
+#app-splash img {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  animation: app-splash-pulse 1.6s ease-in-out infinite;
+}
+
+#app-splash .app-splash-title {
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+  color: #14213d;
+}
+
+#app-splash.app-splash-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes app-splash-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  #app-splash {
+    background: #0b1120;
+  }
+  #app-splash .app-splash-title {
+    color: #f1f5f9;
+  }
+}
+
+@media not all and (display-mode: standalone) {
+  #app-splash {
+    display: none !important;
+  }
+}

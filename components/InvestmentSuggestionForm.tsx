@@ -22,6 +22,7 @@ import { useSnackbar } from "@/hooks/use-snackbar";
 import SnackbarAlert from "@/components/SnackbarAlert";
 import { suggestInvestment } from "@/services/investmentService";
 import { INVESTMENT_TYPE_OPTIONS } from "@/lib/investmentTypes";
+import { usePlatformSettings } from "@/components/PlatformSettingsContext";
 
 interface InvestmentSuggestionFormProps {
   open: boolean;
@@ -62,6 +63,16 @@ export default function InvestmentSuggestionForm({
   });
 
   const [loading, setLoading] = useState(false);
+  const { settings: platformSettings } = usePlatformSettings();
+  const availableInvestmentTypes = React.useMemo(
+    () =>
+      platformSettings.enabledInvestmentTypes.length > 0
+        ? INVESTMENT_TYPE_OPTIONS.filter((opt) =>
+            platformSettings.enabledInvestmentTypes.includes(opt.value)
+          )
+        : INVESTMENT_TYPE_OPTIONS,
+    [platformSettings.enabledInvestmentTypes]
+  );
   const {
     snackbar,
     closeSnackbar,
@@ -250,7 +261,7 @@ export default function InvestmentSuggestionForm({
                 label="Investment Type *"
                 disabled={loading}
               >
-                {INVESTMENT_TYPE_OPTIONS.map((opt) => (
+                {availableInvestmentTypes.map((opt) => (
                   <MenuItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </MenuItem>

@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import dbConnect from "../../../../utils/connectDB";
 import MemberInvestment from "../../../../models/MemberInvestment";
 import Investment from "../../../../models/Investment";
+import { getPlatformSettings } from "../../../../utils/getPlatformSettings";
 
 export async function GET(request: NextRequest) {
   try {
@@ -73,6 +74,17 @@ export async function POST(request: NextRequest) {
     if (!body.community || !body.investmentType) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const platformSettings = await getPlatformSettings();
+    if (
+      platformSettings.enabledInvestmentTypes.length > 0 &&
+      !platformSettings.enabledInvestmentTypes.includes(body.investmentType)
+    ) {
+      return NextResponse.json(
+        { error: `Investment type "${body.investmentType}" is currently disabled` },
         { status: 400 }
       );
     }
