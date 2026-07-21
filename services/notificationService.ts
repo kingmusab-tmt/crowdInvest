@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { sendEmail } from "@/utils/emailService";
@@ -72,19 +73,30 @@ export async function createNotification(
       });
     }
 
-    // Send email notification if enabled - once on, all notification types are sent
+    // Send email notification if enabled - once on, all notification types are sent.
+    // Deferred via after(): the SMTP round-trip (connection + TLS + auth) routinely
+    // takes several seconds, and previously this was awaited inline, making every
+    // caller's HTTP response (e.g. admin KYC verify/reject) wait on it. after() runs
+    // this once the response has been sent, without risking it being cut off like a
+    // bare fire-and-forget promise would on a serverless function.
     if (notificationSettings.email !== false) {
-      const platformSettings = await getPlatformSettings();
-      await sendNotificationEmail({
-        to: user.email,
-        name: user.name,
-        title,
-        message,
-        actionUrl,
-        type,
-        platformName: platformSettings.platformName,
-        senderName: platformSettings.notifications.emailSenderName,
-        senderAddress: platformSettings.notifications.emailSenderAddress,
+      after(async () => {
+        try {
+          const platformSettings = await getPlatformSettings();
+          await sendNotificationEmail({
+            to: user.email,
+            name: user.name,
+            title,
+            message,
+            actionUrl,
+            type,
+            platformName: platformSettings.platformName,
+            senderName: platformSettings.notifications.emailSenderName,
+            senderAddress: platformSettings.notifications.emailSenderAddress,
+          });
+        } catch (error) {
+          console.error("Error sending notification email:", error);
+        }
       });
     }
   } catch (error) {
