@@ -32,6 +32,7 @@ import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import HelpIcon from "@mui/icons-material/Help";
 import SettingsIcon from "@mui/icons-material/Settings";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -132,6 +133,7 @@ const adminMenuItems = [
   },
   { text: "Events", icon: <EventIcon />, path: "/admin/events" },
   { text: "KYC Verification", icon: <VerifiedUserIcon />, path: "/admin/kyc" },
+  { text: "Notify", icon: <CampaignIcon />, path: "/admin/notify" },
   { text: "Assistance", icon: <HelpIcon />, path: "/admin/assistance" },
   {
     text: "Withdrawals",

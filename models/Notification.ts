@@ -24,6 +24,9 @@ export interface INotification extends Document {
     | "investment_suggestion_rejected"
     | "investment_voting_open"
     | "investment_voting_closed"
+    | "birthday_wish"
+    | "birthday_announcement"
+    | "birthday_reminder"
     | "general";
   title: string;
   message: string;
@@ -66,6 +69,9 @@ const NotificationSchema = new Schema<INotification>(
         "investment_suggestion_rejected",
         "investment_voting_open",
         "investment_voting_closed",
+        "birthday_wish",
+        "birthday_announcement",
+        "birthday_reminder",
         "general",
       ],
       default: "general",

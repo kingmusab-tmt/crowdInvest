@@ -40,7 +40,11 @@ import NotificationBell from "./NotificationBell";
 import DarkModeToggle from "./DarkModeToggle";
 import { usePlatformSettings } from "./PlatformSettingsContext";
 import VerificationPendingModal from "./VerificationPendingModal";
-import { CONTRIBUTION_MODAL_SESSION_KEY } from "@/lib/dashboardConstants";
+import BirthdayModal from "./BirthdayModal";
+import {
+  CONTRIBUTION_MODAL_SESSION_KEY,
+  BIRTHDAY_MODAL_SESSION_KEY,
+} from "@/lib/dashboardConstants";
 
 const drawerWidth = 260;
 const drawerCollapsedWidth = 65;
@@ -214,6 +218,25 @@ export default function UserDashboardLayout({
       });
   }, []);
 
+  // Regular members can't use the dashboard until an admin approves their
+  // KYC — admins are exempt, and we wait for profileCompleted so this never
+  // flashes over the onboarding flow itself.
+  const isPendingVerification =
+    session?.user?.role === "User" &&
+    session?.user?.profileCompleted === true &&
+    session?.user?.kycVerified === false;
+
+  const hasCheckedBirthdays = React.useRef(false);
+  React.useEffect(() => {
+    if (!session?.user || isPendingVerification || hasCheckedBirthdays.current) {
+      return;
+    }
+    hasCheckedBirthdays.current = true;
+    fetch("/api/birthdays/check", { method: "POST" }).catch(() => {
+      // Silent fail — don't disrupt the dashboard experience
+    });
+  }, [session, isPendingVerification]);
+
   const visibleMenuItems = React.useMemo(
     () =>
       menuItems.filter(
@@ -252,22 +275,16 @@ export default function UserDashboardLayout({
   };
 
   const handleLogout = async () => {
-    // Clear so the "Monthly Contribution Status" modal shows again on next login
+    // Clear so these modals show again on next login
     sessionStorage.removeItem(CONTRIBUTION_MODAL_SESSION_KEY);
+    sessionStorage.removeItem(BIRTHDAY_MODAL_SESSION_KEY);
     await signOut({ callbackUrl: "/login" });
   };
-
-  // Regular members can't use the dashboard until an admin approves their
-  // KYC — admins are exempt, and we wait for profileCompleted so this never
-  // flashes over the onboarding flow itself.
-  const isPendingVerification =
-    session?.user?.role === "User" &&
-    session?.user?.profileCompleted === true &&
-    session?.user?.kycVerified === false;
 
   return (
     <Box sx={{ display: "flex" }}>
       {isPendingVerification && <VerificationPendingModal />}
+      {!isPendingVerification && <BirthdayModal />}
       <AppBar position="fixed" open={isDrawerOpen}>
         <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
           <IconButton

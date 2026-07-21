@@ -28,6 +28,9 @@ export interface CreateNotificationParams {
     | "investment_suggestion_rejected"
     | "investment_voting_open"
     | "investment_voting_closed"
+    | "birthday_wish"
+    | "birthday_announcement"
+    | "birthday_reminder"
     | "general";
   title: string;
   message: string;
@@ -195,6 +198,9 @@ async function sendNotificationEmail(params: {
           .badge-investment-suggestion-rejected { background: #ffebee; color: #c62828; }
           .badge-investment-voting-open { background: #ede7f6; color: #4527a0; }
           .badge-investment-voting-closed { background: #eceff1; color: #37474f; }
+          .badge-birthday-wish { background: #fce4ec; color: #ad1457; }
+          .badge-birthday-announcement { background: #fff3e0; color: #e65100; }
+          .badge-birthday-reminder { background: #fff8e1; color: #f57f17; }
           .badge-general { background: #f5f5f5; color: #616161; }
           .message-box {
             background: #f9f9f9;
@@ -311,6 +317,9 @@ function getNotificationTypeLabel(type: string): string {
     investment_suggestion_rejected: "Investment Suggestion Rejected",
     investment_voting_open: "Investment Voting Open",
     investment_voting_closed: "Investment Voting Closed",
+    birthday_wish: "Happy Birthday",
+    birthday_announcement: "Birthday Announcement",
+    birthday_reminder: "Birthday Reminder",
     general: "General",
   };
   return labels[type] || "Notification";
