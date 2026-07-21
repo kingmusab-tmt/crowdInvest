@@ -1,16 +1,33 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+// Renders/unmounts the splash overlay through React state rather than
+// imperative DOM calls (el.remove()) — mutating a React-rendered node
+// directly desyncs the fiber tree from the real DOM and causes
+// insertBefore/removeChild NotFoundErrors on the next React commit.
 export default function AppSplashRemover() {
-  useEffect(() => {
-    const el = document.getElementById("app-splash");
-    if (!el) return;
+  const [visible, setVisible] = useState(true);
+  const [fadingOut, setFadingOut] = useState(false);
 
-    el.classList.add("app-splash-hidden");
-    const timeout = setTimeout(() => el.remove(), 400);
+  useEffect(() => {
+    setFadingOut(true);
+    const timeout = setTimeout(() => setVisible(false), 400);
     return () => clearTimeout(timeout);
   }, []);
 
-  return null;
+  if (!visible) return null;
+
+  return (
+    <div id="app-splash" className={fadingOut ? "app-splash-hidden" : undefined}>
+      <img
+        src="/android-chrome-192x192.png"
+        alt="CrowdInvest"
+        width={96}
+        height={96}
+        fetchPriority="high"
+      />
+      <span className="app-splash-title">CrowdInvest</span>
+    </div>
+  );
 }

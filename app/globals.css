@@ -122,8 +122,8 @@
 
 /* PWA boot splash — only shown when launched as an installed standalone
    app (see the display-mode media query below), never in a regular
-   browser tab. Rendered as static HTML in the root layout so it paints
-   before JS hydrates, then removed by AppSplashRemover once mounted. */
+   browser tab. Rendered by AppSplashRemover so it's part of the initial
+   SSR HTML (paints before JS hydrates) and unmounted via React state. */
 #app-splash {
   position: fixed;
   inset: 0;

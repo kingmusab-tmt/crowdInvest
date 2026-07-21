@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import ThemeRegistry from "@/components/ThemeRegistry";
 import AuthProvider from "@/components/AuthProvider";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
@@ -58,27 +59,17 @@ export default function RootLayout({
         <link rel="icon" type="image/png" href="/android-chrome-192x192.png" />
       </head>
       <body>
-        {/* Static markup so it paints before JS hydrates; hidden outside
-            standalone (installed) mode via CSS, no JS needed for that. */}
-        <div id="app-splash">
-          <img
-            src="/android-chrome-192x192.png"
-            alt="CrowdInvest"
-            width={96}
-            height={96}
-            fetchPriority="high"
-          />
-          <span className="app-splash-title">CrowdInvest</span>
-        </div>
         <AppSplashRemover />
-        <AuthProvider>
-          <PlatformSettingsProvider>
-            <ServiceWorkerRegister />
-            <PWAInstallPrompt />
-            <NotificationListener />
-            <ThemeRegistry>{children}</ThemeRegistry>
-          </PlatformSettingsProvider>
-        </AuthProvider>
+        <AppRouterCacheProvider>
+          <AuthProvider>
+            <PlatformSettingsProvider>
+              <ServiceWorkerRegister />
+              <PWAInstallPrompt />
+              <NotificationListener />
+              <ThemeRegistry>{children}</ThemeRegistry>
+            </PlatformSettingsProvider>
+          </AuthProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
