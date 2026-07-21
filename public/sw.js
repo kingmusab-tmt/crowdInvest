@@ -1,6 +1,5 @@
-const CACHE_NAME = "crowdinvest-cache-v1";
+const CACHE_NAME = "crowdinvest-cache-v2";
 const PRECACHE_URLS = [
-  "/",
   "/manifest.json",
   "/favicon.ico",
   "/android-chrome-192x192.png",
@@ -39,6 +38,36 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Next.js build output is content-hashed per deploy (new hash on every build),
+  // so let the browser's own HTTP cache handle it instead of the SW. Caching it
+  // here would let a stale hashed URL survive after a redeploy and 404.
+  if (url.pathname.startsWith("/_next/")) {
+    return;
+  }
+
+  // HTML navigations: network-first so users always land on the current build.
+  // Falling back to cache-first here is what causes stale pages (referencing
+  // JS chunks from a previous deploy that no longer exist) after every deploy.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        try {
+          const response = await fetch(request);
+          if (response && response.status === 200) {
+            cache.put(request, response.clone());
+          }
+          return response;
+        } catch {
+          const cached = await cache.match(request);
+          return cached || cache.match("/");
+        }
+      })()
+    );
+    return;
+  }
+
+  // Other same-origin static assets: cache-first with background revalidation.
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE_NAME);

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import fs from "fs";
-import path from "path";
+import dbConnect from "@/utils/connectDB";
+import AuditLog from "@/models/auditLog";
 
 interface AuditLogParams {
   userId?: string;
@@ -21,76 +21,18 @@ interface AuditLogParams {
   metadata?: Record<string, any>;
 }
 
-interface AuditLogEntry extends AuditLogParams {
-  timestamp: string;
-  _id: string;
-}
-
 /**
- * Get the logs directory path
- */
-function getLogsDirectory(): string {
-  const logsDir = path.join(process.cwd(), "logs", "audit");
-
-  try {
-    // Ensure directory exists - use synchronous API
-    if (!fs.existsSync(logsDir)) {
-      console.log("📁 [AUDIT LOGGER] Creating logs directory:", logsDir);
-      fs.mkdirSync(logsDir, { recursive: true, mode: 0o777 });
-      console.log("✅ [AUDIT LOGGER] Logs directory created successfully");
-    }
-  } catch (err) {
-    console.error("❌ [AUDIT LOGGER] Failed to create logs directory:", err);
-    console.error("Attempted path:", logsDir);
-    console.error("Current working directory:", process.cwd());
-  }
-
-  return logsDir;
-}
-
-/**
- * Get the log file path for a specific date
- */
-function getLogFilePath(date: Date = new Date()): string {
-  const logsDir = getLogsDirectory();
-  const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
-  return path.join(logsDir, `audit-${dateStr}.log`);
-}
-
-/**
- * Generate a unique ID for log entry
- */
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Log an audit event to file
+ * Log an audit event to the database
  * @param params Audit log parameters
  */
 export async function logAudit(params: AuditLogParams): Promise<void> {
   try {
-    const logEntry: AuditLogEntry = {
-      _id: generateId(),
-      timestamp: new Date().toISOString(),
+    await dbConnect();
+    const logEntry = await AuditLog.create({
+      timestamp: new Date(),
       ...params,
-    };
+    });
 
-    const logLine = JSON.stringify(logEntry) + "\n";
-    const filePath = getLogFilePath();
-
-    console.log("📝 [AUDIT LOG] About to write to:", filePath);
-
-    // Append to log file synchronously
-    try {
-      fs.appendFileSync(filePath, logLine, "utf8");
-    } catch (writeErr) {
-      console.error("❌ [AUDIT LOG] Failed to write to file:", writeErr);
-      console.error("File path:", filePath);
-      throw writeErr;
-    }
-
-    // Log to console for testing
     console.log("✅ [AUDIT LOG] New entry logged:", {
       id: logEntry._id,
       timestamp: logEntry.timestamp,
@@ -98,11 +40,10 @@ export async function logAudit(params: AuditLogParams): Promise<void> {
       category: logEntry.category,
       status: logEntry.status,
       userEmail: logEntry.userEmail,
-      filePath: filePath,
     });
   } catch (error) {
-    // Don't throw errors for audit logging failures
-    // Log to console for debugging
+    // Don't throw errors for audit logging failures - logging should never
+    // break the calling flow (e.g. login, admin actions)
     console.error("❌ [AUDIT LOG ERROR] Audit logging failed:", error);
     if (error instanceof Error) {
       console.error("Error details:", {

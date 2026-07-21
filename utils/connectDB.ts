@@ -26,6 +26,7 @@ const dbConnect = async () => {
     await import("../models/Event");
     await import("../models/Assistance");
     await import("../models/Notification");
+    await import("../models/auditLog");
 
     isConnected = true;
   } catch (error) {
