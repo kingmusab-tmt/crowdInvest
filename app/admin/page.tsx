@@ -377,30 +377,12 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={12}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 1,
-              mb: 2,
-            }}
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, color: "text.secondary", mb: 2 }}
           >
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 600, color: "text.secondary" }}
-            >
-              Community Overview
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => router.push("/dashboard")}
-            >
-              Back to Dashboard
-            </Button>
-          </Box>
+            Community Overview
+          </Typography>
         </Grid>
 
         <Grid

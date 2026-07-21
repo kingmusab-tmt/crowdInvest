@@ -15,7 +15,6 @@ import EventIcon from "@mui/icons-material/Event";
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -527,47 +526,13 @@ export default function UserDashboard() {
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
-            Welcome back, {session?.user?.name}!
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Here's what's happening with your community today.
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={fetchDashboardData}
-            disabled={isRefreshing}
-            sx={{ fontWeight: 600 }}
-            startIcon={isRefreshing ? <CircularProgress size={16} /> : null}
-          >
-            {isRefreshing ? "Refreshing..." : "Refresh Data"}
-          </Button>
-
-          {/* Admin Dashboard Button */}
-          {session?.user?.role === "Admin" && (
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => router.push("/admin")}
-              sx={{ fontWeight: 600 }}
-            >
-              Go to Admin Dashboard
-            </Button>
-          )}
-        </Box>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
+          Welcome back, {session?.user?.name}!
+        </Typography>
+        <Typography variant="body1" color="textSecondary">
+          Here's what's happening with your community today.
+        </Typography>
       </Box>
       <Dialog
         open={showContributionModal}
@@ -718,7 +683,7 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
+            xs: 6,
             sm: 6,
             md: 3
           }}>
@@ -732,7 +697,7 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
+            xs: 6,
             sm: 6,
             md: 3
           }}>
@@ -746,7 +711,7 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
+            xs: 6,
             sm: 6,
             md: 3
           }}>
@@ -760,7 +725,7 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
+            xs: 6,
             sm: 6,
             md: 3
           }}>
@@ -774,7 +739,7 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
+            xs: 6,
             sm: 6,
             md: 4
           }}>
@@ -793,7 +758,7 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
+            xs: 6,
             sm: 6,
             md: 4
           }}>
@@ -811,7 +776,7 @@ export default function UserDashboard() {
 
         <Grid
           size={{
-            xs: 12,
+            xs: 6,
             sm: 6,
             md: 4
           }}>

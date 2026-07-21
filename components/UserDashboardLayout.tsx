@@ -30,6 +30,7 @@ import HelpIcon from "@mui/icons-material/Help";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import LogoutIcon from "@mui/icons-material/Logout";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import PeopleIcon from "@mui/icons-material/People";
 import { useTheme } from "@mui/material/styles";
@@ -324,6 +325,14 @@ export default function UserDashboardLayout({
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
+            {session?.user?.role === "Admin" && (
+              <MenuItem onClick={() => router.push("/admin")}>
+                <ListItemIcon>
+                  <AdminPanelSettingsIcon fontSize="small" />
+                </ListItemIcon>
+                Go to Admin Dashboard
+              </MenuItem>
+            )}
             <MenuItem onClick={() => router.push("/dashboard/settings")}>
               <ListItemIcon>
                 <SettingsIcon fontSize="small" />

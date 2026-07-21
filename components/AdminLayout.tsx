@@ -233,6 +233,12 @@ export default function AdminLayout({
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
+            <MenuItem onClick={() => router.push("/dashboard")}>
+              <ListItemIcon>
+                <DashboardIcon fontSize="small" />
+              </ListItemIcon>
+              Back to Dashboard
+            </MenuItem>
             <MenuItem onClick={() => router.push("/admin/settings")}>
               <ListItemIcon>
                 <SettingsIcon fontSize="small" />
