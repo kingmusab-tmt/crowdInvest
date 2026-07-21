@@ -39,6 +39,7 @@ import { signOut, useSession } from "next-auth/react";
 import NotificationBell from "./NotificationBell";
 import DarkModeToggle from "./DarkModeToggle";
 import { usePlatformSettings } from "./PlatformSettingsContext";
+import VerificationPendingModal from "./VerificationPendingModal";
 import { CONTRIBUTION_MODAL_SESSION_KEY } from "@/lib/dashboardConstants";
 
 const drawerWidth = 260;
@@ -256,8 +257,17 @@ export default function UserDashboardLayout({
     await signOut({ callbackUrl: "/login" });
   };
 
+  // Regular members can't use the dashboard until an admin approves their
+  // KYC — admins are exempt, and we wait for profileCompleted so this never
+  // flashes over the onboarding flow itself.
+  const isPendingVerification =
+    session?.user?.role === "User" &&
+    session?.user?.profileCompleted === true &&
+    session?.user?.kycVerified === false;
+
   return (
     <Box sx={{ display: "flex" }}>
+      {isPendingVerification && <VerificationPendingModal />}
       <AppBar position="fixed" open={isDrawerOpen}>
         <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
           <IconButton

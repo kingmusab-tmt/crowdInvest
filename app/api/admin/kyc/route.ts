@@ -156,9 +156,9 @@ export async function POST(request: NextRequest) {
       await createNotification({
         userId: updatedUser._id,
         type: "kyc_verified",
-        title: "KYC Verification Approved",
-        message: `Your KYC verification has been approved. You now have full access to all community features.`,
-        actionUrl: "/dashboard/settings",
+        title: "You're Verified!",
+        message: `Your account has been verified by an admin. You now have full access to your dashboard and all community features.`,
+        actionUrl: "/dashboard",
       });
     } else {
       // Rejection notification

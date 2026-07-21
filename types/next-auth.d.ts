@@ -13,6 +13,7 @@ declare module "next-auth" {
       profileCompleted: boolean | null;
       community?: string | null;
       balance?: number;
+      kycVerified?: boolean | null;
       settings?: {
         theme?: "light" | "dark" | "system";
         profileVisibility?: "public" | "private";
@@ -41,6 +42,7 @@ declare module "next-auth" {
     profileCompleted: boolean | null;
     community?: string | null;
     balance?: number;
+    kycVerified?: boolean | null;
     settings?: {
       theme?: "light" | "dark" | "system";
       profileVisibility?: "public" | "private";
@@ -61,6 +63,7 @@ declare module "next-auth/jwt" {
     profileCompleted: boolean | null;
     community?: string | null;
     balance?: number;
+    kycVerified?: boolean | null;
     settings?: {
       theme?: "light" | "dark" | "system";
       profileVisibility?: "public" | "private";

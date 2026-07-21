@@ -138,6 +138,7 @@ export const authOptions = {
         token.community = user.community;
         token.balance = (user as any).balance;
         token.settings = (user as any).settings;
+        token.kycVerified = (user as any).kyc?.isVerified ?? false;
       } else {
         // Always sync latest user data from database to ensure token is up-to-date
         // This ensures changes to role, profileCompleted, etc. are reflected in the token
@@ -156,6 +157,7 @@ export const authOptions = {
             token.community = dbUser.community;
             token.balance = dbUser.balance;
             token.settings = dbUser.settings;
+            token.kycVerified = dbUser.kyc?.isVerified ?? false;
           }
         } catch (error) {
           console.error("❌ [AUTH JWT] Error syncing user data:", error);
@@ -182,6 +184,7 @@ export const authOptions = {
           session.user.community = dbUser.community?.toString();
           session.user.balance = dbUser.balance;
           session.user.settings = dbUser.settings;
+          session.user.kycVerified = dbUser.kyc?.isVerified ?? false;
         } else {
           session.user.email = token.email;
           session.user.name = token.name;
@@ -193,6 +196,7 @@ export const authOptions = {
           session.user.community = token.community as string | null | undefined;
           session.user.balance = token.balance as number;
           session.user.settings = token.settings as any;
+          session.user.kycVerified = token.kycVerified as boolean;
         }
         return session;
       } catch (error) {
